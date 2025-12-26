@@ -1,0 +1,5 @@
+# PC Agent 의존성
+httpx>=0.25.0
+websockets>=12.0
+asyncio>=3.4.3
+
