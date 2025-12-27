@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh:*)",
+      "Bash(scp -o StrictHostKeyChecking=no \"<LOCAL_PROJECT_PATH>\\deploy\\vultr_setup.sh\" root@<SERVER_IP>:/root/)",
+      "Bash(ping:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(cat:*)",
+      "Bash(where:*)",
+      "Bash(dir:*)",
+      "Bash(tar:*)",
+      "Bash(scp:*)"
+    ]
+  }
+}

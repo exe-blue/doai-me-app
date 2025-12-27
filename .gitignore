@@ -76,3 +76,5 @@ screenshots/
 Thumbs.db
 ehthumbs.db
 
+# Claude local settings (contains sensitive paths/IPs)
+.claude/settings.local.json
