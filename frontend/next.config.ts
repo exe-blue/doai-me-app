@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typescript: {
+    // TODO: Remove this after fixing all TypeScript errors (PR/ticket pending)
+    // Added: 2025-12-28 - Run `npx tsc --noEmit` to see current errors
     ignoreBuildErrors: true,
   },
   async redirects() {

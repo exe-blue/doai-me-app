@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { GlowCard } from '@/components/common/GlowCard';
 import { AnimatedNumber } from '@/components/common/AnimatedNumber';
@@ -184,138 +184,156 @@ export default function ActivitiesPage() {
       </div>
 
       {/* Activity Detail */}
-      {selectedActivity && (
-        <motion.div
-          key={selectedActivity}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <GlowCard glowColor="cyan" hover={false}>
-            {(() => {
-              const activity = mockActivities.find(a => a.id === selectedActivity)!;
-              const details = activityDetails[selectedActivity];
-              
-              return (
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <span className="text-4xl">{activity.icon}</span>
-                      <div>
-                        <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
-                          {activity.name}
-                        </h2>
-                        <p className="text-sm text-muted-foreground">{details.fullDescription}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm">
-                        <Settings className="w-4 h-4 mr-2" />
-                        설정
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Pause className="w-4 h-4 mr-2" />
-                        일시정지
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Tabs defaultValue="workflow" className="w-full">
-                    <TabsList className="mb-4">
-                      <TabsTrigger value="workflow">워크플로우</TabsTrigger>
-                      <TabsTrigger value="outputs">아웃풋</TabsTrigger>
-                      <TabsTrigger value="devices">디바이스</TabsTrigger>
-                      <TabsTrigger value="logs">로그</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="workflow">
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        {details.workflow.map((step, i) => (
-                          <div key={i} className="relative">
-                            <div className="p-4 rounded-lg bg-background/50 border border-border/50 h-full">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                                  {i + 1}
-                                </div>
-                                <CheckCircle className="w-4 h-4 text-green-400" />
-                              </div>
-                              <p className="text-sm">{step}</p>
-                            </div>
-                            {i < details.workflow.length - 1 && (
-                              <div className="hidden md:block absolute top-1/2 -right-2 w-4 h-0.5 bg-border" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="outputs">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {details.outputs.map((output, i) => (
-                          <div key={i} className="p-4 rounded-lg bg-background/50 border border-border/50">
-                            <div className="flex items-center gap-2 mb-2">
-                              <TrendingUp className="w-4 h-4 text-cyan-400" />
-                              <span className="font-medium">{output}</span>
-                            </div>
-                            <div className="text-2xl font-bold text-cyan-400">
-                              <AnimatedNumber value={Math.floor(Math.random() * 500) + 100} />
-                            </div>
-                            <p className="text-xs text-muted-foreground">오늘 생성됨</p>
-                          </div>
-                        ))}
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="devices">
-                      <div className="grid grid-cols-10 gap-1">
-                        {Array.from({ length: activity.allocatedDevices }, (_, i) => (
-                          <div
-                            key={i}
-                            className={`aspect-square rounded ${
-                              i < activity.activeDevices ? 'bg-green-500' : 'bg-gray-600'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-4 mt-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded bg-green-500" />
-                          <span>Active ({activity.activeDevices})</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded bg-gray-600" />
-                          <span>Idle ({activity.allocatedDevices - activity.activeDevices})</span>
-                        </div>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="logs">
-                      <ScrollArea className="h-[300px]">
-                        <div className="space-y-2 font-mono text-xs">
-                          {Array.from({ length: 20 }, (_, i) => (
-                            <div key={i} className="flex items-start gap-2 p-2 rounded bg-background/50">
-                              <span className="text-muted-foreground">
-                                {new Date(Date.now() - i * 60000).toLocaleTimeString()}
-                              </span>
-                              <span className={i % 3 === 0 ? 'text-green-400' : i % 3 === 1 ? 'text-cyan-400' : 'text-yellow-400'}>
-                                {i % 3 === 0 ? '[SUCCESS]' : i % 3 === 1 ? '[INFO]' : '[PROCESS]'}
-                              </span>
-                              <span>
-                                {i % 3 === 0 ? 'Item processed successfully' : 
-                                 i % 3 === 1 ? 'Device heartbeat received' : 
-                                 'Processing new item...'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </TabsContent>
-                  </Tabs>
-                </div>
-              );
-            })()}
-          </GlowCard>
-        </motion.div>
-      )}
+      {selectedActivity && <ActivityDetail selectedActivity={selectedActivity} />}
     </div>
+  );
+}
+
+// Separate component to handle activity detail with memoized random values
+function ActivityDetail({ selectedActivity }: { selectedActivity: string }) {
+  const activity = mockActivities.find(a => a.id === selectedActivity);
+  const details = activityDetails[selectedActivity];
+  
+  // Memoize random values to prevent re-computation on every render
+  const outputValues = useMemo(() => {
+    if (!details) return [];
+    return details.outputs.map((_, index) => Math.floor(Math.random() * 500) + 100);
+  }, [selectedActivity, details]);
+
+  // Handle case where activity is not found
+  if (!activity || !details) {
+    return (
+      <GlowCard glowColor="cyan" hover={false}>
+        <div className="text-center text-muted-foreground py-8">
+          활동을 찾을 수 없습니다
+        </div>
+      </GlowCard>
+    );
+  }
+
+  return (
+    <motion.div
+      key={selectedActivity}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <GlowCard glowColor="cyan" hover={false}>
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <span className="text-4xl">{activity.icon}</span>
+              <div>
+                <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
+                  {activity.name}
+                </h2>
+                <p className="text-sm text-muted-foreground">{details.fullDescription}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                설정
+              </Button>
+              <Button variant="outline" size="sm">
+                <Pause className="w-4 h-4 mr-2" />
+                일시정지
+              </Button>
+            </div>
+          </div>
+
+          <Tabs defaultValue="workflow" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="workflow">워크플로우</TabsTrigger>
+              <TabsTrigger value="outputs">아웃풋</TabsTrigger>
+              <TabsTrigger value="devices">디바이스</TabsTrigger>
+              <TabsTrigger value="logs">로그</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="workflow">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {details.workflow.map((step, i) => (
+                  <div key={i} className="relative">
+                    <div className="p-4 rounded-lg bg-background/50 border border-border/50 h-full">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                          {i + 1}
+                        </div>
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      </div>
+                      <p className="text-sm">{step}</p>
+                    </div>
+                    {i < details.workflow.length - 1 && (
+                      <div className="hidden md:block absolute top-1/2 -right-2 w-4 h-0.5 bg-border" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="outputs">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {details.outputs.map((output, i) => (
+                  <div key={i} className="p-4 rounded-lg bg-background/50 border border-border/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="w-4 h-4 text-cyan-400" />
+                      <span className="font-medium">{output}</span>
+                    </div>
+                    <div className="text-2xl font-bold text-cyan-400">
+                      <AnimatedNumber value={outputValues[i]} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">오늘 생성됨</p>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="devices">
+              <div className="grid grid-cols-10 gap-1">
+                {Array.from({ length: activity.allocatedDevices }, (_, i) => (
+                  <div
+                    key={i}
+                    className={`aspect-square rounded ${
+                      i < activity.activeDevices ? 'bg-green-500' : 'bg-gray-600'
+                    }`}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center gap-4 mt-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-green-500" />
+                  <span>Active ({activity.activeDevices})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-gray-600" />
+                  <span>Idle ({activity.allocatedDevices - activity.activeDevices})</span>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="logs">
+              <ScrollArea className="h-[300px]">
+                <div className="space-y-2 font-mono text-xs">
+                  {Array.from({ length: 20 }, (_, i) => (
+                    <div key={i} className="flex items-start gap-2 p-2 rounded bg-background/50">
+                      <span className="text-muted-foreground">
+                        {new Date(Date.now() - i * 60000).toLocaleTimeString()}
+                      </span>
+                      <span className={i % 3 === 0 ? 'text-green-400' : i % 3 === 1 ? 'text-cyan-400' : 'text-yellow-400'}>
+                        {i % 3 === 0 ? '[SUCCESS]' : i % 3 === 1 ? '[INFO]' : '[PROCESS]'}
+                      </span>
+                      <span>
+                        {i % 3 === 0 ? 'Item processed successfully' : 
+                         i % 3 === 1 ? 'Device heartbeat received' : 
+                         'Processing new item...'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </GlowCard>
+    </motion.div>
   );
 }
