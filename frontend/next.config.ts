@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
     // Added: 2025-12-28 - Run `npx tsc --noEmit` to see current errors
     ignoreBuildErrors: true,
   },
+  // Disable static export for auth-protected routes
+  output: undefined,
   async redirects() {
     return [
       {

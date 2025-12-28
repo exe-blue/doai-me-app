@@ -1,5 +1,8 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { GlowCard } from '@/components/common/GlowCard';
 import { AnimatedNumber } from '@/components/common/AnimatedNumber';
@@ -16,12 +19,22 @@ import {
   Award
 } from 'lucide-react';
 
+// Deterministic level generator based on channel id/index
+function generateLevel(id: string, index: number): number {
+  // Simple hash-based deterministic value
+  const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), index);
+  return 40 + (hash % 30);
+}
+
 export default function RankingPage() {
-  const allChannels = [...mockChannels, ...mockCompetitors.map(c => ({
-    ...c,
-    level: Math.floor(Math.random() * 30) + 40,
-    isCompetitor: true,
-  }))].sort((a, b) => (a.categoryRank || 999) - (b.categoryRank || 999));
+  // Memoize to prevent recalculation on every render and ensure SSR/client consistency
+  const allChannels = useMemo(() => {
+    return [...mockChannels, ...mockCompetitors.map((c, i) => ({
+      ...c,
+      level: generateLevel(c.id, i),
+      isCompetitor: true,
+    }))].sort((a, b) => (a.categoryRank || 999) - (b.categoryRank || 999));
+  }, []);
 
   const categories = [...new Set(allChannels.map(c => c.category))];
 

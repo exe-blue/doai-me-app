@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { motion } from 'framer-motion';
 import { GlowCard } from '@/components/common/GlowCard';
 import { mockNotifications } from '@/data/mock';
@@ -41,11 +43,23 @@ export default function NotificationsPage() {
           <p className="text-muted-foreground">시스템 알림 및 이벤트</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            disabled
+            aria-label="모두 읽음 처리 (현재 비활성화)"
+            onClick={() => {/* TODO: implement markAllRead */}}
+          >
             <Check className="w-4 h-4 mr-2" />
             모두 읽음
           </Button>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            disabled
+            aria-label="선택된 알림 삭제 (현재 비활성화)"
+            onClick={() => {/* TODO: implement deleteSelected */}}
+          >
             <Trash2 className="w-4 h-4 mr-2" />
             삭제
           </Button>

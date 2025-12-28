@@ -1,5 +1,8 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GlowCard } from '@/components/common/GlowCard';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +23,64 @@ import {
 } from 'lucide-react';
 
 export default function SettingsPage() {
+  // Controlled state for notification settings
+  const [viralAlert, setViralAlert] = useState(true);
+  const [rankAlert, setRankAlert] = useState(true);
+  const [deviceErrorAlert, setDeviceErrorAlert] = useState(true);
+  const [questCompleteAlert, setQuestCompleteAlert] = useState(true);
+  
+  // Controlled state for activity settings
+  const [autoRotation, setAutoRotation] = useState(true);
+  const [aiAutoGenerate, setAiAutoGenerate] = useState(true);
+  const [personaAutoActivate, setPersonaAutoActivate] = useState(true);
+  const [rateLimiting, setRateLimiting] = useState(true);
+  const [accessLogging, setAccessLogging] = useState(true);
+  
+  // Loading states for async actions
+  const [isRestarting, setIsRestarting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Handler for system restart
+  const handleRestart = async () => {
+    if (!confirm('시스템을 재시작하시겠습니까? 진행 중인 작업이 중단될 수 있습니다.')) {
+      return;
+    }
+    
+    setIsRestarting(true);
+    try {
+      // TODO: Call restart API
+      // await restartSystem();
+      alert('시스템 재시작 요청이 전송되었습니다.');
+    } catch (error) {
+      alert('시스템 재시작에 실패했습니다.');
+      console.error('Restart error:', error);
+    } finally {
+      setIsRestarting(false);
+    }
+  };
+
+  // Handler for saving settings
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      const settings = {
+        notifications: { viralAlert, rankAlert, deviceErrorAlert, questCompleteAlert },
+        activity: { autoRotation, aiAutoGenerate, personaAutoActivate },
+        api: { rateLimiting },
+        security: { accessLogging },
+      };
+      // TODO: Call save settings API
+      // await updateSettings(settings);
+      console.log('Settings to save:', settings);
+      alert('설정이 저장되었습니다.');
+    } catch (error) {
+      alert('설정 저장에 실패했습니다.');
+      console.error('Save error:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -122,28 +183,28 @@ export default function SettingsPage() {
                 <div className="font-medium">바이럴 히트 알림</div>
                 <div className="text-sm text-muted-foreground">영상 조회수 100K 돌파 시</div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={viralAlert} onCheckedChange={setViralAlert} />
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-background/50">
               <div>
                 <div className="font-medium">순위 변동 알림</div>
                 <div className="text-sm text-muted-foreground">카테고리 순위 변동 시</div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={rankAlert} onCheckedChange={setRankAlert} />
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-background/50">
               <div>
                 <div className="font-medium">디바이스 오류 알림</div>
                 <div className="text-sm text-muted-foreground">디바이스 연결 끊김 시</div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={deviceErrorAlert} onCheckedChange={setDeviceErrorAlert} />
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-background/50">
               <div>
                 <div className="font-medium">퀘스트 완료 알림</div>
                 <div className="text-sm text-muted-foreground">일일/주간 퀘스트 완료 시</div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={questCompleteAlert} onCheckedChange={setQuestCompleteAlert} />
             </div>
           </div>
         </GlowCard>
@@ -162,21 +223,21 @@ export default function SettingsPage() {
                 <div className="font-medium">자동 디바이스 로테이션</div>
                 <div className="text-sm text-muted-foreground">2시간마다 활동 재배치</div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={autoRotation} onCheckedChange={setAutoRotation} />
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-background/50">
               <div>
                 <div className="font-medium">AI 아이디어 자동 생성</div>
                 <div className="text-sm text-muted-foreground">트렌드 발견 시 자동 생성</div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={aiAutoGenerate} onCheckedChange={setAiAutoGenerate} />
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-background/50">
               <div>
                 <div className="font-medium">페르소나 자동 활성화</div>
                 <div className="text-sm text-muted-foreground">피크 시간대 자동 활성화</div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={personaAutoActivate} onCheckedChange={setPersonaAutoActivate} />
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-background/50">
               <div>
@@ -216,7 +277,7 @@ export default function SettingsPage() {
                 <div className="font-medium">Rate Limiting</div>
                 <div className="text-sm text-muted-foreground">요청 제한 관리</div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={rateLimiting} onCheckedChange={setRateLimiting} />
             </div>
           </div>
         </GlowCard>
@@ -252,7 +313,7 @@ export default function SettingsPage() {
                 <div className="font-medium">접근 로그</div>
                 <div className="text-sm text-muted-foreground">모든 요청 기록</div>
               </div>
-              <Switch defaultChecked />
+              <Switch checked={accessLogging} onCheckedChange={setAccessLogging} />
             </div>
           </div>
         </GlowCard>
@@ -260,12 +321,20 @@ export default function SettingsPage() {
 
       {/* Actions */}
       <div className="flex gap-4">
-        <Button className="bg-cyan-500 hover:bg-cyan-600">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          시스템 재시작
+        <Button 
+          className="bg-cyan-500 hover:bg-cyan-600"
+          onClick={handleRestart}
+          disabled={isRestarting}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${isRestarting ? 'animate-spin' : ''}`} />
+          {isRestarting ? '재시작 중...' : '시스템 재시작'}
         </Button>
-        <Button variant="outline">
-          설정 저장
+        <Button 
+          variant="outline"
+          onClick={handleSaveSettings}
+          disabled={isSaving}
+        >
+          {isSaving ? '저장 중...' : '설정 저장'}
         </Button>
       </div>
     </div>
