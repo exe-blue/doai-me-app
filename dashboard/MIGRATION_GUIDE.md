@@ -3,11 +3,14 @@
 ## 완료된 작업
 
 ### 1. 데이터베이스 스키마 정의
+
 - `DATABASE_SCHEMA.md` 파일에 모든 필요한 테이블 스키마 정의 완료
 - PostgreSQL 기준으로 작성 (MySQL/SQLite 호환 가능)
 
 ### 2. 랜딩 페이지 Mock 데이터 제거
+
 다음 컴포넌트의 Mock 데이터가 제거되었습니다:
+
 - ✅ `HeroSection.tsx` - 통계를 0으로 표시
 - ✅ `ActivitiesSection.tsx` - Mock 데이터 제거, 0 표시
 - ✅ `ChannelsShowcase.tsx` - 채널 배열 비움, 빈 데이터 안내 메시지
@@ -15,12 +18,15 @@
 - ✅ `BattleLogPreview.tsx` - 배틀 로그 배열 비움, 빈 데이터 안내
 
 ### 3. 대시보드 메인 페이지 Mock 데이터 제거
+
 - ✅ `dashboard/page.tsx` - 모든 Mock import 제거, 빈 배열 사용
 
 ## 진행 중인 작업
 
 ### 나머지 대시보드 페이지 수정 필요
+
 다음 페이지들은 아직 Mock 데이터를 사용 중입니다:
+
 - `dashboard/activities/page.tsx`
 - `dashboard/channels/page.tsx`
 - `dashboard/devices/page.tsx`
@@ -37,6 +43,7 @@
 ### 1. 데이터베이스 설정
 
 #### PostgreSQL 사용 시
+
 ```bash
 # 1. PostgreSQL 설치 및 실행
 # 2. 데이터베이스 생성
@@ -47,6 +54,7 @@ psql aifarm < schema.sql
 ```
 
 #### Supabase 사용 시
+
 1. Supabase 프로젝트 생성
 2. SQL Editor에서 `DATABASE_SCHEMA.md`의 스키마 실행
 3. 환경 변수 설정
@@ -54,6 +62,7 @@ psql aifarm < schema.sql
 ### 2. 환경 변수 설정
 
 `.env.local` 파일 생성:
+
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
@@ -66,6 +75,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/aifarm
 ### 3. Supabase 클라이언트 설정
 
 `lib/supabase.ts` 파일 생성:
+
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 
@@ -79,7 +89,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 각 데이터 타입별로 API 라우트 생성 필요:
 
-```
+```text
 app/api/
 ├── activities/
 │   └── route.ts
@@ -98,6 +108,7 @@ app/api/
 ```
 
 #### 예시: `app/api/activities/route.ts`
+
 ```typescript
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
@@ -119,6 +130,7 @@ export async function GET() {
 ### 5. React Query 설정
 
 `lib/queries.ts` 파일 생성:
+
 ```typescript
 import { useQuery } from '@tanstack/react-query'
 
@@ -150,6 +162,7 @@ export function useChannels() {
 ### 6. 컴포넌트 수정
 
 #### 예시: `components/landing/ActivitiesSection.tsx`
+
 ```typescript
 'use client'
 
