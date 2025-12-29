@@ -107,37 +107,6 @@ services:
     networks:
       - doai-net
 
-  # ============================================
-  # Appsmith - Low-Code Dashboard UI
-  # ============================================
-  # 역할: Control Room 대시보드
-  # - 기기 모니터링
-  # - 스트림 뷰어 (Iframe)
-  # - 메시지 발송 UI
-  # Aria 명세서 (2025-01-15)
-  doai-appsmith:
-    image: appsmith/appsmith-ee:latest
-    container_name: doai-appsmith
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-      - "8443:443"
-    environment:
-      # 기본 설정
-      - APPSMITH_SIGNUP_DISABLED=false
-      - APPSMITH_SUPERVISOR_USER=${APPSMITH_USER:-admin@doai.me}
-      - APPSMITH_SUPERVISOR_PASSWORD=${APPSMITH_PASSWORD:-doaime2025}
-      # DoAi Gateway 연결
-      - APPSMITH_GATEWAY_URL=http://doai-gateway:3100
-      # 타임존
-      - TZ=Asia/Seoul
-    volumes:
-      - doai_appsmith_data:/appsmith-stacks
-    networks:
-      - doai-net
-    depends_on:
-      - doai-gateway
-
 # ============================================
 # Networks
 # ============================================
@@ -152,5 +121,3 @@ networks:
 volumes:
   doai_n8n_data:
     name: doai-n8n-data
-  doai_appsmith_data:
-    name: doai-appsmith-data
