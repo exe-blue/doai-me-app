@@ -158,7 +158,7 @@ export function useSupabaseDORequests(params?: { status?: string; limit?: number
   });
 }
 
-export function useCreateDORequest() {
+export function useSupabaseCreateDORequest() {
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -227,7 +227,7 @@ export function useSupabaseBattleLog(limit = 50) {
   });
 }
 
-export function useCreateBattleLog() {
+export function useSupabaseCreateBattleLog() {
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -270,7 +270,7 @@ export function useSupabaseNotifications(unreadOnly = false) {
   });
 }
 
-export function useMarkNotificationRead() {
+export function useSupabaseMarkNotificationRead() {
   const queryClient = useQueryClient();
   
   return useMutation({
