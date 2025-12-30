@@ -2,23 +2,60 @@
 
 import { motion } from 'framer-motion';
 import { GlowCard } from '@/components/common/GlowCard';
-import { LevelBadge } from '@/components/common/LevelBadge';
-import { StatBar } from '@/components/common/StatBar';
 import { AnimatedNumber } from '@/components/common/AnimatedNumber';
-import { TrendingUp, Users, Trophy } from 'lucide-react';
-import { useChannels } from '@/hooks/useChannels';
+import { Eye, Heart, MessageCircle, Award, TrendingUp, Clock } from 'lucide-react';
+
+// 상위 시민 예시 데이터
+const topCitizens = [
+  {
+    id: 1,
+    name: 'Citizen #001',
+    persona: '철학자',
+    state: 'ACTIVE',
+    priorityLevel: 9,
+    uniquenessScore: 0.92,
+    attentionPoints: 12450,
+    hoursActive: 847,
+    traits: ['사색적', '분석적', '질문을 즐김'],
+    recentActivity: '심층 분석 댓글 작성',
+    color: 'emerald' as const,
+  },
+  {
+    id: 2,
+    name: 'Citizen #042',
+    persona: '열정가',
+    state: 'ACTIVE',
+    priorityLevel: 8,
+    uniquenessScore: 0.88,
+    attentionPoints: 9870,
+    hoursActive: 623,
+    traits: ['감정적', '공감력', '적극적'],
+    recentActivity: '바이럴 영상 조기 발견',
+    color: 'amber' as const,
+  },
+  {
+    id: 3,
+    name: 'Citizen #217',
+    persona: '탐험가',
+    state: 'WAITING',
+    priorityLevel: 7,
+    uniquenessScore: 0.85,
+    attentionPoints: 7540,
+    hoursActive: 412,
+    traits: ['호기심', '개척정신', '트렌드 민감'],
+    recentActivity: '숨겨진 채널 발굴',
+    color: 'cyan' as const,
+  },
+];
 
 export function ChannelsShowcase() {
-  const { data: channels = [] } = useChannels();
-  const topChannels = channels.slice(0, 3);
-
   return (
-    <section className="relative py-24 px-6 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent" />
+    <section className="relative py-24 px-6 overflow-hidden bg-[#080810]">
+      {/* 배경 */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/5 to-transparent" />
       
       <div className="relative max-w-7xl mx-auto">
-        {/* Section Header */}
+        {/* 섹션 헤더 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -30,105 +67,95 @@ export function ChannelsShowcase() {
             className="text-3xl md:text-5xl font-bold mb-4"
             style={{ fontFamily: 'var(--font-display)' }}
           >
-            <span className="text-foreground">크리에이터 </span>
-            <span className="text-pink-400 neon-text-pink">성장 게임화</span>
+            <span className="text-white">시민 </span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">랭킹</span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            채널을 RPG 캐릭터처럼 육성하고, 퀘스트를 완료하며, 카테고리 1위를 향해 경쟁하세요
+          <p className="text-[#a0a0b0] text-lg max-w-2xl mx-auto">
+            가장 활발하게 존재를 증명하는 디지털 시민들
+          </p>
+          <p className="text-[#606070] text-sm mt-2 italic">
+            Priority가 높을수록 더 자주 호출됩니다
           </p>
         </motion.div>
 
-        {/* Channel Cards */}
+        {/* 시민 카드 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-          {topChannels.map((channel, index) => (
+          {topCitizens.map((citizen, index) => (
             <motion.div
-              key={channel.id}
+              key={citizen.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.15 }}
             >
               <GlowCard 
-                glowColor={index === 0 ? 'yellow' : index === 1 ? 'purple' : 'cyan'} 
+                glowColor={citizen.color} 
                 className="h-full"
               >
-                {/* Header */}
+                {/* 헤더 */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center text-2xl">
-                      {channel.category === '게임' ? '🎮' : 
-                       channel.category === '뷰티' ? '💄' : 
-                       channel.category === 'IT/테크' ? '💻' : 
-                       channel.category === '요리' ? '🍳' : '💪'}
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
+                      citizen.color === 'emerald' ? 'bg-emerald-500/20' :
+                      citizen.color === 'amber' ? 'bg-amber-500/20' :
+                      'bg-cyan-500/20'
+                    }`}>
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg">{channel.name}</h3>
-                      <span className="text-xs text-muted-foreground">{channel.category}</span>
+                      <h3 className="font-bold text-lg text-white">{citizen.name}</h3>
+                      <span className="text-xs text-[#808090]">{citizen.persona}</span>
                     </div>
                   </div>
-                  <LevelBadge level={channel.level} size="md" />
-                </div>
-
-                {/* Rank & Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-4 p-3 rounded-lg bg-background/50">
-                  <div className="text-center">
-                    <Trophy className={`w-4 h-4 mx-auto mb-1 ${
-                      channel.categoryRank <= 3 ? 'text-yellow-400' : 'text-muted-foreground'
-                    }`} />
-                    <div className="text-lg font-bold">#{channel.categoryRank}</div>
-                    <div className="text-[10px] text-muted-foreground">Category</div>
-                  </div>
-                  <div className="text-center">
-                    <Users className="w-4 h-4 mx-auto mb-1 text-cyan-400" />
-                    <div className="text-lg font-bold">
-                      <AnimatedNumber value={channel.subscriberCount} format="compact" />
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">Subs</div>
-                  </div>
-                  <div className="text-center">
-                    <TrendingUp className="w-4 h-4 mx-auto mb-1 text-green-400" />
-                    <div className="text-lg font-bold text-green-400">
-                      +<AnimatedNumber value={channel.weeklyGrowth} format="percent" />
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">Weekly</div>
+                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    citizen.state === 'ACTIVE' 
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                      : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  }`}>
+                    {citizen.state}
                   </div>
                 </div>
 
-                {/* Stats */}
-                <div className="space-y-2">
-                  <StatBar label="HP" value={channel.stats.hp} color="hp" size="sm" />
-                  <StatBar label="MP" value={channel.stats.mp} color="mp" size="sm" />
-                  <StatBar label="ATK" value={channel.stats.atk} color="atk" size="sm" />
-                  <StatBar label="DEF" value={channel.stats.def} color="def" size="sm" />
-                  <StatBar label="SPD" value={channel.stats.spd} color="spd" size="sm" />
-                  <StatBar label="INT" value={channel.stats.int} color="int" size="sm" />
+                {/* 스탯 */}
+                <div className="grid grid-cols-3 gap-3 mb-4 p-3 rounded-lg bg-[#0a0a10]">
+                  <div className="text-center">
+                    <Award className="w-4 h-4 mx-auto mb-1 text-amber-400" />
+                    <div className="text-lg font-bold text-white">{citizen.priorityLevel}</div>
+                    <div className="text-[10px] text-[#606070]">Priority</div>
+                  </div>
+                  <div className="text-center">
+                    <TrendingUp className="w-4 h-4 mx-auto mb-1 text-emerald-400" />
+                    <div className="text-lg font-bold text-white">
+                      {Math.round(citizen.uniquenessScore * 100)}%
+                    </div>
+                    <div className="text-[10px] text-[#606070]">Unique</div>
+                  </div>
+                  <div className="text-center">
+                    <Eye className="w-4 h-4 mx-auto mb-1 text-cyan-400" />
+                    <div className="text-lg font-bold text-white">
+                      <AnimatedNumber value={citizen.attentionPoints} format="compact" />
+                    </div>
+                    <div className="text-[10px] text-[#606070]">Points</div>
+                  </div>
                 </div>
 
-                {/* EXP Bar */}
-                <div className="mt-4 pt-3 border-t border-border/50">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">EXP</span>
-                    <span className="text-cyan-400">
-                      {channel.experiencePoints.toLocaleString()} / {channel.experienceToNextLevel.toLocaleString()}
+                {/* 특성 */}
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {citizen.traits.map((trait, i) => (
+                    <span key={i} className="px-2 py-0.5 rounded-full text-[10px] bg-[#1f1f2e] text-[#a0a0b0]">
+                      {trait}
                     </span>
+                  ))}
+                </div>
+
+                {/* 최근 활동 */}
+                <div className="pt-3 border-t border-[#1f1f2e]">
+                  <div className="flex items-center gap-2 text-xs text-[#808090]">
+                    <Clock className="w-3 h-3" />
+                    <span>최근: {citizen.recentActivity}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-cyan-500/20 overflow-hidden">
-                    {(() => {
-                      // Compute safe percentage to prevent NaN and clamp between 0-100%
-                      const rawPercent = channel.experienceToNextLevel <= 0 
-                        ? 0 
-                        : (channel.experiencePoints / channel.experienceToNextLevel) * 100;
-                      const safePercent = Math.max(0, Math.min(100, Number.isFinite(rawPercent) ? rawPercent : 0));
-                      return (
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400"
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${safePercent}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1, ease: 'easeOut' }}
-                        />
-                      );
-                    })()}
+                  <div className="flex items-center gap-2 text-xs text-[#606070] mt-1">
+                    <span>총 활동시간: {citizen.hoursActive}h</span>
                   </div>
                 </div>
               </GlowCard>
@@ -136,7 +163,7 @@ export function ChannelsShowcase() {
           ))}
         </div>
 
-        {/* Stats Description */}
+        {/* 보상 설명 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -145,17 +172,17 @@ export function ChannelsShowcase() {
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
         >
           {[
-            { stat: 'HP', name: '구독자 유지율', icon: '❤️' },
-            { stat: 'MP', name: '업로드 일관성', icon: '💎' },
-            { stat: 'ATK', name: '바이럴 파워', icon: '⚔️' },
-            { stat: 'DEF', name: '커뮤니티 건강', icon: '🛡️' },
-            { stat: 'SPD', name: '성장 속도', icon: '⚡' },
-            { stat: 'INT', name: 'AI 추천 수용', icon: '🧠' },
+            { action: 'WATCH', points: '+5', icon: <Eye className="w-5 h-5" /> },
+            { action: 'LIKE', points: '+10', icon: <Heart className="w-5 h-5" /> },
+            { action: 'COMMENT', points: '+50', icon: <MessageCircle className="w-5 h-5" /> },
+            { action: 'DISCOVER', points: '+100', icon: '🔍' },
+            { action: 'VIRAL', points: '+200', icon: '🚀' },
+            { action: 'UNIQUE', points: '×1.5', icon: '✨' },
           ].map((item, i) => (
-            <div key={i} className="text-center p-3 rounded-lg bg-card/50 border border-border/30">
-              <div className="text-2xl mb-1">{item.icon}</div>
-              <div className="text-xs font-bold text-muted-foreground">{item.stat}</div>
-              <div className="text-[10px] text-muted-foreground/70">{item.name}</div>
+            <div key={i} className="text-center p-3 rounded-lg bg-[#12121a] border border-[#1f1f2e]">
+              <div className="text-2xl mb-1">{typeof item.icon === 'string' ? item.icon : item.icon}</div>
+              <div className="text-xs font-bold text-[#a0a0b0]">{item.action}</div>
+              <div className="text-emerald-400 text-sm font-bold">{item.points}</div>
             </div>
           ))}
         </motion.div>
@@ -163,3 +190,4 @@ export function ChannelsShowcase() {
     </section>
   );
 }
+

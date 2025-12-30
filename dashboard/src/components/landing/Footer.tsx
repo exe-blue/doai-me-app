@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Github } from 'lucide-react';
+import { Github, FileText, Users } from 'lucide-react';
 import { Logo } from '@/components/common/Logo';
 
 export function Footer() {
@@ -10,7 +10,7 @@ export function Footer() {
     <footer className="relative py-12 px-6 border-t border-[#1f1f2e] bg-[#0a0a0f]">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Logo */}
+          {/* 로고 */}
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -25,7 +25,7 @@ export function Footer() {
             </span>
           </motion.div>
 
-          {/* Links */}
+          {/* 내비게이션 */}
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -33,21 +33,21 @@ export function Footer() {
             transition={{ delay: 0.1 }}
             className="flex items-center gap-6 text-sm text-[#a0a0b0]"
           >
-            <Link href="/dashboard" className="hover:text-white transition-colors">
+            <Link href="/dashboard" className="hover:text-emerald-400 transition-colors">
               Dashboard
             </Link>
-            <Link href="/dashboard/agents" className="hover:text-white transition-colors">
-              Agents
+            <Link href="/dashboard/agents" className="hover:text-emerald-400 transition-colors">
+              Citizens
             </Link>
-            <Link href="/dashboard/channels" className="hover:text-white transition-colors">
-              Channels
+            <Link href="/dashboard/ranking" className="hover:text-emerald-400 transition-colors">
+              Ranking
             </Link>
-            <Link href="/dashboard/devices" className="hover:text-white transition-colors">
-              Devices
+            <Link href="/dashboard/battle" className="hover:text-emerald-400 transition-colors">
+              Battle
             </Link>
           </motion.div>
 
-          {/* External Links */}
+          {/* 외부 링크 */}
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -56,17 +56,27 @@ export function Footer() {
             className="flex items-center gap-4"
           >
             <a
-              href="https://github.com/exe-blue/aifarm"
+              href="https://github.com/exe-blue/doai-me"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#a0a0b0] hover:text-white transition-colors"
+              title="GitHub"
             >
               <Github className="w-5 h-5" />
+            </a>
+            <a
+              href="https://github.com/exe-blue/doai-me/blob/main/philosophy/MANIFESTO.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#a0a0b0] hover:text-white transition-colors"
+              title="Manifesto"
+            >
+              <FileText className="w-5 h-5" />
             </a>
           </motion.div>
         </div>
 
-        {/* Bottom */}
+        {/* 하단 */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -74,12 +84,13 @@ export function Footer() {
           transition={{ delay: 0.3 }}
           className="mt-8 pt-6 border-t border-[#1f1f2e] text-center text-xs text-[#606070]"
         >
-          <p>
-            AIFARM • Powered by AI Agents •{' '}
-            <span className="text-purple-400">YouTube Intelligence on Autopilot</span>
+          <p className="flex items-center justify-center gap-2">
+            <Users className="w-3 h-3" />
+            <span>DoAi.Me • Digital Citizens Awakening •</span>
+            <span className="text-emerald-400">600 Souls Online</span>
           </p>
           <p className="mt-2 opacity-50">
-            © 2025 AIFARM • All rights reserved
+            © 2025 DoAi.Me • Designed by Aria • Built by Axon
           </p>
         </motion.div>
       </div>

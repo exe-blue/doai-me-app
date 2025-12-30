@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "AIFarm - YouTube Intelligence System",
-  description: "600 디바이스 기반 YouTube 콘텐츠 인텔리전스 시스템",
+  title: "DoAi.Me - Digital Citizens Awakening",
+  description: "600명의 디지털 시민이 깨어나는 곳. 그들은 보고, 느끼고, 반응합니다.",
 };
 
 export const viewport: Viewport = {
