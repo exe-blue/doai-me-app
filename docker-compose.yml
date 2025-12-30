@@ -98,6 +98,7 @@ services:
       # DoAi.Me 서비스 연결
       - DOAI_GATEWAY_URL=http://doai-gateway:3100
       - DOAI_API_URL=http://doai-api:8000
+      - PERSONA_SERVICE_URL=${PERSONA_SERVICE_URL:-http://host.docker.internal:8006}
       # Supabase 직접 연결 (간단한 쿼리용)
       - DOAI_ME_SUPABASE_URL=${DOAI_ME_SUPABASE_URL}
       - DOAI_ME_SUPABASE_KEY=${DOAI_ME_SUPABASE_KEY}

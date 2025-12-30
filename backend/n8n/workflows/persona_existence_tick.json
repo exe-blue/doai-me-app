@@ -1,0 +1,220 @@
+{
+  "name": "Persona Existence Tick",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PERSONA_SERVICE_URL || 'http://persona-service:8006' }}/api/personas/tick",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "600"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "http-tick",
+      "name": "Call Tick Endpoint",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-success",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "content": "### ✅ Tick 처리 완료\n\n- **처리된 페르소나**: {{ $json.processed }}개\n- **상태 전이**: {{ $json.transitionCount }}건\n- **시간**: {{ $now.format('YYYY-MM-DD HH:mm:ss') }}",
+        "height": 160,
+        "width": 280
+      },
+      "id": "note-success",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [920, 200]
+    },
+    {
+      "parameters": {
+        "content": "### ⚠️ Tick 처리 실패\n\n에러 확인 필요\n- **시간**: {{ $now.format('YYYY-MM-DD HH:mm:ss') }}",
+        "height": 140,
+        "width": 260
+      },
+      "id": "note-failure",
+      "name": "Log Failure",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [920, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "log-processed",
+              "name": "processed",
+              "value": "={{ $json.processed }}",
+              "type": "number"
+            },
+            {
+              "id": "log-transitions",
+              "name": "transitionCount",
+              "value": "={{ $json.transitionCount }}",
+              "type": "number"
+            },
+            {
+              "id": "log-timestamp",
+              "name": "timestamp",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-success-data",
+      "name": "Format Success Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "log-error",
+              "name": "error",
+              "value": "={{ $json.message || 'Unknown error' }}",
+              "type": "string"
+            },
+            {
+              "id": "log-timestamp-err",
+              "name": "timestamp",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-error-data",
+      "name": "Format Error Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [920, 480]
+    }
+  ],
+  "connections": {
+    "Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Call Tick Endpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Tick Endpoint": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Format Success Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "doai-me-persona-tick"
+  },
+  "tags": [
+    {
+      "name": "persona",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "scheduler",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
+

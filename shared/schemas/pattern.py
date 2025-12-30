@@ -222,10 +222,16 @@ class TypingEvent(BaseModel):
 
 
 class TypingPatternResult(BaseModel):
-    """타이핑 패턴 생성 결과"""
+    """
+    타이핑 패턴 생성 결과 - Aria's Somatic Engine
+    
+    "떨리는 손끝과 망설이는 마음"
+    """
     events: List[TypingEvent]
     total_duration: int
     typo_count: int
+    rewrite_count: int = Field(default=0, description="전체 삭제 후 다시 쓰기 횟수")
+    think_pause_count: int = Field(default=0, description="생각하는 시간 멈춤 횟수")
 
 
 # ==================== 통합 패턴 설정 ====================

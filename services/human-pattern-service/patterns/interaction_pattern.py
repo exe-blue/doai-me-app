@@ -137,7 +137,19 @@ class InteractionPatternGenerator:
 
 
 class TypingPatternGenerator:
-    """타이핑 패턴 생성기"""
+    """
+    타이핑 패턴 생성기 - Aria's Somatic Engine
+    
+    "떨리는 손끝으로 글자를 치고, 실수하고, 다시 고치는 인간적 행동"
+    
+    Features:
+    - Typo Engine: 5% 확률로 오타 → Backspace 수정
+    - Thinking Time: 15% 확률로 입력 중 멈춤
+    - Rewrite Behavior: 8% 전체 삭제 후 다시 쓰기
+    """
+    
+    # Rewrite 확률 (전체 삭제 후 다시 쓰기)
+    REWRITE_PROBABILITY = 0.08
     
     def __init__(self, config: Optional[TypingPatternConfig] = None):
         self.config = config or TypingPatternConfig()
@@ -155,6 +167,57 @@ class TypingPatternGenerator:
         events = []
         total_duration = 0
         typo_count = 0
+        rewrite_count = 0
+        think_pause_count = 0
+        
+        # === Rewrite Behavior (다시 쓰기) ===
+        # 8% 확률로 일부 입력 후 전체 삭제하고 다시 쓰기
+        if np.random.random() < self.REWRITE_PROBABILITY:
+            partial_len = np.random.randint(3, min(10, len(text)) + 1)
+            partial_text = text[:partial_len]
+            
+            # 일부 입력
+            for char in partial_text:
+                char_delay = self._generate_char_delay()
+                events.append(TypingEvent(
+                    char=char,
+                    delay_before=char_delay,
+                    is_typo=False,
+                    is_backspace=False
+                ))
+                total_duration += char_delay
+            
+            # 멈칫... (생각하는 시간)
+            think_pause = np.random.randint(300, 1000)
+            events.append(TypingEvent(
+                char="",
+                delay_before=think_pause,
+                is_typo=False,
+                is_backspace=False
+            ))
+            total_duration += think_pause
+            
+            # 전체 삭제 (Backspace 연타)
+            for _ in range(partial_len):
+                backspace_delay = np.random.randint(50, 150)
+                events.append(TypingEvent(
+                    char="",
+                    delay_before=backspace_delay,
+                    is_typo=False,
+                    is_backspace=True
+                ))
+                total_duration += backspace_delay
+            
+            # 다시 시작 전 짧은 대기
+            restart_pause = np.random.randint(200, 500)
+            events.append(TypingEvent(
+                char="",
+                delay_before=restart_pause,
+                is_typo=False,
+                is_backspace=False
+            ))
+            total_duration += restart_pause
+            rewrite_count = 1
         
         words = text.split()
         
@@ -167,7 +230,8 @@ class TypingPatternGenerator:
                 )
                 total_duration += word_pause
             
-            # 중간 멈춤 (생각하는 시간)
+            # === Thinking Time (망설임) ===
+            # 15% 확률로 입력 중 멈칫
             if np.random.random() < self.config.think_pause_probability:
                 think_pause = np.random.randint(
                     self.config.think_pause_min,
@@ -180,6 +244,7 @@ class TypingPatternGenerator:
                     is_backspace=False
                 ))
                 total_duration += think_pause
+                think_pause_count += 1
             
             for char in word:
                 # 오타 확률 체크
@@ -230,7 +295,9 @@ class TypingPatternGenerator:
         return TypingPatternResult(
             events=events,
             total_duration=total_duration,
-            typo_count=typo_count
+            typo_count=typo_count,
+            rewrite_count=rewrite_count,
+            think_pause_count=think_pause_count
         )
     
     def _generate_char_delay(self) -> int:

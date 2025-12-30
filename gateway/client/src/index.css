@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DoAi.Me Control Room - Global Styles */
+
+:root {
+  /* DoAi.Me 브랜드 컬러 (RGB) */
+  --doai-300: 240 200 92;
+  --doai-400: 230 184 77;
+  --doai-500: 212 165 61;
+  
+  /* Control Room 배경 컬러 (RGB) */
+  --room-500: 58 58 77;
+  --room-600: 42 42 61;
+  --room-700: 26 26 46;
+  --room-800: 18 18 28;
+  --room-900: 10 10 15;
+  
+  /* 레거시 CSS 변수 (기존 코드 호환) */
+  --doai-yellow: #E6B84D;
+  --room-bg: #0a0a0f;
+}
+
+body {
+  @apply bg-room-900 text-gray-100 font-display antialiased;
+  background: linear-gradient(180deg, rgb(var(--room-900)) 0%, #111118 100%);
+}
+
+/* 커스텀 스크롤바 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-room-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-room-500 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-doai-400;
+}
+
+/* 글로우 효과 */
+.doai-glow {
+  box-shadow: 0 0 10px rgb(var(--doai-400)), 0 0 20px rgb(var(--doai-400));
+}
+
+/* 디바이스 카드 스타일 */
+@layer components {
+  .device-card {
+    @apply bg-room-800 border border-room-600 rounded-lg overflow-hidden transition-all duration-200;
+  }
+  
+  .device-card:hover {
+    @apply border-doai-400 shadow-lg;
+    box-shadow: 0 0 15px rgb(var(--doai-400) / 0.2);
+  }
+  
+  .device-card.online {
+    @apply border-green-600/50;
+  }
+  
+  .device-card.offline {
+    @apply border-red-600/30 opacity-60;
+  }
+  
+  /* 버튼 스타일 */
+  .btn-doai {
+    @apply px-4 py-2 bg-doai-400 text-room-900 font-semibold rounded-lg transition-all;
+  }
+  
+  .btn-doai:hover {
+    @apply bg-doai-300 shadow-lg;
+    box-shadow: 0 0 10px rgb(var(--doai-400));
+  }
+  
+  .btn-danger {
+    @apply px-4 py-2 bg-red-600 text-white font-semibold rounded-lg transition-all;
+  }
+  
+  .btn-danger:hover {
+    @apply bg-red-500;
+  }
+  
+  /* 상태 배지 */
+  .badge {
+    @apply px-2 py-0.5 text-xs font-mono rounded-full;
+  }
+  
+  .badge-online {
+    @apply bg-green-500/20 text-green-400 border border-green-500/30;
+  }
+  
+  .badge-offline {
+    @apply bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+  
+  .badge-connecting {
+    @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse;
+  }
+}
+
+/* 비디오 캔버스 */
+.video-canvas {
+  @apply bg-black rounded-lg overflow-hidden;
+  aspect-ratio: 9 / 16;
+}
+
+/* 그리드 페이지네이션 */
+.pagination-dot {
+  @apply w-2 h-2 rounded-full bg-room-500 cursor-pointer transition-all;
+}
+
+.pagination-dot.active {
+  @apply bg-doai-400 w-4;
+}

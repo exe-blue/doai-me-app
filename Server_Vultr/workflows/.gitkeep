@@ -1,0 +1,15 @@
+# n8n 워크플로우 백업 파일 (.json) 저장 폴더
+# n8n에서 Export한 워크플로우를 여기에 저장하세요.
+#
+# 사용법:
+# 1. n8n 웹 UI에서 워크플로우 열기
+# 2. 우측 상단 메뉴 > Download
+# 3. JSON 파일을 이 폴더에 저장
+#
+# 권장 파일명 형식:
+# - WF001_command_dispatcher.json
+# - WF002_report_handler.json
+# - WF003_persona_mode.json
+# - WF004_pop_mode.json
+# - WF005_accident_mode.json
+

@@ -5,6 +5,7 @@
 ## 1. Activities (활동)
 
 ### `activities` 테이블
+
 ```sql
 CREATE TABLE activities (
   id VARCHAR(50) PRIMARY KEY,
@@ -22,6 +23,7 @@ CREATE TABLE activities (
 ```
 
 **기본 데이터 예시:**
+
 - shorts_remix, playlist_curator, persona_commenter, trend_scout, challenge_hunter, thumbnail_lab
 
 ---
@@ -29,6 +31,7 @@ CREATE TABLE activities (
 ## 2. Channels (채널)
 
 ### `channels` 테이블
+
 ```sql
 CREATE TABLE channels (
   id VARCHAR(50) PRIMARY KEY,
@@ -51,6 +54,7 @@ CREATE TABLE channels (
 ```
 
 ### `channel_stats` 테이블
+
 ```sql
 CREATE TABLE channel_stats (
   id SERIAL PRIMARY KEY,
@@ -73,6 +77,7 @@ CREATE TABLE channel_stats (
 ## 3. Competitors (경쟁자)
 
 ### `competitors` 테이블
+
 ```sql
 CREATE TABLE competitors (
   id VARCHAR(50) PRIMARY KEY,
@@ -93,6 +98,7 @@ CREATE TABLE competitors (
 ## 4. Quests (퀘스트)
 
 ### `quests` 테이블
+
 ```sql
 CREATE TABLE quests (
   id VARCHAR(50) PRIMARY KEY,
@@ -118,6 +124,7 @@ CREATE TABLE quests (
 ## 5. Battle Log (배틀 로그)
 
 ### `battle_log` 테이블
+
 ```sql
 CREATE TABLE battle_log (
   id VARCHAR(50) PRIMARY KEY,
@@ -135,6 +142,7 @@ CREATE TABLE battle_log (
 ## 6. Trending Shorts (트렌딩 쇼츠)
 
 ### `trending_shorts` 테이블
+
 ```sql
 CREATE TABLE trending_shorts (
   id VARCHAR(50) PRIMARY KEY,
@@ -156,6 +164,7 @@ CREATE TABLE trending_shorts (
 ## 7. Remix Ideas (리믹스 아이디어)
 
 ### `remix_ideas` 테이블
+
 ```sql
 CREATE TABLE remix_ideas (
   id VARCHAR(50) PRIMARY KEY,
@@ -172,6 +181,7 @@ CREATE TABLE remix_ideas (
 ```
 
 ### `remix_idea_sources` 테이블 (Many-to-Many)
+
 ```sql
 CREATE TABLE remix_idea_sources (
   id SERIAL PRIMARY KEY,
@@ -186,6 +196,7 @@ CREATE TABLE remix_idea_sources (
 ## 8. Challenges (챌린지)
 
 ### `challenges` 테이블
+
 ```sql
 CREATE TABLE challenges (
   id VARCHAR(50) PRIMARY KEY,
@@ -208,6 +219,7 @@ CREATE TABLE challenges (
 ## 9. Personas (페르소나)
 
 ### `personas` 테이블
+
 ```sql
 CREATE TABLE personas (
   id VARCHAR(50) PRIMARY KEY,
@@ -229,6 +241,7 @@ CREATE TABLE personas (
 ## 10. Playlist Themes (플레이리스트 테마)
 
 ### `playlist_themes` 테이블
+
 ```sql
 CREATE TABLE playlist_themes (
   id VARCHAR(50) PRIMARY KEY,
@@ -250,6 +263,7 @@ CREATE TABLE playlist_themes (
 ## 11. Dashboard Stats (대시보드 통계)
 
 ### `dashboard_stats` 테이블
+
 ```sql
 CREATE TABLE dashboard_stats (
   id SERIAL PRIMARY KEY,
@@ -275,6 +289,7 @@ CREATE TABLE dashboard_stats (
 ## 12. Notifications (알림)
 
 ### `notifications` 테이블
+
 ```sql
 CREATE TABLE notifications (
   id VARCHAR(50) PRIMARY KEY,
@@ -292,6 +307,7 @@ CREATE TABLE notifications (
 ## 13. Devices (디바이스)
 
 ### `devices` 테이블
+
 ```sql
 CREATE TABLE devices (
   id INTEGER PRIMARY KEY,
@@ -311,6 +327,7 @@ CREATE TABLE devices (
 ## 14. DO Requests (DO 요청)
 
 ### `do_requests` 테이블
+
 ```sql
 CREATE TABLE do_requests (
   id VARCHAR(50) PRIMARY KEY,
@@ -354,6 +371,7 @@ CREATE TABLE do_requests (
 ## 15. BE Activity Logs (백엔드 활동 로그)
 
 ### `be_activity_logs` 테이블
+
 ```sql
 CREATE TABLE be_activity_logs (
   id VARCHAR(50) PRIMARY KEY,
@@ -376,6 +394,7 @@ CREATE TABLE be_activity_logs (
 ## 16. Unified Logs (통합 로그)
 
 ### `unified_logs` 테이블
+
 ```sql
 CREATE TABLE unified_logs (
   id VARCHAR(50) PRIMARY KEY,

@@ -1,0 +1,132 @@
+# ============================================
+# DoAi.Me CI/CD Pipeline
+# ============================================
+# Triggers:
+#   - Push to main branch
+#   - Manual dispatch
+#
+# Jobs:
+#   1. Deploy to Vultr (Docker services)
+#   2. Vercel auto-deploys via GitHub integration
+# ============================================
+
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      deploy_vultr:
+        description: 'Deploy to Vultr'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  VULTR_HOST: ${{ secrets.VULTR_HOST }}
+  VULTR_USER: ${{ secrets.VULTR_USER }}
+  VULTR_SSH_KEY: ${{ secrets.VULTR_SSH_KEY }}
+
+jobs:
+  # ==================== Vultr Deployment ====================
+  deploy-vultr:
+    name: Deploy to Vultr
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.inputs.deploy_vultr == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VULTR_SSH_KEY }}
+
+      - name: Add Vultr to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VULTR_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Vultr
+        run: |
+          ssh ${{ secrets.VULTR_USER }}@${{ secrets.VULTR_HOST }} << 'ENDSSH'
+            set -e
+            
+            echo "=========================================="
+            echo "🚀 DoAi.Me Vultr 배포 시작"
+            echo "=========================================="
+            
+            # 프로젝트 디렉토리로 이동
+            cd /opt/aifarm || { echo "❌ /opt/aifarm 디렉토리 없음"; exit 1; }
+            
+            # Git pull
+            echo "📥 최신 코드 가져오기..."
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Docker Compose 재시작
+            echo "🐳 Docker 서비스 재시작..."
+            cd Server_Vultr
+            docker-compose pull
+            docker-compose up -d --build --remove-orphans
+            
+            # 헬스체크
+            echo "🔍 헬스체크..."
+            sleep 10
+            
+            # n8n 체크
+            if curl -sf http://localhost:5678/healthz > /dev/null 2>&1; then
+              echo "✅ n8n: 정상"
+            else
+              echo "⚠️ n8n: 시작 중..."
+            fi
+            
+            # Persona Service 체크
+            if curl -sf http://localhost:8006/health > /dev/null 2>&1; then
+              echo "✅ persona-service: 정상"
+            else
+              echo "⚠️ persona-service: 시작 중..."
+            fi
+            
+            # Human Pattern Service 체크
+            if curl -sf http://localhost:8004/health > /dev/null 2>&1; then
+              echo "✅ human-pattern-service: 정상"
+            else
+              echo "⚠️ human-pattern-service: 시작 중..."
+            fi
+            
+            # 서비스 상태 출력
+            echo ""
+            echo "📊 서비스 상태:"
+            docker-compose ps
+            
+            echo ""
+            echo "=========================================="
+            echo "✅ 배포 완료!"
+            echo "=========================================="
+          ENDSSH
+
+  # ==================== Notify ====================
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-vultr]
+    if: always()
+    
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "=========================================="
+          echo "📋 배포 요약"
+          echo "=========================================="
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo ""
+          echo "Vultr: ${{ needs.deploy-vultr.result }}"
+          echo "Vercel: Auto-deployed via GitHub integration"
+          echo "=========================================="
+

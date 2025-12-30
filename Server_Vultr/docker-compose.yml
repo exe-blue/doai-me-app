@@ -1,0 +1,214 @@
+# ============================================================
+# 🌱 Project Rhizome - The Brain (Server Infrastructure)
+# ============================================================
+# n8n (Orchestration) + MongoDB (Memory) + Traefik (Proxy)
+#
+# 실행: docker-compose up -d
+# 접속: http://[SERVER_IP]:5678 (n8n)
+# ============================================================
+
+version: '3.8'
+
+services:
+  # ==================== n8n (Orchestration) ====================
+  # 모든 판단과 지시의 중심 - Webhook 기반 워크플로우 엔진
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: rhizome-brain-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      # 기본 설정
+      - N8N_HOST=${N8N_HOST:-0.0.0.0}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - NODE_ENV=production
+      
+      # Webhook 설정 (Tailscale IP 사용)
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
+      
+      # ⚠️ 보안 설정 - 필수!
+      # 이 값들은 반드시 .env 파일에 설정해야 합니다. 기본값이 없으며 미설정 시 서비스 시작 실패
+      # 강력한 비밀번호 생성: openssl rand -base64 32
+      # 암호화 키 생성: openssl rand -base64 32
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-true}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD must be set in .env}
+      
+      # 암호화 키 - 절대 소스에 커밋하지 마세요!
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY must be set in .env}
+      
+      # 타임존
+      - GENERIC_TIMEZONE=${TIMEZONE:-Asia/Seoul}
+      - TZ=${TIMEZONE:-Asia/Seoul}
+      
+      # 실행 모드
+      - EXECUTIONS_MODE=regular
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      
+      # MongoDB 연결 (Credentials에서 사용)
+      - MONGO_URI=mongodb://mongo:27017/rhizome
+      
+      # Python 서비스 연결
+      - PERSONA_SERVICE_URL=http://persona-service:8006
+      - HUMAN_PATTERN_SERVICE_URL=http://human-pattern-service:8004
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/home/node/workflows:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - rhizome-network
+    healthcheck:
+      # n8n 이미지에는 wget/curl이 없으므로 node를 사용하여 HTTP 체크
+      test: ["CMD-SHELL", "node -e \"const http = require('http'); http.get('http://localhost:5678/healthz', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1));\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ==================== Persona Service (Python/FastAPI) ====================
+  # ADR-005 v2: The Void of Irrelevance - 페르소나 존재 관리
+  persona-service:
+    build:
+      context: ..
+      dockerfile: services/persona-service/Dockerfile
+    container_name: rhizome-persona-service
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      - PERSONA_DB_PATH=/app/data/personas.db
+      - DEBUG=false
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+    volumes:
+      - persona_data:/app/data
+    networks:
+      - rhizome-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ==================== Human Pattern Service (Python/FastAPI) ====================
+  # Aria's Somatic Engine - 휴먼 패턴 생성 (떨리는 손끝과 망설이는 마음)
+  human-pattern-service:
+    build:
+      context: ..
+      dockerfile: services/human-pattern-service/Dockerfile
+    container_name: rhizome-human-pattern
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      - DEBUG=false
+    networks:
+      - rhizome-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ==================== MongoDB (Memory) ====================
+  # 페르소나의 성격(Traits), 상태(State), 경험(Log) 저장
+  mongo:
+    image: mongo:7.0
+    container_name: rhizome-memory-mongo
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"  # localhost에서만 접근 가능    environment:
+      # ⚠️ MongoDB 인증 정보 - .env 파일에 강력한 비밀번호 설정 필수
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:?MONGO_ROOT_USER must be set in .env}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD must be set in .env}
+      - MONGO_INITDB_DATABASE=rhizome
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+      - ./mongo_init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - rhizome-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    command: ["mongod", "--bind_ip_all"]
+
+  # ==================== Mongo Express (Optional) ====================
+  # MongoDB 웹 관리 UI (개발용, 프로덕션에서는 비활성화 권장)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: rhizome-mongo-ui
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_ROOT_USER}
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASSWORD}
+      - ME_CONFIG_MONGODB_URL=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USER:-admin}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_PASSWORD:?MONGO_EXPRESS_PASSWORD must be set in .env}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - rhizome-network
+    profiles:
+      - dev  # docker-compose --profile dev up 으로만 실행
+
+  # ==================== Traefik (Proxy - Optional) ====================
+  # 보안 리버스 프록시 (HTTPS, Rate Limiting)
+  traefik:
+    image: traefik:v3.0
+    container_name: rhizome-proxy-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik Dashboard
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"  # 프로덕션에서는 false로 변경
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Let's Encrypt (프로덕션용)
+      # - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      # - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      # - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certs:/letsencrypt
+    networks:
+      - rhizome-network
+    profiles:
+      - proxy  # docker-compose --profile proxy up 으로만 실행
+
+# ==================== 볼륨 정의 ====================
+volumes:
+  n8n_data:
+    name: rhizome-n8n-data
+  mongo_data:
+    name: rhizome-mongo-data
+  mongo_config:
+    name: rhizome-mongo-config
+  traefik_certs:
+    name: rhizome-traefik-certs
+  persona_data:
+    name: rhizome-persona-data
+
+# ==================== 네트워크 정의 ====================
+networks:
+  rhizome-network:
+    name: rhizome-network
+    driver: bridge
+

@@ -1,34 +1,10 @@
-<svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- WithB.io Logo - Dark Mode -->
-  <defs>
-    <linearGradient id="gradient-dark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-
-  <!-- Icon: W + B with neon effect -->
-  <g filter="url(#glow-dark)">
-    <path d="M8 12L12 32L16 20L20 32L24 12" stroke="url(#gradient-dark)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <rect x="28" y="12" width="12" height="20" rx="2" stroke="url(#gradient-dark)" stroke-width="2.5" fill="none"/>
-    <line x1="28" y1="22" x2="40" y2="22" stroke="url(#gradient-dark)" stroke-width="2.5"/>
-  </g>
-
-  <!-- Text: WithB.io -->
-  <text x="50" y="28" font-family="'Orbitron', sans-serif" font-size="20" font-weight="700" fill="#e5e7eb">
-    <tspan fill="#06b6d4">With</tspan>
-    <tspan fill="#3b82f6">B</tspan>
-    <tspan fill="#94a3b8">.io</tspan>
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 왼쪽 큰 원 (노란색) -->
+  <circle cx="16" cy="20" r="14" fill="#E6B84D"/>
+  <!-- 오른쪽 작은 원 (노란색) -->
+  <circle cx="34" cy="26" r="10" fill="#E6B84D"/>
+  <!-- 텍스트 "Ai.ME" (흰색 - 다크모드용) -->
+  <text x="50" y="28" font-family="'Brush Script MT', 'Segoe Script', cursive" font-size="22" fill="white" font-weight="400">
+    Ai.ME
   </text>
-
-  <!-- Glow effect -->
-  <defs>
-    <filter id="glow-dark" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
 </svg>

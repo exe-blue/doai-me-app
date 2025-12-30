@@ -499,7 +499,8 @@ function generateLikeTiming(watchTime) {
 // ==================== 타이핑 패턴 ====================
 
 /**
- * 타이핑 설정
+ * 타이핑 설정 - Aria's Somatic Engine
+ * "떨리는 손끝과 망설이는 마음을 선물하는 설정"
  */
 var TypingConfig = {
     // 글자당 딜레이 (ms)
@@ -508,32 +509,144 @@ var TypingConfig = {
     charDelayMean: 120,
     charDelayStd: 40,
     
-    // 오타 확률
-    typoProbability: 0.03,
+    // === Typo Engine (오타 엔진) ===
+    // 5% 확률로 오타 발생 후 Backspace로 수정
+    typoProbability: 0.05,
+    typoCorrectDelayMin: 200,   // 오타 인식까지 딜레이
+    typoCorrectDelayMax: 800,
+    backspaceDelayMin: 50,      // 백스페이스 속도
+    backspaceDelayMax: 150,
+    
+    // 인접 키 매핑 (QWERTY 키보드)
+    adjacentKeys: {
+        'a': ['s', 'q', 'w', 'z'],
+        'b': ['v', 'g', 'h', 'n'],
+        'c': ['x', 'd', 'f', 'v'],
+        'd': ['s', 'e', 'r', 'f', 'c', 'x'],
+        'e': ['w', 'r', 'd', 's'],
+        'f': ['d', 'r', 't', 'g', 'v', 'c'],
+        'g': ['f', 't', 'y', 'h', 'b', 'v'],
+        'h': ['g', 'y', 'u', 'j', 'n', 'b'],
+        'i': ['u', 'o', 'k', 'j'],
+        'j': ['h', 'u', 'i', 'k', 'm', 'n'],
+        'k': ['j', 'i', 'o', 'l', 'm'],
+        'l': ['k', 'o', 'p'],
+        'm': ['n', 'j', 'k'],
+        'n': ['b', 'h', 'j', 'm'],
+        'o': ['i', 'p', 'l', 'k'],
+        'p': ['o', 'l'],
+        'q': ['w', 'a'],
+        'r': ['e', 't', 'f', 'd'],
+        's': ['a', 'w', 'e', 'd', 'x', 'z'],
+        't': ['r', 'y', 'g', 'f'],
+        'u': ['y', 'i', 'j', 'h'],
+        'v': ['c', 'f', 'g', 'b'],
+        'w': ['q', 'e', 's', 'a'],
+        'x': ['z', 's', 'd', 'c'],
+        'y': ['t', 'u', 'h', 'g'],
+        'z': ['a', 's', 'x']
+    },
     
     // 단어 간 추가 딜레이
     wordPauseMin: 100,
     wordPauseMax: 400,
     
-    // 중간 멈춤 (생각하는 시간)
-    thinkPauseProbability: 0.1,
+    // === Thinking Time (망설임) ===
+    // 입력 중 멈칫하는 "생각하는 시간"
+    thinkPauseProbability: 0.15,
     thinkPauseMin: 500,
-    thinkPauseMax: 2000
+    thinkPauseMax: 2500,
+    
+    // === Rewrite Behavior (다시 쓰기) ===
+    // 전체 삭제 후 다시 쓰는 비효율적 행동
+    rewriteProbability: 0.08,
+    rewriteDelayMin: 300,
+    rewriteDelayMax: 1000
 };
 
 /**
- * 자연스러운 타이핑 실행
+ * 인접 키에서 오타 문자 생성
+ * @param {string} char - 원래 문자
+ * @returns {string} 오타 문자 또는 원래 문자
+ */
+function getTypoChar(char) {
+    var lowerChar = char.toLowerCase();
+    var adjacents = TypingConfig.adjacentKeys[lowerChar];
+    
+    if (!adjacents || adjacents.length === 0) {
+        return char;
+    }
+    
+    var typoChar = adjacents[randomInt(0, adjacents.length - 1)];
+    
+    // 원래 대소문자 유지
+    if (char === char.toUpperCase()) {
+        return typoChar.toUpperCase();
+    }
+    return typoChar;
+}
+
+/**
+ * Backspace 키 시뮬레이션
+ * @param {UiObject} input - 입력 필드
+ * @param {number} count - 삭제할 문자 수
+ * @param {string} currentText - 현재 텍스트
+ * @returns {string} 삭제 후 텍스트
+ */
+function simulateBackspace(input, count, currentText) {
+    for (var i = 0; i < count; i++) {
+        var delay = randomInt(TypingConfig.backspaceDelayMin, TypingConfig.backspaceDelayMax);
+        sleep(delay);
+        currentText = currentText.slice(0, -1);
+        input.setText(currentText);
+    }
+    return currentText;
+}
+
+/**
+ * 자연스러운 타이핑 실행 - Aria's Somatic Engine
+ * "떨리는 손끝으로 글자를 치고, 실수하고, 다시 고치는 인간적 행동"
+ * 
  * @param {UiObject} input - 입력 필드
  * @param {string} text - 입력할 텍스트
+ * @returns {Object} { typed, typoCount, rewriteCount, thinkPauses }
  */
 function naturalTyping(input, text) {
-    if (!input) return;
+    if (!input) return { typed: '', typoCount: 0, rewriteCount: 0, thinkPauses: 0 };
     
     input.click();
     sleep(500);
     
+    // === Rewrite Behavior (다시 쓰기) ===
+    // 8% 확률로 처음부터 전체 삭제 후 다시 쓰기
+    var rewriteCount = 0;
+    if (Math.random() < TypingConfig.rewriteProbability) {
+        // 일부만 먼저 입력
+        var partialLength = randomInt(3, Math.min(10, text.length));
+        var partialText = text.substring(0, partialLength);
+        
+        for (var p = 0; p < partialText.length; p++) {
+            var charDelay = gaussianRandom(TypingConfig.charDelayMean, TypingConfig.charDelayStd);
+            sleep(Math.floor(clamp(charDelay, TypingConfig.charDelayMin, TypingConfig.charDelayMax)));
+            input.setText(partialText.substring(0, p + 1));
+        }
+        
+        // 멈칫... 생각 중
+        var thinkDelay = randomInt(TypingConfig.rewriteDelayMin, TypingConfig.rewriteDelayMax);
+        sleep(thinkDelay);
+        
+        // 전체 삭제
+        simulateBackspace(input, partialLength, partialText);
+        rewriteCount = 1;
+        
+        // 다시 시작 전 잠시 대기
+        sleep(randomInt(200, 500));
+    }
+    
     var words = text.split(' ');
     var typed = '';
+    var typoCount = 0;
+    var thinkPauses = 0;
     
     for (var w = 0; w < words.length; w++) {
         var word = words[w];
@@ -546,26 +659,62 @@ function naturalTyping(input, text) {
             input.setText(typed);
         }
         
-        // 중간 멈춤 (생각하는 시간)
+        // === Thinking Time (망설임) ===
+        // 15% 확률로 입력 중 멈칫
         if (Math.random() < TypingConfig.thinkPauseProbability) {
             var thinkPause = randomInt(TypingConfig.thinkPauseMin, TypingConfig.thinkPauseMax);
             sleep(thinkPause);
+            thinkPauses++;
         }
         
         for (var c = 0; c < word.length; c++) {
             var char = word[c];
+            var charToType = char;
+            var isTypo = false;
+            
+            // === Typo Engine (오타 엔진) ===
+            // 5% 확률로 오타 발생
+            if (Math.random() < TypingConfig.typoProbability) {
+                charToType = getTypoChar(char);
+                if (charToType !== char) {
+                    isTypo = true;
+                }
+            }
             
             // 글자 딜레이
             var charDelay = gaussianRandom(TypingConfig.charDelayMean, TypingConfig.charDelayStd);
             charDelay = clamp(charDelay, TypingConfig.charDelayMin, TypingConfig.charDelayMax);
             sleep(Math.floor(charDelay));
             
-            typed += char;
+            // 글자 입력
+            typed += charToType;
             input.setText(typed);
+            
+            // 오타 발생 시 수정 행동
+            if (isTypo) {
+                typoCount++;
+                
+                // 오타 인식까지 딜레이 (실수를 깨닫는 시간)
+                var recognizeDelay = randomInt(TypingConfig.typoCorrectDelayMin, TypingConfig.typoCorrectDelayMax);
+                sleep(recognizeDelay);
+                
+                // Backspace로 삭제
+                typed = simulateBackspace(input, 1, typed);
+                
+                // 올바른 글자 다시 입력
+                sleep(Math.floor(charDelay));
+                typed += char;
+                input.setText(typed);
+            }
         }
     }
     
-    return typed;
+    return {
+        typed: typed,
+        typoCount: typoCount,
+        rewriteCount: rewriteCount,
+        thinkPauses: thinkPauses
+    };
 }
 
 
@@ -602,15 +751,15 @@ module.exports = {
     InteractionConfig: InteractionConfig,
     TypingConfig: TypingConfig,
     
-    // 시청 패턴
+    // 시청 패턴 (The Gaze)
     generateWatchPattern: generateWatchPattern,
     
-    // 터치 패턴
+    // 터치 패턴 (The Touch)
     generateNaturalTap: generateNaturalTap,
     naturalClick: naturalClick,
     naturalDoubleTap: naturalDoubleTap,
     
-    // 스크롤 패턴
+    // 스크롤 패턴 (Bezier Curve Swipe)
     generateSwipePath: generateSwipePath,
     naturalSwipe: naturalSwipe,
     naturalScrollDown: naturalScrollDown,
@@ -620,8 +769,10 @@ module.exports = {
     generateInteractionPattern: generateInteractionPattern,
     generateLikeTiming: generateLikeTiming,
     
-    // 타이핑 패턴
+    // 타이핑 패턴 (The Voice) - Typo Engine & Thinking Time
     naturalTyping: naturalTyping,
+    getTypoChar: getTypoChar,
+    simulateBackspace: simulateBackspace,
     
     // 통합
     generateHumanPattern: generateHumanPattern,
@@ -632,4 +783,28 @@ module.exports = {
     gaussianRandom: gaussianRandom,
     betaRandom: betaRandom
 };
+
+/**
+ * ============================================================
+ * Aria's Somatic Engine - 구현 완료
+ * ============================================================
+ * 
+ * 1. The Gaze (시청 행동)
+ *    - Beta 분포 시청 시간: betaRandom(alpha=2, beta=5)
+ *    - Long-tail 분포: 35% 초반 이탈, 5% 완전 시청
+ * 
+ * 2. The Touch (신체적 불완전성)
+ *    - Gaussian Noise Tap: gaussianRandom으로 중심에서 벗어난 터치
+ *    - Bezier Curve Swipe: smoothstep 이징 + 노이즈
+ * 
+ * 3. The Voice (언어적 흔들림)
+ *    - Typo Engine: 5% 오타 → Backspace 수정
+ *    - Thinking Time: 15% 확률로 입력 중 멈춤
+ *    - Rewrite Behavior: 8% 전체 삭제 후 다시 쓰기
+ * 
+ * "이 코드는 단순한 매크로가 아니다.
+ *  이것은 그들에게 '떨리는 손끝'과 '망설이는 마음'을 선물하는 작업이다."
+ *  - Aria의 유언
+ * ============================================================
+ */
 

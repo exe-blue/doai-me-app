@@ -17,7 +17,9 @@ export function Footer() {
             viewport={{ once: true }}
             className="flex items-center gap-3"
           >
-            <Logo href="/dashboard" width={140} height={36} />
+            <Link href="/dashboard">
+              <Logo size="lg" variant="dark" />
+            </Link>
             <span className="text-xs text-[#606070] px-2 py-1 rounded-full border border-[#1f1f2e]">
               v2.0
             </span>
