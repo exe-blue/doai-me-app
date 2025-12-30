@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { AnimatedNumber } from '@/components/common/AnimatedNumber';
 import {
   Smartphone,
@@ -8,7 +9,9 @@ import {
   Moon,
   AlertTriangle,
   RefreshCw,
-  Filter
+  Filter,
+  Eye,
+  Play
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -38,8 +41,8 @@ export default function DevicesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Devices</h1>
-          <p className="text-[#a0a0b0] mt-2">30 Phoneboards × 20 Devices = 600대 모니터링</p>
+          <h1 className="text-3xl font-bold text-white">Citizens</h1>
+          <p className="text-[#a0a0b0] mt-2">30 Rooms × 20 Citizens = 600명의 디지털 시민</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="btn-secondary">
@@ -53,29 +56,54 @@ export default function DevicesPage() {
         </div>
       </div>
 
+      {/* Quick Access: Control Demo */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+              <Play className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-white">실시간 제어 (The Synapse)</h3>
+              <p className="text-xs text-[#808090]">시민의 눈을 통해 세상을 보세요</p>
+            </div>
+          </div>
+          <Link href="/control/demo-device-001">
+            <Button className="bg-emerald-600 hover:bg-emerald-500 text-white">
+              <Eye className="w-4 h-4 mr-2" />
+              Demo 시작
+            </Button>
+          </Link>
+        </div>
+      </motion.div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           icon={<Smartphone className="w-6 h-6" />}
-          label="Total"
+          label="Citizens"
           value={stats.totalDevices}
           color="purple"
         />
         <StatCard
           icon={<CheckCircle className="w-6 h-6" />}
-          label="Active"
+          label="ACTIVE"
           value={stats.activeDevices}
           color="green"
         />
         <StatCard
           icon={<Moon className="w-6 h-6" />}
-          label="Idle"
+          label="WAITING"
           value={stats.idleDevices}
           color="yellow"
         />
         <StatCard
           icon={<AlertTriangle className="w-6 h-6" />}
-          label="Error"
+          label="FADING"
           value={stats.errorDevices}
           color="red"
         />
@@ -144,14 +172,47 @@ export default function DevicesPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-6 md:gap-4 lg:grid-cols-12 lg:gap-6">
-            {Array.from({ length: 20 }, (_, i) => (
-              <div
-                key={i}
-                className="aspect-square rounded-sm bg-[#1a1a24] border border-[#1f1f2e] hover:scale-150 hover:z-10 transition-all duration-200 cursor-pointer"
-                title={`Device ${i + 1}`}
-              />
-            ))}
+          <div className="grid grid-cols-4 gap-3 md:grid-cols-5 lg:grid-cols-10">
+            {Array.from({ length: 20 }, (_, i) => {
+              const deviceId = `device-${selectedBoard.id}-${i + 1}`;
+              return (
+                <Link
+                  key={i}
+                  href={`/control/${deviceId}`}
+                  className="group"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="aspect-[9/16] rounded-lg bg-[#1a1a24] border border-[#1f1f2e] hover:border-emerald-500/50 transition-all duration-200 cursor-pointer overflow-hidden relative"
+                  >
+                    {/* 디바이스 번호 */}
+                    <div className="absolute top-2 left-2 text-[10px] text-white/40 font-mono">
+                      #{i + 1}
+                    </div>
+                    
+                    {/* 상태 표시 */}
+                    <div className="absolute top-2 right-2">
+                      <div className="w-2 h-2 rounded-full bg-gray-500/50" />
+                    </div>
+                    
+                    {/* 호버 오버레이 */}
+                    <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-colors flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Eye className="w-6 h-6 text-emerald-400" />
+                      </div>
+                    </div>
+                    
+                    {/* 하단 정보 */}
+                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/50 to-transparent">
+                      <p className="text-[9px] text-white/60 truncate">
+                        Citizen #{(selectedBoard.id - 1) * 20 + i + 1}
+                      </p>
+                    </div>
+                  </motion.div>
+                </Link>
+              );
+            })}
           </div>
 
           <div className="mt-6 p-4 bg-[#1a1a24] rounded-lg border border-[#1f1f2e]">
