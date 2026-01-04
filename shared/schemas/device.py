@@ -29,6 +29,16 @@ class DeviceCreate(DeviceBase):
     pass
 
 
+class DeviceUpdate(BaseModel):
+    """기기 업데이트 요청"""
+    status: Optional[DeviceStatus] = None
+    model: Optional[str] = None
+    battery_temp: Optional[float] = None
+    cpu_usage: Optional[float] = None
+    memory_usage: Optional[float] = None
+    battery_level: Optional[int] = None
+
+
 class DeviceHealthUpdate(BaseModel):
     """기기 헬스 업데이트"""
     battery_temp: Optional[float] = Field(None, ge=0, le=100, description="배터리 온도 (°C)")
