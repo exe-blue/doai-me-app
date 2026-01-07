@@ -251,10 +251,7 @@ export function WormholeToast({ event, onDismiss, onClick }: WormholeToastProps)
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 100, scale: 0.8 }}
       onClick={onClick}
-      className="relative bg-neutral-900 border border-purple-500/50 rounded-lg p-4 shadow-lg cursor-pointer hover:border-purple-500 transition-colors max-w-sm"
-      style={{
-        boxShadow: `0 0 20px rgba(139, 92, 246, 0.2)`,
-      }}
+      className={`relative bg-neutral-900 border border-purple-500/50 rounded-lg p-4 cursor-pointer hover:border-purple-500 transition-colors max-w-sm wormhole-toast-shadow ${levelConfig.cssClass}`}
     >
       {/* Close button */}
       <button
@@ -281,13 +278,7 @@ export function WormholeToast({ event, onDismiss, onClick }: WormholeToastProps)
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-purple-400 font-mono text-sm">WORMHOLE</span>
-            <span 
-              className="text-xs px-1.5 py-0.5 rounded"
-              style={{ 
-                backgroundColor: `${levelConfig.color}20`,
-                color: levelConfig.color,
-              }}
-            >
+            <span className="text-xs px-1.5 py-0.5 rounded wormhole-level-badge">
               {levelConfig.label}
             </span>
           </div>
@@ -300,16 +291,12 @@ export function WormholeToast({ event, onDismiss, onClick }: WormholeToastProps)
             {/* Intensity bar */}
             <div className="flex-1 h-1 bg-neutral-800 rounded-full overflow-hidden">
               <motion.div
-                className="h-full rounded-full"
-                style={{ backgroundColor: levelConfig.color }}
+                className="h-full rounded-full wormhole-intensity-bar"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.round(intensity * 100)}%` }}
               />
             </div>
-            <span 
-              className="text-xs font-mono"
-              style={{ color: levelConfig.color }}
-            >
+            <span className="text-xs font-mono wormhole-text-dynamic">
               {Math.round(intensity * 100)}%
             </span>
           </div>
