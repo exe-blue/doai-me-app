@@ -6,6 +6,5 @@
       "src": "apps/web/package.json",
       "use": "@vercel/next"
     }
-  ],
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- apps/web/"
+  ]
 }

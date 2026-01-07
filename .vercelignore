@@ -1,15 +1,11 @@
-# 불필요한 파일/폴더 제외
+# Vercel 배포에서 제외할 파일/폴더
 backend/
 gateway/
 node-runner/
 client-android/
-knowledge/
-philosophy/
-website/
 supabase/
-.github/
-docs/
-*.md
-!apps/web/**
-
-
+sdk/
+jaffle_shop/
+archive/
+philosophy/
+knowledge/
