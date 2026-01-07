@@ -230,7 +230,7 @@ local listen = function(opts)
                 else
                   client_sock:close()
                   if on_error then
-                    on_error(client_sock, 'bad protocol')
+                    on_error(self, 'bad protocol')
                   end
                   return
                 end
