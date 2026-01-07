@@ -87,11 +87,7 @@ local send = function(self,data,opcode)
 end
 
 local close = function(self,code,reason)
-  if self.state == 'OPEN' then
-    -- 정상 닫기 진행
-  elseif self.state == 'CLOSED' then
-    return false,1006,'already closed'
-  else
+  if self.state ~= 'OPEN' then
     return false,1006,'wrong state'
   end
   local msg = frame.encode_close(code or 1000,reason)
