@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 // 연결 타임아웃 상수 (30초)
 const DEVICE_CONNECTION_THRESHOLD_MS = 30 * 1000;
 

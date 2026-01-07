@@ -1,14 +1,16 @@
 /**
  * YouTube Channel API
- * 
+ *
  * 채널 정보 조회 및 최신 영상 목록
- * 
+ *
  * GET /api/youtube/channel?channelId=CHANNEL_ID
  * GET /api/youtube/channel?handle=@CHANNEL_HANDLE
  * GET /api/youtube/channel?url=CHANNEL_URL
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
 
