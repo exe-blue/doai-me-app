@@ -13,7 +13,7 @@ import logging
 import time
 
 # 라우터 임포트
-from .routers import commissions, maintenance, personas, youtube, wifi, nocturne
+from .routers import commissions, maintenance, personas, youtube, wifi, nocturne, laixi
 from .routers.oob import router as oob_router
 
 # 스케줄러 임포트
@@ -110,6 +110,7 @@ app.include_router(personas.router, prefix="/api")
 app.include_router(wifi.router)  # /api/v1/wifi (prefix 내장)
 app.include_router(nocturne.router, prefix="/api")  # /api/nocturne
 app.include_router(oob_router, prefix="/api")  # /api/oob - OOB 관리
+app.include_router(laixi.router)  # /api/laixi - Laixi 로컬 디바이스 제어
 
 
 # 기본 엔드포인트
@@ -164,6 +165,13 @@ async def api_info():
                 "POST /api/oob/recover": "복구 실행",
                 "POST /api/oob/box/test": "박스 프로토콜 테스트",
                 "POST /api/oob/box/command": "박스 명령 실행"
+            },
+            "laixi": {
+                "GET /api/laixi/health": "Laixi 연결 상태 확인",
+                "GET /api/laixi/devices": "연결된 디바이스 목록",
+                "POST /api/laixi/watch": "YouTube 영상 시청 명령",
+                "POST /api/laixi/stop": "YouTube 시청 중지",
+                "POST /api/laixi/screenshot": "디바이스 스크린샷"
             },
             "commissions": "작업 위임 관리",
             "maintenance": "유지보수 작업",

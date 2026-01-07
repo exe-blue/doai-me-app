@@ -8,9 +8,10 @@ DoAi.Me Backend API Routers
 - youtube: YouTube 자동화
 - wifi: WiFi 자동 연결
 - nocturne: 밤의 상징문장 (Nocturne Line)
+- laixi: Laixi 로컬 디바이스 제어
 """
 
-from . import commissions, maintenance, personas, youtube, wifi, nocturne
+from . import commissions, maintenance, personas, youtube, wifi, nocturne, laixi
 
 __all__ = [
     "commissions",
@@ -19,5 +20,6 @@ __all__ = [
     "youtube",
     "wifi",
     "nocturne",
+    "laixi",
 ]
 
