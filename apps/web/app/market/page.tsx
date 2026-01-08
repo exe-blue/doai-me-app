@@ -25,6 +25,7 @@ import {
   QueuePanel,
   LogsPanel,
   CompletedPanel,
+  HistoryPanel,
 } from './components';
 
 // 파티클 네트워크 동적 임포트
@@ -279,11 +280,14 @@ function MarketContent() {
             </div>
           </div>
 
-          {/* 6. 완료 목록 */}
-          <CompletedPanel
-            completedVideos={state.completedVideos}
-            isDark={isDark}
-          />
+          {/* 6. 완료 목록 + 히스토리 */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <CompletedPanel
+              completedVideos={state.completedVideos}
+              isDark={isDark}
+            />
+            <HistoryPanel isDark={isDark} />
+          </div>
 
         </div>
       </main>

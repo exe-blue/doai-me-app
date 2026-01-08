@@ -10,4 +10,6 @@ export { LaixiPanel } from './LaixiPanel';
 export { QueuePanel } from './QueuePanel';
 export { LogsPanel } from './LogsPanel';
 export { CompletedPanel } from './CompletedPanel';
+export { HistoryPanel } from './HistoryPanel';
+export { UnifiedControlPanel } from './UnifiedControlPanel';
 // SubscribedChannelsPanel은 Infra 페이지로 이동됨
