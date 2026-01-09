@@ -194,7 +194,13 @@ async def api_info():
             },
             "commissions": "작업 위임 관리",
             "maintenance": "유지보수 작업",
-            "personas": "AI 페르소나 관리"
+            "personas": {
+                "GET /api/personas": "페르소나 목록 조회",
+                "GET /api/personas/{id}": "페르소나 상세 조회",
+                "POST /api/personas/{id}/idle-search": "IDLE 상태 검색 트리거 (P1 핵심)",
+                "GET /api/personas/{id}/search-history": "검색 기록 조회",
+                "GET /api/personas/{id}/search-profile": "검색 프로필 (고유성 분석)"
+            }
         }
     }
 

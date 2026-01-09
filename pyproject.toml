@@ -45,10 +45,10 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["shared*", "backend*"]
+include = ["shared*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "backend/tests"]
+testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-v --tb=short"
 markers = [

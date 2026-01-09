@@ -5,15 +5,16 @@
   "description": "DoAi.Me - AI Farm Orchestration System",
   "workspaces": [
     "apps/*",
-    "gateway",
+    "local/gateway",
     "doai-me",
     "autox-scripts"
   ],
   "scripts": {
     "dev:dashboard": "npm run dev -w apps/dashboard",
     "dev:web": "npm run dev -w apps/web",
-    "dev:gateway": "npm run dev -w gateway",
+    "dev:gateway": "npm start -w local/gateway",
     "build:dashboard": "npm run build -w apps/dashboard",
+    "build:web": "npm run build -w apps/web",
     "install:all": "npm install"
   },
   "engines": {

@@ -124,21 +124,28 @@ aifarm/
 
 ### 로컬 개발
 
+> 자세한 실행 가이드: [RUN_LOCAL.md](RUN_LOCAL.md)
+
 ```bash
-# Backend
-cd backend/api
+# Cloud Gateway (Vultr)
+cd services/cloud-gateway
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn main:app --reload
+python main.py
 
-# Gateway
-cd gateway
+# Local Gateway (Mini PC)
+cd local/gateway
 npm install
 npm start
 
-# Dashboard
-cd dashboard
+# Admin Dashboard (Next.js)
+cd apps/web
+npm install
+npm run dev
+
+# Device Dashboard (Vite)
+cd apps/dashboard
 npm install
 npm run dev
 ```
