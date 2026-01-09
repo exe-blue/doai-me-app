@@ -417,7 +417,7 @@ async def send_alert(request: AlertRequest):
                     )
                     sent_to_slack = True
                     slack_response = {"status": "sent"}
-                except Exception as e:
+                except Exception:
                     slack_response = {"status": "failed", "error": "Slack notification failed"}
 
             if discord_webhook:
@@ -430,7 +430,7 @@ async def send_alert(request: AlertRequest):
                     )
                     sent_to_discord = True
                     discord_response = {"status": "sent"}
-                except Exception as e:
+                except Exception:
                     discord_response = {"status": "failed", "error": "Discord notification failed"}
 
         # Supabase에 알림 기록 저장
