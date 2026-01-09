@@ -28,15 +28,41 @@ load_dotenv(project_root / ".env")
 # Note: 실제 .env 파일이 없는 CI 환경에서도 테스트가 collection될 수 있도록
 # 필수 환경 변수에 더미 값을 설정합니다. 이 값들은 실제로 사용되지 않습니다.
 # =============================================================================
+_CI_DUMMY_SUPABASE_URL = "https://test-ci-dummy.supabase.co"
 _CI_DEFAULT_ENV_VARS = {
-    "SUPABASE_URL": "https://test.supabase.co",
+    "SUPABASE_URL": _CI_DUMMY_SUPABASE_URL,
     "SUPABASE_ANON_KEY": "test-anon-key-for-ci",
     "SUPABASE_SERVICE_ROLE_KEY": "test-service-role-key-for-ci",
 }
 
+# Track if we're using dummy CI credentials
+_USING_CI_DUMMY_CREDENTIALS = False
 for key, default_value in _CI_DEFAULT_ENV_VARS.items():
     if key not in os.environ:
         os.environ[key] = default_value
+        _USING_CI_DUMMY_CREDENTIALS = True
+
+
+def has_real_supabase_credentials() -> bool:
+    """
+    Check if we have real Supabase credentials (not CI dummy values)
+
+    Returns True only if SUPABASE_URL is set to a real project URL
+    """
+    url = os.getenv("SUPABASE_URL", "")
+    # If URL is the dummy value or contains 'test', we don't have real credentials
+    if not url:
+        return False
+    if url == _CI_DUMMY_SUPABASE_URL:
+        return False
+    if "test" in url.lower() and "supabase.co" not in url:
+        return False
+    # Real Supabase URLs look like: https://xxxxx.supabase.co
+    return ".supabase.co" in url or "localhost" in url
+
+
+# Expose for use in test files
+SKIP_INTEGRATION_TESTS = not has_real_supabase_credentials()
 
 
 # =============================================================================

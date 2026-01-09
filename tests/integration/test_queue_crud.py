@@ -5,7 +5,6 @@ Supabase 연결이 필요합니다.
 테스트 전 SUPABASE_URL, SUPABASE_KEY 환경변수가 설정되어야 합니다.
 """
 
-import os
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -16,11 +15,14 @@ from shared.schemas.youtube_queue import (
     VideoQueueCreate,
     VideoQueueUpdate,
 )
+from tests.conftest import SKIP_INTEGRATION_TESTS
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(SKIP_INTEGRATION_TESTS, reason="실제 Supabase 자격 증명 필요"),
+]
 
 
-@pytest.mark.skipif(not os.getenv("SUPABASE_URL"), reason="SUPABASE_URL 환경변수 필요")
 class TestVideoQueueCRUD:
     """Video Queue CRUD 테스트"""
 
@@ -248,7 +250,6 @@ class TestVideoQueueCRUD:
             raise
 
 
-@pytest.mark.skipif(not os.getenv("SUPABASE_URL"), reason="SUPABASE_URL 환경변수 필요")
 class TestCommentPoolCRUD:
     """Comment Pool CRUD 테스트"""
 
@@ -297,7 +298,6 @@ class TestCommentPoolCRUD:
             raise
 
 
-@pytest.mark.skipif(not os.getenv("SUPABASE_URL"), reason="SUPABASE_URL 환경변수 필요")
 class TestExecutionLogCRUD:
     """Execution Log CRUD 테스트"""
 

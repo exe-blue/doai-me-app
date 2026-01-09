@@ -8,15 +8,18 @@ YouTube Automation DB 통합 테스트
 - automation_queue
 """
 
-import os
 from datetime import datetime
 
 import pytest
 
-pytestmark = pytest.mark.integration
+from tests.conftest import SKIP_INTEGRATION_TESTS
+
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(SKIP_INTEGRATION_TESTS, reason="실제 Supabase 자격 증명 필요"),
+]
 
 
-@pytest.mark.skipif(not os.getenv("SUPABASE_URL"), reason="SUPABASE_URL 필요")
 class TestPersonaYoutubeHistory:
     @pytest.fixture
     def client(self, supabase_client):
@@ -42,7 +45,6 @@ class TestPersonaYoutubeHistory:
             raise
 
 
-@pytest.mark.skipif(not os.getenv("SUPABASE_URL"), reason="SUPABASE_URL 필요")
 class TestVideoAssignments:
     @pytest.fixture
     def client(self, supabase_client):
@@ -62,7 +64,6 @@ class TestVideoAssignments:
             raise
 
 
-@pytest.mark.skipif(not os.getenv("SUPABASE_URL"), reason="SUPABASE_URL 필요")
 class TestDeviceHeartbeats:
     @pytest.fixture
     def client(self, supabase_client):
@@ -82,7 +83,6 @@ class TestDeviceHeartbeats:
             raise
 
 
-@pytest.mark.skipif(not os.getenv("SUPABASE_URL"), reason="SUPABASE_URL 필요")
 class TestAutomationQueue:
     @pytest.fixture
     def client(self, supabase_client):
