@@ -15,13 +15,14 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - ENV=production
-      - DEBUG=false
+      - ENV=${ENV:-development}
+      - DEBUG=${DEBUG:-false}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - LOG_LEVEL=INFO
+      - API_KEY=${API_KEY:-dev-api-key-change-in-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
