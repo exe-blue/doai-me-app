@@ -28,7 +28,7 @@ import {
 
 export default function DashboardPage() {
   return (
-    <NodeProvider wsEndpoint="ws://localhost:8080">
+    <NodeProvider wsEndpoint="ws://localhost:3100/ws/dashboard">
       <ConsumeContent />
     </NodeProvider>
   );
