@@ -12,9 +12,12 @@
 ## Milestones
 
 ### 🎯 M1: 레포 구조 정리 (Current)
-- [ ] apps/ 구조 확립 (web, orchestrator, node-runner)
-- [ ] infra/ 배포 스크립트 정리
-- [ ] orion/ 운영 문서 체계화
+- [x] apps/ 구조 확립 (web, orchestrator, node-runner)
+  - [x] node-runner/ → apps/node-runner/ 이동 완료
+  - [x] website/ 중복 제거, apps/website/ 통합
+  - [x] 빈 gateway/ 제거
+- [x] infra/ 배포 스크립트 정리
+- [x] orion/ 운영 문서 체계화
 - [ ] 미사용 코드 제거
 
 ### 🎯 M2: 배포 파이프라인 안정화
@@ -45,7 +48,16 @@
 
 ## 완료된 항목
 
-_아직 완료된 마일스톤 없음_
+### 페르소나 시스템 P1 + P2
+- [x] P1: IDLE 상태 검색 및 고유성 형성 시스템
+  - [x] DB 스키마 확장 (persona_activity_logs.search_keyword, formative_impact)
+  - [x] OpenAI 기반 성격 맞춤 검색어 생성
+  - [x] Formative Period Effect 계산
+- [x] P2: 페르소나 CRUD 및 Laixi 연동
+  - [x] 페르소나 CRUD API (GET, POST, PUT, DELETE)
+  - [x] Laixi 연동 YouTube 검색 실행
+  - [x] 성격 변화 분석 (personality_drift)
+  - [x] 검색 기반 관심사 자동 업데이트
 
 ---
 

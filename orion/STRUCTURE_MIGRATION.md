@@ -8,7 +8,7 @@
 |------|------|------|
 | `apps/dashboard/` | `apps/web/` | 리네이밍 필요 |
 | `central-orchestrator/` | `apps/orchestrator/` | 이동 필요 |
-| `node-runner/` | `apps/node-runner/` | 이동 필요 |
+| `node-runner/` | `apps/node-runner/` | ✅ 완료 |
 | (분산) | `infra/` | ✅ 생성됨 |
 | (분산) | `orion/` | ✅ 생성됨 |
 

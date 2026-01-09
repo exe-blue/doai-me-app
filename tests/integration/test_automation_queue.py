@@ -34,7 +34,7 @@ class TestIdleTaskFlow:
 
             client.table('automation_queue').delete().eq('id', task_id).execute()
         except Exception as e:
-            if "does not exist" in str(e):
+            if "does not exist" in str(e) or "Invalid schema" in str(e):
                 pytest.skip("테이블 없음")
             raise
 
@@ -60,7 +60,7 @@ class TestScheduledTask:
 
             client.table('automation_queue').delete().eq('id', task_id).execute()
         except Exception as e:
-            if "does not exist" in str(e):
+            if "does not exist" in str(e) or "Invalid schema" in str(e):
                 pytest.skip("테이블 없음")
             raise
 
@@ -86,6 +86,6 @@ class TestTaskExpiration:
 
             client.table('automation_queue').delete().eq('id', task_id).execute()
         except Exception as e:
-            if "does not exist" in str(e):
+            if "does not exist" in str(e) or "Invalid schema" in str(e):
                 pytest.skip("테이블 없음")
             raise

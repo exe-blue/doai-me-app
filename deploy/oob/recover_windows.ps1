@@ -20,7 +20,7 @@ param(
 # === 설정 ===
 $DOAI_HOME = if ($env:DOAI_HOME) { $env:DOAI_HOME } else { "C:\DoAi" }
 $LOG_FILE = Join-Path $DOAI_HOME "logs\recover.log"
-$NODE_RUNNER_PATH = Join-Path $DOAI_HOME "node-runner"
+$NODE_RUNNER_PATH = Join-Path $DOAI_HOME "apps/node-runner"
 
 # 로그 함수
 function Write-Log {

@@ -1,7 +1,7 @@
 # Vercel 배포에서 제외할 파일/폴더
 backend/
 gateway/
-node-runner/
+apps/node-runner/
 client-android/
 /supabase/
 sdk/

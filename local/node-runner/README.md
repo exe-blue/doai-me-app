@@ -108,8 +108,8 @@ curl http://localhost:9999/health
 
 ```powershell
 # NSSM으로 서비스 등록
-nssm install DoAiMe-NodeRunner "C:\Python311\python.exe" "D:\aifarm\node-runner\noderunner.py"
-nssm set DoAiMe-NodeRunner AppDirectory "D:\aifarm\node-runner"
+nssm install DoAiMe-NodeRunner "C:\Python311\python.exe" "D:\aifarm\apps\node-runner\noderunner.py"
+nssm set DoAiMe-NodeRunner AppDirectory "D:\aifarm\apps\node-runner"
 nssm set DoAiMe-NodeRunner DisplayName "DoAi.Me NodeRunner"
 nssm start DoAiMe-NodeRunner
 ```
