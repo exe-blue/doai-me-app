@@ -30,7 +30,7 @@ except ImportError:
 
 from shared.schemas.network import (
     NetworkStatus,
-    APStatus as APStatusEnum,
+    APStatusValue,
     DHCPStatus,
     VLANConfig,
     VLANStatus,
@@ -376,7 +376,7 @@ class NetworkHealthChecker:
 
         # 상태 결정
         if not is_online:
-            status.status = APStatusEnum.OFFLINE
+            status.status = APStatusValue.OFFLINE
             self._create_alert(
                 alert_type="ap_offline",
                 severity="critical",
@@ -385,7 +385,7 @@ class NetworkHealthChecker:
                 source=ap_id,
             )
         elif status.client_usage_percent >= self.config.ap_client_critical_threshold:
-            status.status = APStatusEnum.OVERLOADED
+            status.status = APStatusValue.OVERLOADED
             self._create_alert(
                 alert_type="ap_overloaded",
                 severity="warning",
@@ -394,9 +394,9 @@ class NetworkHealthChecker:
                 source=ap_id,
             )
         elif status.client_usage_percent >= self.config.ap_client_warning_threshold:
-            status.status = APStatusEnum.DEGRADED
+            status.status = APStatusValue.DEGRADED
         else:
-            status.status = APStatusEnum.ONLINE
+            status.status = APStatusValue.ONLINE
 
         return status
 
@@ -576,11 +576,11 @@ class NetworkHealthChecker:
         # AP 요약
         summary.total_aps = len(self._ap_statuses)
         for status in self._ap_statuses.values():
-            if status.status == APStatusEnum.ONLINE:
+            if status.status == APStatusValue.ONLINE:
                 summary.online_aps += 1
-            elif status.status == APStatusEnum.OFFLINE:
+            elif status.status == APStatusValue.OFFLINE:
                 summary.offline_aps += 1
-            elif status.status == APStatusEnum.OVERLOADED:
+            elif status.status == APStatusValue.OVERLOADED:
                 summary.overloaded_aps += 1
 
         # DHCP 요약
@@ -620,9 +620,9 @@ class NetworkHealthChecker:
 
         # AP 이슈
         for status in self._ap_statuses.values():
-            if status.status == APStatusEnum.OFFLINE:
+            if status.status == APStatusValue.OFFLINE:
                 issues.append(f"AP {status.name} is offline")
-            elif status.status == APStatusEnum.OVERLOADED:
+            elif status.status == APStatusValue.OVERLOADED:
                 issues.append(f"AP {status.name} is overloaded ({status.connected_clients} clients)")
 
         # VLAN 이슈
@@ -653,7 +653,7 @@ class NetworkHealthChecker:
             ap_data={
                 a.ap_id: {
                     "name": a.name,
-                    "status": a.status.value if isinstance(a.status, APStatusEnum) else a.status,
+                    "status": a.status.value if isinstance(a.status, APStatusValue) else a.status,
                     "connected_clients": a.connected_clients,
                     "client_usage_percent": a.client_usage_percent,
                 }
@@ -750,7 +750,7 @@ class NetworkHealthChecker:
             "aps": {
                 k: {
                     "name": v.name,
-                    "status": v.status.value if isinstance(v.status, APStatusEnum) else v.status,
+                    "status": v.status.value if isinstance(v.status, APStatusValue) else v.status,
                     "clients": v.connected_clients,
                 }
                 for k, v in self._ap_statuses.items()

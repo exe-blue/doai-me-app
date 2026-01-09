@@ -141,49 +141,51 @@ class TestBuildPrompt:
 
 class TestGenerateKeyword:
     """키워드 생성 테스트 (Mock)"""
-    
+
     @pytest.mark.asyncio
     async def test_generate_with_mock_openai(self):
         """Mock OpenAI 응답"""
         generator = AISearchGenerator()
-        
+
         # OpenAI 클라이언트 Mock
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
         mock_response.choices[0].message.content = "게임 리뷰"
-        
+
         with patch.object(generator, '_openai') as mock_openai:
             mock_openai.chat.completions.create = AsyncMock(return_value=mock_response)
-            
-            keyword = await generator.generate_keyword()
-            
+
+            result = await generator.generate()
+
             # 폴백 또는 생성된 키워드
-            assert keyword is not None
-            assert len(keyword) > 0
-    
+            assert result is not None
+            assert result.keyword is not None
+            assert len(result.keyword) > 0
+
     @pytest.mark.asyncio
     async def test_generate_fallback_on_error(self):
         """에러 시 폴백 반환"""
         generator = AISearchGenerator()
         generator._openai = None
         generator._anthropic = None
-        
-        keyword = await generator.generate_keyword()
-        
+
+        result = await generator.generate()
+
         # 폴백 키워드 반환
-        assert keyword in FALLBACK_KEYWORDS
-    
+        assert result.keyword in FALLBACK_KEYWORDS
+
     @pytest.mark.asyncio
     async def test_generate_with_category(self):
         """카테고리 지정 생성"""
         generator = AISearchGenerator()
         generator._openai = None
         generator._anthropic = None
-        
-        keyword = await generator.generate_keyword(category="gaming")
-        
+
+        result = await generator.generate(category="gaming")
+
         # 폴백이라도 반환
-        assert keyword is not None
+        assert result is not None
+        assert result.keyword is not None
 
 
 class TestCategoryPrompts:

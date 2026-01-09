@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 # 테스트 대상 임포트
 from shared.schemas.network import (
     NetworkStatus,
-    APStatus as APStatusEnum,
+    APStatusValue,
     DHCPStatus,
     VLANConfig,
     VLANStatus,
@@ -53,14 +53,14 @@ class TestNetworkStatus:
         assert NetworkStatus.DOWN.value == "down"
 
 
-class TestAPStatusEnum:
+class TestAPStatusValue:
     """APStatus Enum 테스트"""
 
     def test_values(self):
-        assert APStatusEnum.ONLINE.value == "online"
-        assert APStatusEnum.OFFLINE.value == "offline"
-        assert APStatusEnum.OVERLOADED.value == "overloaded"
-        assert APStatusEnum.DEGRADED.value == "degraded"
+        assert APStatusValue.ONLINE.value == "online"
+        assert APStatusValue.OFFLINE.value == "offline"
+        assert APStatusValue.OVERLOADED.value == "overloaded"
+        assert APStatusValue.DEGRADED.value == "degraded"
 
 
 class TestDHCPStatus:
@@ -458,28 +458,28 @@ class TestAPManagement:
 
         assert status is not None
         assert status.connected_clients == 20
-        assert status.status == APStatusEnum.ONLINE
+        assert status.status == APStatusValue.ONLINE
 
     def test_update_ap_status_degraded(self):
         checker = NetworkHealthChecker()
 
         status = checker.update_ap_status("ap-1", connected_clients=38)  # 76%
 
-        assert status.status == APStatusEnum.DEGRADED
+        assert status.status == APStatusValue.DEGRADED
 
     def test_update_ap_status_overloaded(self):
         checker = NetworkHealthChecker()
 
         status = checker.update_ap_status("ap-1", connected_clients=48)  # 96%
 
-        assert status.status == APStatusEnum.OVERLOADED
+        assert status.status == APStatusValue.OVERLOADED
 
     def test_update_ap_status_offline(self):
         checker = NetworkHealthChecker()
 
         status = checker.update_ap_status("ap-1", connected_clients=0, is_online=False)
 
-        assert status.status == APStatusEnum.OFFLINE
+        assert status.status == APStatusValue.OFFLINE
 
 
 # =========================================

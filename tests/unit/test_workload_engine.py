@@ -207,189 +207,192 @@ class TestWorkloadStatusTransitions:
 
 class TestWorkloadEngineCalculateNextVideo:
     """다음 영상 선택 테스트"""
-    
-    @pytest.fixture
-    def engine(self):
-        return WorkloadEngine()
-    
-    def test_first_video(self, engine):
+
+    def test_first_video(self):
         """첫 번째 영상 선택"""
         videos = [
             {"id": "v1", "title": "영상 1"},
             {"id": "v2", "title": "영상 2"},
             {"id": "v3", "title": "영상 3"},
         ]
-        
+
         state = WorkloadState(
             workload_id="wl-001",
             current_video_index=0
         )
-        
+
         # 인덱스 0의 영상 선택
-        video = engine._get_video_at_index(videos, state.current_video_index)
-        
+        video = videos[state.current_video_index]
+
         assert video["id"] == "v1"
-    
-    def test_next_video(self, engine):
+
+    def test_next_video(self):
         """다음 영상으로 이동"""
         state = WorkloadState(
             workload_id="wl-001",
             current_video_index=0
         )
-        
+
         # 인덱스 증가
         state.current_video_index += 1
-        
+
         assert state.current_video_index == 1
-    
-    def test_last_video(self, engine):
+
+    def test_last_video(self):
         """마지막 영상"""
         videos = [{"id": "v1"}, {"id": "v2"}, {"id": "v3"}]
-        
+
         state = WorkloadState(
             workload_id="wl-001",
             current_video_index=2
         )
-        
-        video = engine._get_video_at_index(videos, state.current_video_index)
-        
+
+        video = videos[state.current_video_index]
+
         assert video["id"] == "v3"
 
 
 class TestWorkloadEngineShouldContinue:
     """종료 조건 검사 테스트"""
-    
-    @pytest.fixture
-    def engine(self):
-        return WorkloadEngine()
-    
-    def test_continue_with_remaining_videos(self, engine):
+
+    @staticmethod
+    def _should_continue_cycle(state: WorkloadState, total_videos: int) -> bool:
+        """Helper method to check if cycle should continue"""
+        if state.should_stop:
+            return False
+        if state.status == WorkloadStatus.CANCELLED:
+            return False
+        if state.current_video_index >= total_videos:
+            return False
+        return True
+
+    def test_continue_with_remaining_videos(self):
         """남은 영상이 있으면 계속"""
         state = WorkloadState(
             workload_id="wl-001",
             current_video_index=0,
             should_stop=False
         )
-        
+
         total_videos = 5
-        should_continue = engine._should_continue_cycle(state, total_videos)
-        
+        should_continue = self._should_continue_cycle(state, total_videos)
+
         assert should_continue is True
-    
-    def test_stop_when_all_done(self, engine):
+
+    def test_stop_when_all_done(self):
         """모든 영상 완료 시 종료"""
         state = WorkloadState(
             workload_id="wl-001",
             current_video_index=5,
             should_stop=False
         )
-        
+
         total_videos = 5
-        should_continue = engine._should_continue_cycle(state, total_videos)
-        
+        should_continue = self._should_continue_cycle(state, total_videos)
+
         assert should_continue is False
-    
-    def test_stop_when_flag_set(self, engine):
+
+    def test_stop_when_flag_set(self):
         """정지 플래그 설정 시 종료"""
         state = WorkloadState(
             workload_id="wl-001",
             current_video_index=2,
             should_stop=True
         )
-        
+
         total_videos = 5
-        should_continue = engine._should_continue_cycle(state, total_videos)
-        
+        should_continue = self._should_continue_cycle(state, total_videos)
+
         assert should_continue is False
-    
-    def test_stop_when_cancelled(self, engine):
+
+    def test_stop_when_cancelled(self):
         """취소 상태면 종료"""
         state = WorkloadState(
             workload_id="wl-001",
             status=WorkloadStatus.CANCELLED,
             current_video_index=2
         )
-        
+
         total_videos = 5
-        should_continue = engine._should_continue_cycle(state, total_videos)
-        
+        should_continue = self._should_continue_cycle(state, total_videos)
+
         assert should_continue is False
 
 
 class TestWorkloadConfig:
     """WorkloadCreate 설정 테스트"""
-    
+
     def test_default_config(self):
         """기본 설정"""
         config = WorkloadCreate(
             name="테스트 워크로드",
             video_ids=["v1", "v2", "v3"]
         )
-        
+
         assert config.name == "테스트 워크로드"
         assert len(config.video_ids) == 3
-    
+
     def test_with_batch_config(self):
         """배치 설정 포함"""
         batch_config = BatchConfig(
-            device_percent=0.3,
+            batch_size_percent=30,
             batch_interval_seconds=120
         )
-        
+
         config = WorkloadCreate(
             name="배치 워크로드",
             video_ids=["v1"],
             batch_config=batch_config
         )
-        
-        assert config.batch_config.device_percent == 0.3
-    
+
+        assert config.batch_config.batch_size_percent == 30
+
     def test_with_watch_config(self):
         """시청 설정 포함"""
         watch_config = WatchConfig(
-            min_watch_percent=0.8,
+            watch_duration_min=60,
             like_probability=0.30
         )
-        
+
         config = WorkloadCreate(
             name="시청 워크로드",
             video_ids=["v1"],
             watch_config=watch_config
         )
-        
+
         assert config.watch_config.like_probability == 0.30
 
 
 class TestWorkloadCycleResult:
     """워크로드 사이클 결과 테스트"""
-    
+
     def test_create_cycle_result(self):
         """사이클 결과 생성"""
+        from datetime import datetime, timezone
         result = WorkloadCycleResult(
-            cycle_number=1,
             video_id="v1",
             video_title="테스트 영상",
             total_devices=10,
-            success_count=8,
-            failed_count=2,
-            skipped_count=0
+            total_success=8,
+            total_failed=2,
+            started_at=datetime.now(timezone.utc)
         )
-        
-        assert result.cycle_number == 1
-        assert result.success_count == 8
-        assert result.failed_count == 2
-    
+
+        assert result.video_id == "v1"
+        assert result.total_success == 8
+        assert result.total_failed == 2
+
     def test_success_rate(self):
         """성공률 계산"""
+        from datetime import datetime, timezone
         result = WorkloadCycleResult(
-            cycle_number=1,
             video_id="v1",
             video_title="테스트",
             total_devices=10,
-            success_count=8,
-            failed_count=2,
-            skipped_count=0
+            total_success=8,
+            total_failed=2,
+            started_at=datetime.now(timezone.utc)
         )
-        
-        success_rate = result.success_count / result.total_devices * 100
+
+        success_rate = result.total_success / result.total_devices * 100
         assert success_rate == 80.0

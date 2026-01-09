@@ -650,18 +650,37 @@ class YouTubeQueueService:
     ) -> bool:
         """
         댓글 실행 여부 결정
-        
+
         Args:
             probability: 댓글 확률 (0.0 ~ 1.0)
             is_logged_in: 로그인 상태 여부
-        
+
         Returns:
             True면 댓글 실행, False면 스킵
         """
         if not is_logged_in:
             return False
         return random.random() < probability
-    
+
+    @staticmethod
+    def calculate_watch_percent(
+        watch_duration_seconds: int,
+        target_duration_seconds: int
+    ) -> float:
+        """
+        시청률 계산
+
+        Args:
+            watch_duration_seconds: 실제 시청 시간 (초)
+            target_duration_seconds: 목표 시청 시간 (초)
+
+        Returns:
+            시청률 (%)
+        """
+        if target_duration_seconds <= 0:
+            return 0.0
+        return (watch_duration_seconds / target_duration_seconds) * 100
+
     # =========================================
     # 유틸리티
     # =========================================

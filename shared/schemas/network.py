@@ -32,8 +32,8 @@ class NetworkStatus(str, Enum):
     DOWN = "down"
 
 
-class APStatus(str, Enum):
-    """AP 상태"""
+class APStatusValue(str, Enum):
+    """AP 상태 값"""
     ONLINE = "online"
     OFFLINE = "offline"
     OVERLOADED = "overloaded"
@@ -121,7 +121,7 @@ class APStatus(BaseModel):
     """AP 상태"""
     ap_id: str
     name: str
-    status: APStatus = APStatus.ONLINE
+    status: APStatusValue = APStatusValue.ONLINE
 
     # 연결 정보
     connected_clients: int = 0

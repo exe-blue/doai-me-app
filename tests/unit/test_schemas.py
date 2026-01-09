@@ -246,47 +246,44 @@ class TestQueueSummarySchemas:
 
 class TestWorkloadSchemas:
     """Workload 관련 스키마 테스트"""
-    
+
     def test_batch_config_defaults(self):
         """BatchConfig 기본값"""
         config = BatchConfig()
-        
-        assert config.device_percent == 0.5
+
+        assert config.batch_size_percent == 50
         assert config.batch_interval_seconds == 60
-        assert config.randomize_interval is True
-    
+
     def test_batch_config_custom(self):
         """BatchConfig 커스텀 값"""
         config = BatchConfig(
-            device_percent=0.3,
+            batch_size_percent=30,
             batch_interval_seconds=120,
-            randomize_interval=False,
-            min_interval_seconds=60,
-            max_interval_seconds=180
+            cycle_interval_seconds=400
         )
-        
-        assert config.device_percent == 0.3
+
+        assert config.batch_size_percent == 30
         assert config.batch_interval_seconds == 120
-    
+
     def test_watch_config_defaults(self):
         """WatchConfig 기본값"""
         config = WatchConfig()
-        
-        assert config.min_watch_percent == 0.7
-        assert config.max_watch_percent == 1.0
-        assert config.like_probability == 0.20
-        assert config.comment_probability == 0.05
-    
+
+        assert config.watch_duration_min == 30
+        assert config.watch_duration_max == 120
+        assert config.like_probability == 0.05
+        assert config.comment_probability == 0.02
+
     def test_watch_config_custom(self):
         """WatchConfig 커스텀 값"""
         config = WatchConfig(
-            min_watch_percent=0.5,
-            max_watch_percent=0.8,
+            watch_duration_min=45,
+            watch_duration_max=90,
             like_probability=0.30,
             comment_probability=0.10,
-            random_pause_chance=0.2
+            enable_random_scroll=False
         )
-        
+
         assert config.like_probability == 0.30
         assert config.comment_probability == 0.10
     

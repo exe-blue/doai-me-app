@@ -151,11 +151,9 @@ def sample_batch_config():
     """샘플 BatchConfig 데이터"""
     from shared.schemas.workload import BatchConfig
     return BatchConfig(
-        device_percent=0.5,
+        batch_size_percent=50,
         batch_interval_seconds=60,
-        randomize_interval=True,
-        min_interval_seconds=30,
-        max_interval_seconds=120
+        cycle_interval_seconds=300
     )
 
 
@@ -164,11 +162,10 @@ def sample_watch_config():
     """샘플 WatchConfig 데이터"""
     from shared.schemas.workload import WatchConfig
     return WatchConfig(
-        min_watch_percent=0.7,
-        max_watch_percent=1.0,
-        like_probability=0.20,
-        comment_probability=0.05,
-        random_pause_chance=0.1
+        watch_duration_min=30,
+        watch_duration_max=120,
+        like_probability=0.05,
+        comment_probability=0.02
     )
 
 
