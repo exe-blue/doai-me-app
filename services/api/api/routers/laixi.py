@@ -30,6 +30,15 @@ try:
     HAS_LAIXI = True
 except ImportError:
     HAS_LAIXI = False
+    # Stub definitions for type hints when Laixi is not available
+    class LaixiClient:
+        """Stub class for type hints"""
+        pass
+    class LaixiConfig:
+        """Stub class for type hints"""
+        pass
+    def get_laixi_client():
+        return None
 
 # 로거 설정
 logger = logging.getLogger(__name__)
