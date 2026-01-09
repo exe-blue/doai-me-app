@@ -89,17 +89,19 @@ async def _on_health_status_change(component, old_status, new_status):
                 from shared.supabase_client import get_client
 
                 client = get_client()
-                client.table("monitoring_alerts").insert({
-                    "level": level,
-                    "title": f"Health Check Alert: {component.name}",
-                    "message": f"Component '{component.name}' status changed to {new_status.value}. {component.message or ''}",
-                    "source": "health_checker",
-                    "metadata": {
-                        "component": component.name,
-                        "old_status": old_status.value if old_status else None,
-                        "new_status": new_status.value,
-                    },
-                }).execute()
+                client.table("monitoring_alerts").insert(
+                    {
+                        "level": level,
+                        "title": f"Health Check Alert: {component.name}",
+                        "message": f"Component '{component.name}' status changed to {new_status.value}. {component.message or ''}",
+                        "source": "health_checker",
+                        "metadata": {
+                            "component": component.name,
+                            "old_status": old_status.value if old_status else None,
+                            "new_status": new_status.value,
+                        },
+                    }
+                ).execute()
             except Exception as e:
                 logger.warning(f"Failed to create auto-alert: {e}")
 
@@ -435,17 +437,23 @@ async def send_alert(request: AlertRequest):
         alert_id = None
         try:
             client = get_client()
-            result = client.table("monitoring_alerts").insert({
-                "level": request.level,
-                "title": request.title,
-                "message": request.message,
-                "source": request.source,
-                "metadata": request.metadata or {},
-                "sent_to_slack": sent_to_slack,
-                "sent_to_discord": sent_to_discord,
-                "slack_response": slack_response,
-                "discord_response": discord_response,
-            }).execute()
+            result = (
+                client.table("monitoring_alerts")
+                .insert(
+                    {
+                        "level": request.level,
+                        "title": request.title,
+                        "message": request.message,
+                        "source": request.source,
+                        "metadata": request.metadata or {},
+                        "sent_to_slack": sent_to_slack,
+                        "sent_to_discord": sent_to_discord,
+                        "slack_response": slack_response,
+                        "discord_response": discord_response,
+                    }
+                )
+                .execute()
+            )
 
             if result.data and len(result.data) > 0:
                 alert_id = result.data[0].get("id")

@@ -193,7 +193,10 @@ class HealthChecker:
         for component in components:
             if component.status == HealthStatus.UNHEALTHY:
                 overall_status = HealthStatus.UNHEALTHY
-            elif component.status == HealthStatus.DEGRADED and overall_status != HealthStatus.UNHEALTHY:
+            elif (
+                component.status == HealthStatus.DEGRADED
+                and overall_status != HealthStatus.UNHEALTHY
+            ):
                 overall_status = HealthStatus.DEGRADED
 
             # 상태 변경 감지 및 콜백 호출
