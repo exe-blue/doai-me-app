@@ -12,6 +12,34 @@ from .metrics import (
     device_tasks_total,
     system_info,
 )
+from .runbook import (
+    AlertLevel,
+    RecoveryLevel,
+    IncidentStatus,
+    ActionResult,
+    AlertConfig,
+    TimelineEvent,
+    Incident,
+    RunbookAction,
+    RunbookResult,
+    L1TriggerCondition,
+    AlertManager,
+    IncidentTracker,
+    RunbookExecutor,
+    get_alert_manager,
+    get_incident_tracker,
+    get_runbook_executor,
+    reset_runbook_module,
+)
+from .network import (
+    NetworkHealthChecker,
+    DeviceNetworkInfo,
+    NetworkAlert,
+    get_network_health_checker,
+    reset_network_health_checker,
+    DEFAULT_VLAN_CONFIGS,
+    DEFAULT_AP_CONFIGS,
+)
 
 __all__ = [
     # Metrics
@@ -26,4 +54,30 @@ __all__ = [
     "HealthCheckResult",
     "HealthStatus",
     "ComponentHealth",
+    # Runbook (PR #5)
+    "AlertLevel",
+    "RecoveryLevel",
+    "IncidentStatus",
+    "ActionResult",
+    "AlertConfig",
+    "TimelineEvent",
+    "Incident",
+    "RunbookAction",
+    "RunbookResult",
+    "L1TriggerCondition",
+    "AlertManager",
+    "IncidentTracker",
+    "RunbookExecutor",
+    "get_alert_manager",
+    "get_incident_tracker",
+    "get_runbook_executor",
+    "reset_runbook_module",
+    # Network (PR #3)
+    "NetworkHealthChecker",
+    "DeviceNetworkInfo",
+    "NetworkAlert",
+    "get_network_health_checker",
+    "reset_network_health_checker",
+    "DEFAULT_VLAN_CONFIGS",
+    "DEFAULT_AP_CONFIGS",
 ]

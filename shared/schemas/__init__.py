@@ -61,12 +61,35 @@ from .pattern import (
     TypingPatternConfig,
 )
 
+from .network import (
+    NetworkStatus,
+    APStatus,
+    DHCPStatus,
+    VLANConfig,
+    VLANStatus,
+    VLANDeviceDistribution,
+    APConfig,
+    APClientInfo,
+    DHCPPoolConfig,
+    DHCPPoolStatus,
+    DHCPLease,
+    NetworkHealthConfig,
+    NetworkHealthSummary,
+    NetworkHealthSnapshot,
+    NetworkHealthResponse,
+    VLANListResponse,
+    APListResponse,
+    DHCPPoolListResponse,
+    NetworkAlertCreate,
+    NetworkAlertResponse,
+)
+
 __all__ = [
     # Device
-    "DeviceStatus", "DeviceBase", "DeviceCreate", "DeviceUpdate", 
+    "DeviceStatus", "DeviceBase", "DeviceCreate", "DeviceUpdate",
     "DeviceInDB", "DeviceResponse", "DeviceListResponse", "DeviceHeartbeat",
     # Task
-    "TaskStatus", "SearchType", "TaskBase", "TaskCreate", 
+    "TaskStatus", "SearchType", "TaskBase", "TaskCreate",
     "TaskInDB", "TaskResponse", "TaskResultMessage",
     # Persona
     "ExistenceState", "PersonaTraits", "PersonaBase", "PersonaCreate",
@@ -79,4 +102,12 @@ __all__ = [
     # Pattern
     "HumanPatternConfig", "WatchPatternConfig", "TouchPatternConfig",
     "ScrollPatternConfig", "InteractionPatternConfig", "TypingPatternConfig",
+    # Network (PR #3)
+    "NetworkStatus", "APStatus", "DHCPStatus",
+    "VLANConfig", "VLANStatus", "VLANDeviceDistribution",
+    "APConfig", "APClientInfo",
+    "DHCPPoolConfig", "DHCPPoolStatus", "DHCPLease",
+    "NetworkHealthConfig", "NetworkHealthSummary", "NetworkHealthSnapshot",
+    "NetworkHealthResponse", "VLANListResponse", "APListResponse",
+    "DHCPPoolListResponse", "NetworkAlertCreate", "NetworkAlertResponse",
 ]
