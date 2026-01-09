@@ -1,9 +1,17 @@
 """
 📊 DoAi.Me 모니터링 모듈
-Prometheus 메트릭 및 헬스체크
+Prometheus 메트릭, 헬스체크, 로그 수집
 """
 
 from .health import ComponentHealth, HealthChecker, HealthCheckResult, HealthStatus
+from .log_collector import (
+    LogCollector,
+    LogLevel,
+    get_log_collector,
+    get_log_stats,
+    reset_log_collector,
+    search_logs,
+)
 from .metrics import (
     active_agents,
     agent_task_duration,
@@ -54,6 +62,13 @@ __all__ = [
     "HealthCheckResult",
     "HealthStatus",
     "ComponentHealth",
+    # Log Collector (M3)
+    "LogCollector",
+    "LogLevel",
+    "get_log_collector",
+    "reset_log_collector",
+    "search_logs",
+    "get_log_stats",
     # Runbook (PR #5)
     "AlertLevel",
     "RecoveryLevel",

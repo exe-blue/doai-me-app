@@ -232,6 +232,9 @@ async def api_info():
                 "GET /api/monitoring/summary": "시스템 요약",
                 "GET /api/monitoring/alerts": "알림 목록 조회",
                 "POST /api/monitoring/alerts": "알림 전송 (Slack/Discord)",
+                "GET /api/monitoring/logs": "로그 검색",
+                "POST /api/monitoring/logs": "로그 저장",
+                "GET /api/monitoring/logs/stats": "로그 통계",
                 "GET /api/monitoring/network": "네트워크 건강 상태",
             },
         }

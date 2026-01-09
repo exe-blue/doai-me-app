@@ -62,14 +62,17 @@ class HealthChecker:
     여러 컴포넌트의 헬스체크를 등록하고 실행
     """
 
-    def __init__(self, version: str = "2.0.0"):
+    def __init__(self, version: str = "2.0.0", on_status_change: Optional[Callable] = None):
         """
         Args:
             version: 서비스 버전
+            on_status_change: 상태 변경 시 콜백 (async fn(component, old_status, new_status))
         """
         self.version = version
         self._checks: Dict[str, Callable] = {}
         self._timeouts: Dict[str, float] = {}
+        self._last_statuses: Dict[str, HealthStatus] = {}
+        self._on_status_change = on_status_change
 
     def register(
         self,
@@ -178,20 +181,34 @@ class HealthChecker:
             HealthCheckResult 전체 결과
         """
         import asyncio
+        import inspect
 
         # 모든 체크 병렬 실행
         tasks = [self.check_one(name) for name in self._checks.keys()]
         components = await asyncio.gather(*tasks)
 
-        # 전체 상태 결정
+        # 전체 상태 결정 및 상태 변경 감지
         overall_status = HealthStatus.HEALTHY
 
         for component in components:
             if component.status == HealthStatus.UNHEALTHY:
                 overall_status = HealthStatus.UNHEALTHY
-                break
-            elif component.status == HealthStatus.DEGRADED:
+            elif component.status == HealthStatus.DEGRADED and overall_status != HealthStatus.UNHEALTHY:
                 overall_status = HealthStatus.DEGRADED
+
+            # 상태 변경 감지 및 콜백 호출
+            old_status = self._last_statuses.get(component.name)
+            if old_status != component.status:
+                self._last_statuses[component.name] = component.status
+
+                if self._on_status_change:
+                    try:
+                        if inspect.iscoroutinefunction(self._on_status_change):
+                            await self._on_status_change(component, old_status, component.status)
+                        else:
+                            self._on_status_change(component, old_status, component.status)
+                    except Exception as e:
+                        logger.error(f"상태 변경 콜백 실패: {e}")
 
         return HealthCheckResult(
             status=overall_status,

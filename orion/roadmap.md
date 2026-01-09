@@ -4,8 +4,8 @@
 
 ## 현재 상태
 
-**Phase:** 모니터링 체계 구축
-**Version:** 0.1.0-alpha
+**Phase:** 스케일링 준비
+**Version:** 0.2.0-alpha
 
 ---
 
@@ -35,10 +35,24 @@
   - [x] Integration test skip 로직 추가
 - [ ] 롤백 자동화 (백로그로 이동)
 
-### 🎯 M3: 모니터링 체계 구축 (Current)
-- [ ] 로그 수집/분석 파이프라인
-- [ ] 알람 체계 구축
-- [ ] 대시보드 구성
+### ✅ M3: 모니터링 체계 구축
+- [x] 로그 수집/분석 파이프라인
+  - [x] monitoring_logs 테이블 생성 (Supabase 마이그레이션)
+  - [x] LogCollector 클래스 구현 (버퍼링, 비동기 저장)
+  - [x] GET /api/monitoring/logs 검색 API
+  - [x] POST /api/monitoring/logs 저장 API
+  - [x] GET /api/monitoring/logs/stats 통계 API
+- [x] 알람 체계 구축
+  - [x] monitoring_alerts 테이블 생성
+  - [x] monitoring_incidents 테이블 생성
+  - [x] alert_rules 테이블 생성
+  - [x] GET/POST /api/monitoring/alerts API
+  - [x] HealthChecker 상태 변경 콜백 (자동 로그/알림)
+- [x] 메트릭 및 대시보드 기반
+  - [x] GET /metrics Prometheus 엔드포인트
+  - [x] GET /api/monitoring/health 상세 헬스체크
+  - [x] GET /api/monitoring/summary 시스템 요약
+  - [x] GET /api/monitoring/network 네트워크 상태
 
 ### 🎯 M4: 스케일링 준비
 - [ ] 노드 20대 → 100대 확장 테스트
@@ -75,5 +89,7 @@
 
 | 날짜 | 변경 내용 | 결정자 |
 |------|-----------|--------|
+| 2026-01-10 | M3 모니터링 체계 완료 | @claude |
+| 2026-01-09 | M2 CI/CD 안정화 완료 | @claude |
 | 2026-01-04 | 초기 로드맵 작성 | @orion |
 
