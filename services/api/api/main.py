@@ -19,6 +19,7 @@ try:
         commissions,
         laixi,
         maintenance,
+        monitoring,
         nocturne,
         personas,
         wifi,
@@ -36,6 +37,7 @@ except ImportError:
         commissions,
         laixi,
         maintenance,
+        monitoring,
         nocturne,
         personas,
         wifi,
@@ -150,6 +152,7 @@ app.include_router(nocturne.router, prefix="/api")  # /api/nocturne
 app.include_router(oob_router, prefix="/api")  # /api/oob - OOB 관리
 app.include_router(laixi.router)  # /api/laixi - Laixi 로컬 디바이스 제어
 app.include_router(youtube_channels.router, prefix="/api")  # /api/youtube-channels
+app.include_router(monitoring.router)  # /metrics + /api/monitoring/* - 모니터링
 
 
 # 기본 엔드포인트
@@ -222,6 +225,14 @@ async def api_info():
                 "POST /api/personas/{id}/idle-search": "IDLE 상태 검색 트리거 (P1 핵심)",
                 "GET /api/personas/{id}/search-history": "검색 기록 조회",
                 "GET /api/personas/{id}/search-profile": "검색 프로필 (고유성 분석)",
+            },
+            "monitoring": {
+                "GET /metrics": "Prometheus 메트릭 (텍스트 포맷)",
+                "GET /api/monitoring/health": "상세 헬스체크",
+                "GET /api/monitoring/summary": "시스템 요약",
+                "GET /api/monitoring/alerts": "알림 목록 조회",
+                "POST /api/monitoring/alerts": "알림 전송 (Slack/Discord)",
+                "GET /api/monitoring/network": "네트워크 건강 상태",
             },
         }
     }

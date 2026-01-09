@@ -4,14 +4,14 @@
 
 ## 현재 상태
 
-**Phase:** 구조 정리 및 안정화
+**Phase:** 모니터링 체계 구축
 **Version:** 0.1.0-alpha
 
 ---
 
 ## Milestones
 
-### 🎯 M1: 레포 구조 정리 (Current)
+### ✅ M1: 레포 구조 정리
 - [x] apps/ 구조 확립 (web, orchestrator, node-runner)
   - [x] node-runner/ → apps/node-runner/ 이동 완료
   - [x] website/ 중복 제거, apps/website/ 통합
@@ -24,12 +24,18 @@
   - local/ 유지 (개발 환경용)
   - sdk/ 유지 (Laixi 문서)
 
-### 🎯 M2: 배포 파이프라인 안정화
-- [ ] CI/CD 파이프라인 정비
-- [ ] 자동 테스트 커버리지 확보
-- [ ] 롤백 자동화
+### ✅ M2: 배포 파이프라인 안정화
+- [x] CI/CD 파이프라인 정비
+  - [x] Ruff linter 설정 업데이트 (lint.* 포맷)
+  - [x] Black formatter 통합
+  - [x] Per-file-ignores 설정 (tests, scripts, archive)
+- [x] 자동 테스트 커버리지 확보
+  - [x] 446 unit tests 통과
+  - [x] CI 환경용 더미 환경변수 설정
+  - [x] Integration test skip 로직 추가
+- [ ] 롤백 자동화 (백로그로 이동)
 
-### 🎯 M3: 모니터링 체계 구축
+### 🎯 M3: 모니터링 체계 구축 (Current)
 - [ ] 로그 수집/분석 파이프라인
 - [ ] 알람 체계 구축
 - [ ] 대시보드 구성
