@@ -17,8 +17,12 @@
   - [x] website/ 중복 제거, apps/website/ 통합
   - [x] 빈 gateway/ 제거
 - [x] infra/ 배포 스크립트 정리
+  - [x] kong/ → infra/kong/ 통합
 - [x] orion/ 운영 문서 체계화
-- [ ] 미사용 코드 제거
+- [x] 미사용 코드 제거
+  - archive/ 유지 (deprecated 코드 참조용)
+  - local/ 유지 (개발 환경용)
+  - sdk/ 유지 (Laixi 문서)
 
 ### 🎯 M2: 배포 파이프라인 안정화
 - [ ] CI/CD 파이프라인 정비

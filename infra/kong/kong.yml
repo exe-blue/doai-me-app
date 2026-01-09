@@ -1,0 +1,74 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: doai-api-service
+    url: http://doai-api:8000
+    routes:
+      - name: doai-api-route
+        paths:
+          - /api
+        strip_path: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+
+  - name: doai-gateway-service
+    url: http://doai-gateway:8000
+    routes:
+      - name: doai-gateway-route
+        paths:
+          - /gateway
+        strip_path: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+
+  - name: health-service
+    url: http://doai-api:8000
+    routes:
+      - name: health-route
+        paths:
+          - /health
+        strip_path: false
+
+consumers:
+  - username: supabase-auth
+    jwt_secrets:
+      - key: "5286c8b1-5132-40ea-a04c-62f6b5883aba"
+        algorithm: HS256
+      - key: "96650f75-1473-485b-8390-ee1973a32fae"
+        algorithm: HS256
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      credentials: true
+      max_age: 3600
+
+  - name: rate-limiting
+    config:
+      minute: 100
+      hour: 1000
+      policy: local
+
+  - name: correlation-id
+    config:
+      header_name: X-Request-ID
+      generator: uuid
+      echo_downstream: true
