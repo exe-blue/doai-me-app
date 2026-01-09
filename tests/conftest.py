@@ -175,15 +175,17 @@ def sample_watch_config():
 
 @pytest.fixture(scope="session")
 def supabase_client():
-    """실제 Supabase 클라이언트 (Integration 테스트용)"""
+    """실제 Supabase 클라이언트 (Integration 테스트용) - api 스키마 사용"""
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
-    
+
     if not url or not key:
         pytest.skip("SUPABASE_URL/KEY 환경변수가 필요합니다")
-    
+
     from supabase import create_client
-    return create_client(url, key)
+    client = create_client(url, key)
+    # Use 'api' schema instead of default 'public'
+    return client.schema('api')
 
 
 @pytest.fixture
