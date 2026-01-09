@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh:*)",
+      "Bash(scp -o StrictHostKeyChecking=no \"d:\\\\exe.blue\\\\ai-fram\\\\deploy\\\\vultr_setup.sh\" root@158.247.210.152:/root/)",
+      "Bash(ping:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(cat:*)",
+      "Bash(where:*)",
+      "Bash(dir:*)",
+      "Bash(tar:*)",
+      "Bash(scp:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git clone:*)",
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(ls:*)",
+      "Bash(unzip:*)",
+      "Bash(git --version:*)",
+      "Bash(git rebase:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(git stash:*)",
+      "Bash(git reset:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(git checkout:*)",
+      "Bash(move middleware.ts proxy.ts)"
+    ]
+  }
+}

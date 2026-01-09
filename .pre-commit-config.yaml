@@ -1,0 +1,50 @@
+# ============================================
+# DoAi.Me - Pre-commit 훅 설정
+# ============================================
+# 설치: pre-commit install
+# 수동 실행: pre-commit run --all-files
+# ============================================
+
+repos:
+  # Ruff - 빠른 Python 린터
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+
+  # Black - Python 코드 포매터
+  - repo: https://github.com/psf/black
+    rev: 23.11.0
+    hooks:
+      - id: black
+        language_version: python3.11
+
+  # 기본 pre-commit 훅
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # 파일 끝 공백 제거
+      - id: trailing-whitespace
+        exclude: ^(.*\.md|.*\.txt)$
+      # 파일 끝에 빈 줄 추가
+      - id: end-of-file-fixer
+        exclude: ^(.*\.md|.*\.txt)$
+      # YAML 문법 검사
+      - id: check-yaml
+        args: [--unsafe]
+      # JSON 문법 검사
+      - id: check-json
+      # 대용량 파일 방지
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      # merge conflict 마커 검사
+      - id: check-merge-conflict
+      # 디버그 문 검사
+      - id: debug-statements
+
+# CI 환경에서 skip할 훅 설정
+ci:
+  autofix_prs: true
+  autoupdate_schedule: weekly

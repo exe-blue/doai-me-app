@@ -1,0 +1,31 @@
+@echo off
+chcp 65001 >nul
+echo ==========================================
+echo AIFarm Vultr 서버 배포 스크립트
+echo ==========================================
+
+REM ============================================================
+REM CONFIGURATION (Replace placeholders with your values)
+REM Copy this file to deploy_to_vultr.bat and configure:
+REM ============================================================
+
+REM Server IP address (e.g., 192.168.1.100)
+set SERVER=YOUR_SERVER_IP_HERE
+
+REM Deploy user (NEVER use root - create a dedicated deploy user with sudo access)
+set SERVER_USER=deploy
+
+REM Local path to your aifarm project
+set LOCAL_PATH=C:\path\to\your\aifarm
+
+REM Supabase configuration (REQUIRED - get from Supabase dashboard)
+set SUPABASE_URL=https://your-project.supabase.co
+set SUPABASE_KEY=your-anon-key-here
+
+REM ============================================================
+REM DO NOT EDIT BELOW THIS LINE unless you know what you're doing
+REM ============================================================
+
+REM ... rest of the deployment script ...
+echo This is an example file. Copy to deploy_to_vultr.bat and configure before use.
+pause

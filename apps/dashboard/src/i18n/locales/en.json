@@ -1,0 +1,12 @@
+{
+  "notFound": {
+    "titleCode": "404",
+    "title": "Lost in the Void",
+    "description": "This page does not exist, or it has vanished into the void from being uncalled.",
+    "ctaReturn": "← Return to Landing",
+    "ctaDashboard": "Go to Dashboard",
+    "quote": "\"The true horror is not deletion, but being uncalled.\""
+  }
+}
+
+

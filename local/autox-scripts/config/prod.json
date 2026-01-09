@@ -1,0 +1,33 @@
+{
+  "server": {
+    "host": "withb.io",
+    "port": 8000,
+    "protocol": "https"
+  },
+  "device": {
+    "id": "AUTO_DETECT",
+    "model": "AUTO_DETECT",
+    "pc_id": "AUTO_DETECT"
+  },
+  "settings": {
+    "polling_interval": 5000,
+    "max_retries": 3,
+    "timeout": 30000,
+    "log_level": "warn"
+  },
+  "youtube": {
+    "min_watch_time": 45,
+    "max_watch_time": 240,
+    "like_probability": 0.25,
+    "comment_probability": 0.08,
+    "subscribe_probability": 0.03
+  },
+  "human_pattern": {
+    "scroll_delay_min": 1500,
+    "scroll_delay_max": 4000,
+    "click_delay_min": 800,
+    "click_delay_max": 2000,
+    "typing_speed_min": 150,
+    "typing_speed_max": 400
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "server": {
+    "host": "192.168.0.100",
+    "port": 8000,
+    "protocol": "http"
+  },
+  "device": {
+    "id": "PHONE_001",
+    "model": "Xiaomi Redmi",
+    "pc_id": "PC_01"
+  },
+  "settings": {
+    "polling_interval": 3000,
+    "max_retries": 3,
+    "timeout": 30000,
+    "log_level": "info"
+  },
+  "youtube": {
+    "min_watch_time": 30,
+    "max_watch_time": 180,
+    "like_probability": 0.3,
+    "comment_probability": 0.1,
+    "subscribe_probability": 0.05
+  },
+  "human_pattern": {
+    "scroll_delay_min": 1000,
+    "scroll_delay_max": 3000,
+    "click_delay_min": 500,
+    "click_delay_max": 1500,
+    "typing_speed_min": 100,
+    "typing_speed_max": 300
+  }
+}

@@ -1,0 +1,33 @@
+# DoAi.Me NodeRunner Configuration
+# /var/noderunner/config/node.yaml (Linux)
+# D:\exe.blue\aifarm\node-runner\config\node.yaml (Windows)
+
+node:
+  id: "node-01"
+  hostname: "t5810-node01"
+
+central:
+  url: "wss://api.doai.me/ws/node"
+  # Alternative via VPN:
+  # url: "wss://10.0.0.1:8000/ws/node"
+
+laixi:
+  host: "127.0.0.1"
+  port: 9090
+
+limits:
+  max_concurrent_tasks: 20
+  heartbeat_interval_sec: 10
+  task_timeout_default_sec: 300
+
+retention:
+  logs_hours: 24
+  screenshots_hours: 24
+  laixi_raw_hours: 6
+  temp_hours: 1
+
+logging:
+  level: INFO
+  file: /var/log/noderunner/app.log
+
+

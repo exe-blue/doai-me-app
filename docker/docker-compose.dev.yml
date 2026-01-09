@@ -1,0 +1,65 @@
+# ============================================
+# DoAi.Me - 개발용 Docker Compose
+# ============================================
+# 용도: 로컬 개발 환경 (핫 리로드, 디버그 모드)
+# 실행: docker compose -f docker/docker-compose.dev.yml up
+# ============================================
+
+version: '3.8'
+
+services:
+  # ============================================
+  # Backend API Server (개발 모드)
+  # ============================================
+  doai-api-dev:
+    build:
+      context: ../services/api
+      dockerfile: Dockerfile
+    container_name: doai-api-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      # Supabase 연결 (로컬 .env에서 로드)
+      - DOAI_ME_SUPABASE_URL=${DOAI_ME_SUPABASE_URL}
+      - DOAI_ME_SUPABASE_KEY=${DOAI_ME_SUPABASE_KEY}
+    volumes:
+      - ../services/api:/app  # 핫 리로드
+    command: uvicorn main:app --reload --host 0.0.0.0 --port 8000
+    networks:
+      - doai-dev-net
+
+  # ============================================
+  # Gateway Server (개발 모드)
+  # ============================================
+  doai-gateway-dev:
+    build:
+      context: ../local/gateway
+      dockerfile: Dockerfile
+    container_name: doai-gateway-dev
+    ports:
+      - "3100:3100"
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_PORT=3100
+      - ADB_HOST=host.docker.internal
+      - ADB_PORT=5037
+      - LOG_LEVEL=debug
+    volumes:
+      - ../local/gateway:/app
+      - /app/node_modules  # node_modules 보존
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - doai-dev-net
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  doai-dev-net:
+    name: doai-dev-net
+    driver: bridge

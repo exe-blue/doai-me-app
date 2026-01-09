@@ -1,0 +1,187 @@
+/* Font Imports - 최상단에 위치해야 함 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DoAi.Me Global Styles */
+@layer base {
+  :root {
+    --doai-yellow: #FFCC00;
+    --doai-black: #111111;
+    --void-950: #0A0A0A;
+  }
+
+  body {
+    @apply bg-doai-black-950 text-gray-100 font-body antialiased;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-doai-black-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-doai-black-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-doai-black-500;
+  }
+}
+
+@layer components {
+  /* DoAi Button Styles */
+  .btn-primary {
+    @apply bg-doai-yellow-500 text-doai-black-900 font-semibold 
+           px-4 py-2 rounded-lg transition-all duration-200
+           hover:bg-doai-yellow-400 hover:shadow-glow
+           active:bg-doai-yellow-600
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-doai-black-700 text-gray-100 font-medium
+           px-4 py-2 rounded-lg border border-doai-black-600
+           transition-all duration-200
+           hover:bg-doai-black-600 hover:border-doai-black-500
+           active:bg-doai-black-800;
+  }
+
+  .btn-danger {
+    @apply bg-error text-white font-semibold
+           px-4 py-2 rounded-lg transition-all duration-200
+           hover:bg-red-600
+           active:bg-red-700;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-gray-300 font-medium
+           px-4 py-2 rounded-lg transition-all duration-200
+           hover:bg-doai-black-800 hover:text-gray-100;
+  }
+
+  /* Card Styles */
+  .card {
+    @apply bg-doai-black-800 rounded-xl border border-doai-black-700
+           transition-all duration-200;
+  }
+
+  .card-interactive {
+    @apply bg-doai-black-800 rounded-xl border border-doai-black-700
+           transition-all duration-200 cursor-pointer
+           hover:border-doai-black-600 hover:bg-doai-black-700;
+  }
+
+  .card-selected {
+    @apply bg-doai-black-800 rounded-xl border border-doai-yellow-500 shadow-glow
+           transition-all duration-200;
+  }
+
+  /* Device Cell */
+  .device-cell {
+    @apply bg-doai-black-800 rounded-xl border border-doai-black-700
+           transition-all duration-200 cursor-pointer
+           hover:border-doai-black-600 hover:bg-doai-black-700
+           p-3 flex flex-col gap-2
+           min-w-[120px] h-[100px];
+  }
+
+  .device-cell-selected {
+    @apply bg-doai-black-800 rounded-xl p-3 flex flex-col gap-2
+           min-w-[120px] h-[100px]
+           border-doai-yellow-500 border-2 shadow-glow-strong
+           transition-all duration-200 cursor-pointer;
+  }
+
+  /* Existence Bar */
+  .existence-bar {
+    @apply h-2 bg-doai-black-700 rounded-full overflow-hidden;
+  }
+
+  .existence-bar-fill {
+    @apply h-full rounded-full transition-all duration-500;
+  }
+
+  /* Status Dot */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-dot-online {
+    @apply w-2 h-2 rounded-full bg-status-online;
+  }
+
+  .status-dot-offline {
+    @apply w-2 h-2 rounded-full bg-status-offline;
+  }
+
+  .status-dot-busy {
+    @apply w-2 h-2 rounded-full bg-status-busy animate-pulse;
+  }
+
+  .status-dot-idle {
+    @apply w-2 h-2 rounded-full bg-status-idle;
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply px-4 py-2 text-gray-400 font-medium transition-all duration-200
+           hover:text-gray-100
+           border-b-2 border-transparent;
+  }
+
+  .nav-link-active {
+    @apply px-4 py-2 font-medium transition-all duration-200
+           text-doai-yellow-500 border-b-2 border-doai-yellow-500;
+  }
+
+  /* Input Styles */
+  .input {
+    @apply bg-doai-black-800 border border-doai-black-600 rounded-lg
+           px-4 py-2 text-gray-100 placeholder-gray-500
+           focus:outline-none focus:border-doai-yellow-500 focus:ring-1 focus:ring-doai-yellow-500
+           transition-all duration-200;
+  }
+
+  /* Badge Styles */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-status-online {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-status-online/20 text-status-online;
+  }
+
+  .badge-status-offline {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-status-offline/20 text-status-offline;
+  }
+
+  .badge-activity-mining {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-activity-mining/20 text-activity-mining;
+  }
+
+  .badge-activity-surfing {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-activity-surfing/20 text-activity-surfing;
+  }
+
+  .badge-activity-response {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-activity-response/20 text-activity-response;
+  }
+
+  .badge-activity-labor {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+           bg-activity-labor/20 text-activity-labor;
+  }
+}

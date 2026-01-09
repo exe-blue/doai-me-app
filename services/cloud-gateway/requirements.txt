@@ -1,0 +1,17 @@
+# DoAi.Me Cloud Gateway Dependencies
+# WSS Protocol v1.0
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn>=0.24.0
+websockets>=15.0.0
+pydantic>=2.5.0
+
+# Database
+supabase>=2.27.0
+
+# HTTP Client (for OOB forwarding)
+aiohttp>=3.10.0
+
+# Utils
+python-dotenv>=1.0.0

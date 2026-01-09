@@ -1,0 +1,25 @@
+{
+  "name": "aifarm-autox-scripts",
+  "version": "1.0.0",
+  "description": "AutoX.js scripts for AIFARM YouTube automation",
+  "main": "main.js",
+  "scripts": {
+    "test": "node tests/simulator.js",
+    "deploy": "echo 'Use VS Code AutoX.js extension to deploy'"
+  },
+  "keywords": [
+    "autox",
+    "youtube",
+    "automation",
+    "aifarm"
+  ],
+  "author": "AIFARM Team",
+  "license": "MIT",
+  "engines": {
+    "autox": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/exe-blue/aifarm"
+  }
+}

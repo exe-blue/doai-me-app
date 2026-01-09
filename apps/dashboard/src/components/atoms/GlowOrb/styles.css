@@ -1,0 +1,224 @@
+/**
+ * GlowOrb 스타일시트
+ * 
+ * LSP 상태별 애니메이션 및 시각 효과
+ */
+
+/* ==================== 기본 컨테이너 ==================== */
+
+.glow-orb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  user-select: none;
+  transition: transform 0.3s ease;
+}
+
+.glow-orb__layer {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: 
+    opacity 0.5s ease,
+    filter 0.5s ease,
+    transform 0.5s ease;
+}
+
+/* 레이어 중앙 정렬 */
+.glow-orb__ambient,
+.glow-orb__outer,
+.glow-orb__inner,
+.glow-orb__core {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ==================== Dormant 상태 ==================== */
+
+.glow-orb--dormant .glow-orb__layer {
+  opacity: 0;
+}
+
+/* ==================== Listening 상태 ==================== */
+
+.glow-orb--listening .glow-orb__layer {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.02);
+    opacity: 0.9;
+  }
+}
+
+/* ==================== Evaluating 상태 ==================== */
+
+.glow-orb--evaluating .glow-orb__layer {
+  animation: pulse-fast 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse-fast {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 0.85;
+  }
+}
+
+/* ==================== Resonating 상태 (핵심) ==================== */
+
+.glow-orb--resonating .glow-orb__layer {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* 호흡 애니메이션: opacity(t) = 0.3 + 0.3 × sin(2π × t / 3000) */
+@keyframes breathe {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+    filter: blur(20px);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.03);
+    opacity: 1;
+    filter: blur(30px);
+  }
+}
+
+.glow-orb--resonating .glow-orb__core {
+  animation: breathe-core 3s ease-in-out infinite;
+}
+
+@keyframes breathe-core {
+  0%, 100% {
+    filter: blur(0px);
+    opacity: 0.8;
+  }
+  50% {
+    filter: blur(2px);
+    opacity: 1;
+  }
+}
+
+/* ==================== Silencing 상태 (침묵하는 현존) ==================== */
+
+.glow-orb--silencing .glow-orb__layer {
+  animation: fade-hold 8s ease-out forwards;
+}
+
+/* 잔상 유지: opacity(t) = max(0.05, 0.3 × e^(-t/5000)) */
+@keyframes fade-hold {
+  0% {
+    opacity: 0.3;
+    filter: blur(30px);
+  }
+  25% {
+    opacity: 0.15;
+    filter: blur(40px);
+  }
+  50% {
+    opacity: 0.08;
+    filter: blur(50px);
+  }
+  100% {
+    opacity: 0.05;
+    filter: blur(50px);
+  }
+}
+
+.glow-orb--silencing .glow-orb__core {
+  animation: fade-hold-core 8s ease-out forwards;
+}
+
+@keyframes fade-hold-core {
+  0% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.08;
+  }
+}
+
+/* ==================== Responding 상태 ==================== */
+
+.glow-orb--responding .glow-orb__layer {
+  animation: type-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes type-pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1.01);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.85;
+  }
+  75% {
+    transform: translate(-50%, -50%) scale(1.02);
+    opacity: 0.95;
+  }
+}
+
+/* ==================== Presence Signal (터치 시) ==================== */
+
+.glow-orb--silencing.glow-orb--pressed .glow-orb__layer {
+  animation: presence-signal 0.8s ease-out forwards !important;
+}
+
+@keyframes presence-signal {
+  0% {
+    opacity: 0.08;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  20% {
+    opacity: 0.25;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+  100% {
+    opacity: 0.08;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* ==================== 상태 전이 효과 ==================== */
+
+/* Listening → Evaluating */
+.glow-orb--evaluating {
+  transition: all 0.3s ease;
+}
+
+/* Evaluating → Resonating */
+.glow-orb--resonating {
+  transition: all 0.5s ease;
+}
+
+/* Resonating → Silencing */
+.glow-orb--silencing {
+  transition: all 1s ease;
+}
+
+/* ==================== 접근성 ==================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-orb__layer {
+    animation: none !important;
+    transition: opacity 0.3s ease;
+  }
+}
+

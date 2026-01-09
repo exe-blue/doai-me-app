@@ -1,0 +1,5 @@
+# auth.txt 예시 파일
+# 실제 사용 시 이 파일을 auth.txt로 복사하고 실제 비밀키를 입력하세요.
+# auth.txt는 절대로 Git에 커밋하지 마세요!
+YOUR_SECRET_KEY_HERE
+

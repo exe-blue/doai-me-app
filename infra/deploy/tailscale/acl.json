@@ -1,0 +1,60 @@
+{
+  "// DoAi.Me Tailscale ACL Configuration": "Strategos Security Design v1",
+  "// Tailnet": "doai",
+  
+  "groups": {
+    "group:admins": [
+      "shiva@example.com",
+      "orion-ops@example.com"
+    ]
+  },
+  
+  "tagOwners": {
+    "tag:node": ["group:admins"],
+    "tag:orchestrator": ["group:admins"],
+    "tag:admin": ["group:admins"],
+    "tag:logserver": ["group:admins"]
+  },
+  
+  "acls": [
+    {
+      "// Rule 1": "Admin/Orchestrator -> Node 제어 (SSH + Agent API)",
+      "action": "accept",
+      "src": ["group:admins", "tag:orchestrator"],
+      "dst": ["tag:node:22", "tag:node:8000"]
+    },
+    {
+      "// Rule 2": "Node -> LogServer 모니터링 (HTTPS/메트릭)",
+      "action": "accept",
+      "src": ["tag:node"],
+      "dst": ["tag:logserver:443", "tag:logserver:8443", "tag:logserver:9000"]
+    },
+    {
+      "// Rule 3": "Admin -> Orchestrator 관리",
+      "action": "accept",
+      "src": ["group:admins"],
+      "dst": ["tag:orchestrator:*"]
+    }
+  ],
+  
+  "// Isolation Note": "노드↔노드 통신은 규칙이 없으므로 자동 deny됨",
+  
+  "ssh": [
+    {
+      "// Tailscale SSH": "Admin -> Node SSH (MFA 강제)",
+      "action": "accept",
+      "src": ["group:admins", "tag:orchestrator"],
+      "dst": ["tag:node"],
+      "users": ["doaiops", "root"]
+    }
+  ],
+  
+  "nodeAttrs": [
+    {
+      "// Auto-approve nodes": "태그 부여된 노드만 자동 승인",
+      "target": ["tag:node", "tag:orchestrator"],
+      "attr": ["autoApprovers"]
+    }
+  ]
+}
+

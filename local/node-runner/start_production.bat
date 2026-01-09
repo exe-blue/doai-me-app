@@ -1,0 +1,25 @@
+@echo off
+REM DoAi.Me NodeRunner - Production Mode
+REM Vultr Cloud Gateway에 연결
+
+REM 환경변수 설정
+set NODE_ID=%COMPUTERNAME%
+set CENTRAL_URL=wss://api.doai.me/ws/node
+set LAIXI_HOST=127.0.0.1
+set LAIXI_PORT=22221
+set LAIXI_PATH=C:\Program Files\Laixi\Laixi.exe
+
+echo ============================================
+echo DoAi.Me NodeRunner - PRODUCTION MODE
+echo ============================================
+echo NODE_ID:  %NODE_ID%
+echo CENTRAL:  %CENTRAL_URL%
+echo LAIXI:    ws://%LAIXI_HOST%:%LAIXI_PORT%
+echo ============================================
+echo.
+
+REM Python 실행
+python noderunner.py
+
+pause
+
