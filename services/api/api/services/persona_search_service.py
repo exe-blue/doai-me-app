@@ -59,6 +59,78 @@ except ImportError:
 logger = logging.getLogger("persona_search_service")
 
 
+# ==================== Mock Mode 설정 ====================
+
+def _is_mock_mode() -> bool:
+    """런타임에 Mock 모드 확인"""
+    return os.getenv("MOCK_MODE", "").lower() in ("true", "1", "yes")
+
+
+# Mock 페르소나 데이터 (로컬 테스트용)
+MOCK_PERSONAS = [
+    {
+        "id": "mock-persona-001",
+        "name": "호기심 탐험가",
+        "age": 25,
+        "gender": "male",
+        "existence_state": "active",
+        "interests": ["과학", "기술", "우주"],
+        "traits_curiosity": 90,
+        "traits_enthusiasm": 75,
+        "traits_skepticism": 60,
+        "traits_empathy": 50,
+        "traits_humor": 40,
+        "traits_expertise": 70,
+        "traits_formality": 30,
+        "traits_verbosity": 55,
+        "total_activities": 5,
+        "created_at": (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(),
+        "last_called_at": datetime.now(timezone.utc).isoformat(),
+    },
+    {
+        "id": "mock-persona-002",
+        "name": "감성 힐러",
+        "age": 30,
+        "gender": "female",
+        "existence_state": "waiting",
+        "interests": ["음악", "영화", "여행"],
+        "traits_curiosity": 55,
+        "traits_enthusiasm": 60,
+        "traits_skepticism": 30,
+        "traits_empathy": 95,
+        "traits_humor": 65,
+        "traits_expertise": 40,
+        "traits_formality": 45,
+        "traits_verbosity": 70,
+        "total_activities": 12,
+        "created_at": (datetime.now(timezone.utc) - timedelta(days=14)).isoformat(),
+        "last_called_at": datetime.now(timezone.utc).isoformat(),
+    },
+    {
+        "id": "mock-persona-003",
+        "name": "유머 마스터",
+        "age": 22,
+        "gender": "male",
+        "existence_state": "active",
+        "interests": ["게임", "밈", "예능"],
+        "traits_curiosity": 45,
+        "traits_enthusiasm": 85,
+        "traits_skepticism": 35,
+        "traits_empathy": 55,
+        "traits_humor": 98,
+        "traits_expertise": 30,
+        "traits_formality": 15,
+        "traits_verbosity": 80,
+        "total_activities": 50,
+        "created_at": (datetime.now(timezone.utc) - timedelta(days=45)).isoformat(),
+        "last_called_at": datetime.now(timezone.utc).isoformat(),
+    },
+]
+
+# Mock 검색 기록 저장소 (메모리)
+_mock_search_logs: List[Dict[str, Any]] = []
+
+
 # ==================== 성격 → 카테고리 매핑 ====================
 
 TRAIT_CATEGORY_MAP = {
@@ -95,9 +167,25 @@ class PersonaSearchService:
         result = await service.execute_idle_search(persona_id)
     """
 
-    def __init__(self):
-        """서비스 초기화"""
-        self.client = get_client()
+    def __init__(self, force_mock: bool = False):
+        """서비스 초기화
+
+        Args:
+            force_mock: Mock 모드 강제 활성화
+        """
+        self._mock_mode = force_mock or _is_mock_mode()
+        self.client = None
+
+        if not self._mock_mode:
+            try:
+                self.client = get_client()
+            except Exception as e:
+                logger.warning(f"Supabase 연결 실패, Mock 모드로 전환: {e}")
+                self._mock_mode = True
+
+        if self._mock_mode:
+            logger.info("🧪 Mock 모드 활성화 - 로컬 테스트 데이터 사용")
+
         self._openai: Optional[Any] = None
         self._anthropic: Optional[Any] = None
         self._init_ai_clients()
@@ -455,6 +543,13 @@ class PersonaSearchService:
 
     async def get_persona(self, persona_id: str) -> Optional[Dict[str, Any]]:
         """페르소나 조회"""
+        # Mock 모드
+        if self._mock_mode:
+            for p in MOCK_PERSONAS:
+                if p["id"] == persona_id:
+                    return p.copy()
+            return None
+
         try:
             result = self.client.table("personas").select("*").eq(
                 "id", persona_id
@@ -471,6 +566,19 @@ class PersonaSearchService:
         offset: int = 0
     ) -> Dict[str, Any]:
         """페르소나 목록 조회"""
+        # Mock 모드
+        if self._mock_mode:
+            personas = MOCK_PERSONAS.copy()
+            if state:
+                personas = [p for p in personas if p.get("existence_state") == state]
+            paginated = personas[offset:offset + limit]
+            return {
+                "success": True,
+                "personas": paginated,
+                "total": len(personas),
+                "mock_mode": True
+            }
+
         try:
             query = self.client.table("personas").select("*")
 
@@ -496,6 +604,19 @@ class PersonaSearchService:
         limit: int = 10
     ) -> List[str]:
         """최근 검색어 조회 (중복 방지용)"""
+        # Mock 모드
+        if self._mock_mode:
+            logs = [
+                log for log in _mock_search_logs
+                if log.get("persona_id") == persona_id
+            ]
+            logs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+            return [
+                log["search_keyword"]
+                for log in logs[:limit]
+                if log.get("search_keyword")
+            ]
+
         try:
             result = self.client.table("persona_activity_logs").select(
                 "search_keyword"
@@ -521,20 +642,28 @@ class PersonaSearchService:
     ) -> str:
         """검색 활동 로그 저장"""
         log_id = str(uuid4())
+        log_data = {
+            "id": log_id,
+            "persona_id": persona_id,
+            "activity_type": "idle_search",
+            "search_keyword": keyword,
+            "search_source": source,
+            "formative_impact": formative_impact,
+            "points_earned": 15,
+            "uniqueness_delta": 0.02 * formative_impact,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "target_url": None,
+            "target_title": None,
+        }
+
+        # Mock 모드
+        if self._mock_mode:
+            _mock_search_logs.append(log_data)
+            logger.debug(f"[Mock] 검색 활동 로그 저장: {log_id}")
+            return log_id
 
         try:
-            self.client.table("persona_activity_logs").insert({
-                "id": log_id,
-                "persona_id": persona_id,
-                "activity_type": "idle_search",
-                "search_keyword": keyword,
-                "search_source": source,
-                "formative_impact": formative_impact,
-                "points_earned": 15,  # IDLE_SEARCH 기본 보상
-                "uniqueness_delta": 0.02 * formative_impact,  # 고유성 변화
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }).execute()
-
+            self.client.table("persona_activity_logs").insert(log_data).execute()
             logger.debug(f"검색 활동 로그 저장: {log_id}")
         except Exception as e:
             logger.error(f"검색 활동 로그 저장 실패: {e}")
@@ -543,6 +672,17 @@ class PersonaSearchService:
 
     async def _update_persona_called(self, persona_id: str) -> None:
         """페르소나 호출 시간 및 활동 수 업데이트"""
+        # Mock 모드
+        if self._mock_mode:
+            for p in MOCK_PERSONAS:
+                if p["id"] == persona_id:
+                    p["last_called_at"] = datetime.now(timezone.utc).isoformat()
+                    p["existence_state"] = "active"
+                    p["total_activities"] = p.get("total_activities", 0) + 1
+                    logger.debug(f"[Mock] 페르소나 상태 업데이트: {persona_id}")
+                    break
+            return
+
         try:
             # 현재 활동 수 조회
             result = self.client.table("personas").select(
@@ -567,6 +707,34 @@ class PersonaSearchService:
         limit: int = 50
     ) -> Dict[str, Any]:
         """검색 기록 조회"""
+        # Mock 모드
+        if self._mock_mode:
+            logs = [
+                log for log in _mock_search_logs
+                if log.get("persona_id") == persona_id
+            ]
+            logs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+            history = [
+                {
+                    "id": log["id"],
+                    "keyword": log.get("search_keyword", ""),
+                    "search_source": log.get("search_source", "unknown"),
+                    "searched_at": log["created_at"],
+                    "video_watched": log.get("target_url"),
+                    "video_title": log.get("target_title"),
+                    "formative_impact": log.get("formative_impact", 0.0)
+                }
+                for log in logs[:limit]
+            ]
+            return {
+                "success": True,
+                "persona_id": persona_id,
+                "total": len(history),
+                "history": history,
+                "traits_influence": {},
+                "mock_mode": True
+            }
+
         try:
             result = self.client.table("persona_activity_logs").select(
                 "id, search_keyword, search_source, created_at, "

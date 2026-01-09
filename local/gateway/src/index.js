@@ -56,11 +56,17 @@ const aiRouter = require('./api/routes/ai');
 // Vultr WSS Integration (v2.1)
 const { initVultrConnection, shutdownVultrConnection } = require('./vultr-integration');
 
+// Laixi Adapter (Device Control via WebSocket)
+const LaixiAdapter = require('./adapters/laixi/LaixiAdapter');
+
 // Stream Server (Legacy, Iframe용)
 const StreamServer = require('./stream/server');
 
 // H.264 Stream Server (v2.0 - Real-time Screen Streaming)
 const H264StreamServer = require('./stream/h264-stream');
+
+// ==================== Laixi Adapter (Device Control) ====================
+let laixiAdapter = null; // start()에서 초기화
 
 // ==================== 초기화 ====================
 const logger = new Logger();
@@ -331,15 +337,38 @@ async function start() {
         // 5. Dispatcher 시작
         dispatcher.start();
 
-        // 5.5. Vultr WSS 연결 (v2.1)
+        // 5.5. Laixi 연결 (Device Control)
+        if (process.env.LAIXI_ENABLED === 'true') {
+            logger.info('[Gateway] Laixi 연결 초기화...');
+            logger.info(`[Gateway]   URL: ${process.env.LAIXI_URL || 'ws://127.0.0.1:22221/'}`);
+
+            laixiAdapter = new LaixiAdapter({
+                url: process.env.LAIXI_URL || 'ws://127.0.0.1:22221/',
+                timeout: parseInt(process.env.LAIXI_TIMEOUT) || 10000,
+                heartbeatInterval: parseInt(process.env.LAIXI_HEARTBEAT_INTERVAL) || 5000,
+                logger
+            });
+
+            try {
+                await laixiAdapter.connect();
+                logger.info('[Gateway] ✅ Laixi 연결 성공');
+            } catch (err) {
+                logger.warn(`[Gateway] ⚠️ Laixi 연결 실패, ADB 모드로 폴백: ${err.message}`);
+                laixiAdapter = null;
+            }
+        } else {
+            logger.info('[Gateway] ⏭️ Laixi 비활성화 (ADB 모드)');
+        }
+
+        // 5.6. Vultr WSS 연결 (v2.1)
         logger.info('[Gateway] Vultr 연결 초기화...');
         const vultrClient = await initVultrConnection({
             adbClient,
-            laixiAdapter: null, // Laixi 사용 시 laixiAdapter 인스턴스 전달
+            laixiAdapter,  // Laixi 인스턴스 또는 null
             logger,
             config
         });
-        
+
         if (vultrClient) {
             logger.info('[Gateway] 🌐 Vultr 연결 활성화됨');
         } else {
@@ -387,6 +416,10 @@ async function shutdown(signal) {
     
     heartbeat.stop();
     dispatcher.stop();
+    if (laixiAdapter) {
+        laixiAdapter.disconnect();
+        logger.info('[Gateway] Laixi 연결 종료');
+    }
     shutdownVultrConnection(); // Vultr 연결 종료
     wsMultiplexer.shutdown();
     streamServer.shutdown();
