@@ -12,6 +12,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.87.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.24.12",
     "i18next": "^24.2.3",
     "jmuxer": "^2.1.0",
     "react": "^19.2.1",
