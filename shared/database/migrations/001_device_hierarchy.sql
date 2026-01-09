@@ -16,6 +16,18 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =====================================================
+-- 공통 트리거 함수: updated_at 자동 갱신
+-- 모든 테이블에서 UPDATE 시 updated_at을 현재 시간으로 설정
+-- =====================================================
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =====================================================
 -- 1. 워크스테이션 테이블
 -- 워크스테이션 = Laixi가 실행되는 PC
 -- =====================================================
@@ -85,11 +97,20 @@ COMMENT ON TABLE phoneboards IS '폰보드 (20대 슬롯 보드)';
 COMMENT ON COLUMN phoneboards.status IS 'partial = 일부 슬롯만 연결됨';
 
 -- =====================================================
--- 3. devices 테이블 확장
--- 기존 테이블에 계층 구조 컬럼 추가
+-- 3. devices 테이블 (기본 생성 + 확장)
 -- =====================================================
 
--- 워크스테이션/폰보드 참조 컬럼 추가
+-- 기본 devices 테이블 생성 (없으면)
+CREATE TABLE IF NOT EXISTS devices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    serial_number VARCHAR(50) UNIQUE NOT NULL,
+    model VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'offline' CHECK (status IN ('idle', 'busy', 'offline', 'error', 'maintenance')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 계층 구조 컬럼 추가
 ALTER TABLE devices ADD COLUMN IF NOT EXISTS workstation_id VARCHAR(10) REFERENCES workstations(id) ON DELETE SET NULL;
 ALTER TABLE devices ADD COLUMN IF NOT EXISTS phoneboard_id VARCHAR(20) REFERENCES phoneboards(id) ON DELETE SET NULL;
 ALTER TABLE devices ADD COLUMN IF NOT EXISTS slot_number INTEGER CHECK (slot_number >= 1 AND slot_number <= 30);
@@ -152,7 +173,7 @@ CREATE TABLE IF NOT EXISTS workloads (
     next_cycle_at TIMESTAMP WITH TIME ZONE,
     
     -- 메타
-    created_by UUID REFERENCES api_keys(id),
+    created_by UUID,  -- api_keys 참조 제거 (테이블 없음)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -205,7 +226,7 @@ CREATE TABLE IF NOT EXISTS command_history (
     
     -- 워크로드 연결 (있는 경우)
     workload_id UUID REFERENCES workloads(id) ON DELETE SET NULL,
-    task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
+    task_id UUID,  -- tasks 참조 제거 (테이블 없음)
     
     -- 타임스탬프
     sent_at TIMESTAMP WITH TIME ZONE,

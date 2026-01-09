@@ -86,20 +86,59 @@ class Settings(BaseSettings):
     max_concurrent_tasks: int = 100
     
     # ===========================================
+    # CORS Configuration
+    # ===========================================
+    # 허용된 오리진 목록 (쉼표로 구분)
+    # 개발: http://localhost:3000,http://localhost:5173
+    # 프로덕션: https://doai.me,https://admin.doai.me
+    cors_origins: str = "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173"
+    cors_allow_credentials: bool = True
+    cors_allow_methods: str = "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+    cors_allow_headers: str = "Authorization,Content-Type,X-Requested-With,X-API-Key"
+
+    @field_validator('cors_origins', mode='after')
+    @classmethod
+    def validate_cors_origins_in_production(cls, v: str, info) -> str:
+        """
+        프로덕션 환경에서 와일드카드 CORS 사용 방지
+        """
+        env = info.data.get('env', 'development')
+
+        if env == "production":
+            if v == "*" or "localhost" in v or "127.0.0.1" in v:
+                raise ValueError(
+                    "프로덕션 환경에서는 localhost나 와일드카드(*) CORS 오리진을 사용할 수 없습니다. "
+                    "CORS_ORIGINS를 실제 도메인으로 설정하세요. (예: https://doai.me)"
+                )
+        return v
+
+    def get_cors_origins_list(self) -> list[str]:
+        """CORS 오리진 문자열을 리스트로 변환"""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    def get_cors_methods_list(self) -> list[str]:
+        """CORS 메서드 문자열을 리스트로 변환"""
+        return [method.strip() for method in self.cors_allow_methods.split(",") if method.strip()]
+
+    def get_cors_headers_list(self) -> list[str]:
+        """CORS 헤더 문자열을 리스트로 변환"""
+        return [header.strip() for header in self.cors_allow_headers.split(",") if header.strip()]
+
+    # ===========================================
     # Logging
     # ===========================================
     log_level: str = "INFO"
-    
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
         extra = "ignore"  # 정의되지 않은 환경변수 무시
-    
+
     def get_supabase_anon_key_value(self) -> str:
         """Supabase Anon Key의 실제 값 반환 (SecretStr에서 추출)"""
         return self.supabase_anon_key.get_secret_value()
-    
+
     def get_supabase_service_role_key_value(self) -> str:
         """Supabase Service Role Key의 실제 값 반환 (SecretStr에서 추출)"""
         return self.supabase_service_role_key.get_secret_value()

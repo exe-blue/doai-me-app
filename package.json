@@ -1,0 +1,22 @@
+{
+  "name": "aifarm",
+  "version": "2.0.0",
+  "private": true,
+  "description": "DoAi.Me - AI Farm Orchestration System",
+  "workspaces": [
+    "apps/*",
+    "gateway",
+    "doai-me",
+    "autox-scripts"
+  ],
+  "scripts": {
+    "dev:dashboard": "npm run dev -w apps/dashboard",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:gateway": "npm run dev -w gateway",
+    "build:dashboard": "npm run build -w apps/dashboard",
+    "install:all": "npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS execution_logs (
             THEN (watch_duration_seconds::FLOAT / target_duration_seconds * 100.0)
             ELSE NULL 
         END
-    ) STORED
+    ) STORED,
     
     -- 인터랙션 결과
     did_like BOOLEAN DEFAULT FALSE,

@@ -10,8 +10,6 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Button } from '@/app/components/ui/button';
-import { Badge } from '@/app/components/ui/badge';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -118,23 +116,22 @@ function AdminLayoutInner({ children, activeTab }: AdminLayoutProps) {
           {/* Right Side */}
           <div className="flex items-center gap-2 ml-auto">
             {/* Live indicator */}
-            <Badge variant="outline" className="hidden sm:flex gap-1.5 items-center">
-              <span className="h-2 w-2 rounded-full bg-signal-green animate-pulse" />
+            <span className="hidden sm:flex gap-1.5 items-center px-2.5 py-0.5 border border-border rounded-full text-xs font-semibold">
+              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
               Live
-            </Badge>
+            </span>
             
             {/* Logout Button */}
             <LogoutButton />
             
             {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-md hover:bg-muted transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+            </button>
           </div>
         </div>
         
@@ -193,9 +190,9 @@ function NavLink({ item, active, mobile, onClick }: NavLinkProps) {
       <Icon className="h-4 w-4" />
       <span>{item.label}</span>
       {item.badge && (
-        <Badge variant="secondary" className="ml-auto text-[10px] h-5">
+        <span className="ml-auto px-1.5 py-0.5 bg-muted text-muted-foreground text-[10px] font-semibold rounded">
           {item.badge}
-        </Badge>
+        </span>
       )}
     </Link>
   );
@@ -220,15 +217,14 @@ function LogoutButton() {
   };
   
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
+      type="button"
       onClick={handleLogout}
-      className="gap-2"
+      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md hover:bg-muted transition-colors"
     >
       <LogOut className="h-4 w-4" />
       <span className="hidden sm:inline">Logout</span>
-    </Button>
+    </button>
   );
 }
 

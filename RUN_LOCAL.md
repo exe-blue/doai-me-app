@@ -12,7 +12,7 @@
                              │ HTTP
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Cloud Gateway (cloud-gateway)                                  │
+│  Cloud Gateway (services/cloud-gateway)                         │
 │  http://localhost:8000                                          │
 │  ▪ /api/command - 명령 전송                                     │
 │  ▪ /api/nodes - 노드 목록                                       │
@@ -21,7 +21,7 @@
                              │ WebSocket
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Gateway (gateway)                                              │
+│  Local Gateway (local/gateway)                                  │
 │  http://localhost:3100                                          │
 │  ▪ ADB 디바이스 제어                                            │
 │  ▪ Laixi 연결 (선택)                                            │
@@ -49,7 +49,7 @@ curl http://158.247.210.152:8000/health
 ### 옵션 B: 로컬에서 실행
 
 ```bash
-cd cloud-gateway
+cd services/cloud-gateway
 
 # 가상환경 생성 및 활성화
 python -m venv venv
@@ -59,7 +59,7 @@ python -m venv venv
 source venv/bin/activate
 
 # 의존성 설치
-pip install fastapi uvicorn pydantic
+pip install -r requirements.txt
 
 # 실행
 python main.py
@@ -72,10 +72,10 @@ INFO:     Uvicorn running on http://0.0.0.0:8000
 
 ---
 
-## Step 2: Gateway (NodeRunner) 실행
+## Step 2: Local Gateway 실행
 
 ```bash
-cd gateway
+cd local/gateway
 
 # 환경 변수 설정
 cp config.example.env .env
@@ -166,7 +166,7 @@ curl -X POST http://localhost:8000/api/command \
 실제 디바이스 없이 테스트하려면 Gateway를 Mock 모드로 실행:
 
 ```bash
-# gateway/.env
+# local/gateway/.env
 MOCK_DEVICES=true
 MOCK_DEVICE_COUNT=5
 ```
@@ -192,13 +192,13 @@ adb devices
 
 2. Gateway 로그 확인:
    ```bash
-   # gateway 터미널에서
+   # local/gateway 터미널에서
    [Vultr] ✅ 연결됨
    ```
 
 3. 환경 변수 확인:
    ```bash
-   # gateway/.env
+   # local/gateway/.env
    VULTR_ENABLED=true
    VULTR_URL=ws://localhost:8000/ws/node
    ```
@@ -216,7 +216,7 @@ adb devices
 
 Cloud Gateway의 CORS 설정 확인:
 ```python
-# cloud-gateway/main.py
+# services/cloud-gateway/main.py
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 또는 특정 도메인
@@ -271,7 +271,7 @@ app.add_middleware(
                                │ WSS COMMAND
                                ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                      3. Gateway                                  │
+│                      3. Local Gateway                            │
 │                                                                  │
 │   VultrClient._handleCommand()                                   │
 │   → CommandExecutor.execute()                                    │
@@ -319,11 +319,11 @@ C:\Program Files\Laixi\
 
 ```powershell
 # 방법 1: 설정 스크립트 사용
-cd gateway\scripts
+cd local\gateway\scripts
 powershell -ExecutionPolicy Bypass -File setup_laixi_link.ps1
 
 # 방법 2: 수동 설정
-$source = "D:\exe.blue\aifarm\gateway\scripts\laixi"
+$source = "D:\exe.blue\aifarm\local\gateway\scripts\laixi"
 $target = "C:\Program Files\Laixi\Scripts\doai"
 New-Item -ItemType SymbolicLink -Path $target -Target $source
 ```
@@ -336,8 +336,8 @@ New-Item -ItemType SymbolicLink -Path $target -Target $source
 
 ### Gateway에서 Laixi 사용
 
-```javascript
-// gateway/.env
+```bash
+# local/gateway/.env
 LAIXI_ENABLED=true
 LAIXI_URL=ws://127.0.0.1:22221/
 ```
@@ -346,8 +346,8 @@ LAIXI_URL=ws://127.0.0.1:22221/
 
 Laixi 없이도 Gateway는 직접 ADB로 동작합니다:
 
-```javascript
-// gateway/.env
+```bash
+# local/gateway/.env
 LAIXI_ENABLED=false
 ```
 
@@ -360,10 +360,10 @@ LAIXI_ENABLED=false
 "C:\Program Files\Laixi\Laixi.exe"
 
 # 터미널 1: Cloud Gateway
-cd cloud-gateway && python main.py
+cd services/cloud-gateway && python main.py
 
-# 터미널 2: Gateway (NodeRunner)
-cd gateway && npm start
+# 터미널 2: Local Gateway
+cd local/gateway && npm start
 
 # 터미널 3: Frontend
 cd apps/web && npm run dev
@@ -372,3 +372,20 @@ cd apps/web && npm run dev
 http://localhost:3000/admin/command
 ```
 
+---
+
+## 단위 테스트 스크립트
+
+각 컴포넌트를 독립적으로 테스트하려면:
+
+```bash
+# Cloud Gateway만 테스트
+scripts\test_1_cloud_gateway.bat
+
+# Local Gateway만 테스트
+scripts\test_2_local_gateway.bat
+
+# Frontend만 테스트
+scripts\test_3_frontend.bat# 전체 통합 테스트
+scripts\test_all.bat
+```

@@ -1,103 +1,107 @@
-# Python
+# ============================================
+# DoAi.Me - Git Ignore
+# ============================================
+
+# ==================== Python ====================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-build/
-develop-eggs/
+*.egg
+*.egg-info/
 dist/
-downloads/
+build/
 eggs/
 .eggs/
-/lib/
-/lib64/
-!apps/web/lib/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+*.manifest
+*.spec
+
+# Virtual environments
 .venv/
 venv/
 ENV/
 env/
+.python-version
 
-# Node.js
+# ==================== IDE ====================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ==================== Testing ====================
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# ==================== Environment ====================
+.env
+.env.local
+.env.*.local
+*.local
+.envrc
+
+# ==================== Docker ====================
+docker/volumes/
+
+# ==================== Logs ====================
+*.log
+logs/
+*.log.*
+
+# ==================== OS ====================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ==================== Node.js ====================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Build outputs
-frontend/dist/
-frontend/build/
-*.local
+# ==================== Build outputs ====================
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Next.js (apps/web)
-apps/web/.next/
-apps/web/out/
-apps/web/node_modules/
+# ==================== Jupyter ====================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
 
-# TypeScript incremental build artifacts
-*.tsbuildinfo
-**/*.tsbuildinfo
+# ==================== mypy ====================
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-# Environment
-.env
-.env.local
-.env.*.local
+# ==================== Ruff ====================
+.ruff_cache/
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Visual Studio user-specific files
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-# Logs
-logs/
-*.log
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Docker
-.docker/
-
-# Temporary
-tmp/
-temp/
-*.tmp
-
-# Screenshots
-screenshots/
-*.png
-*.jpg
-*.jpeg
-
-# OS
-Thumbs.db
-ehthumbs.db
-
-# Claude local settings (contains sensitive paths/IPs)
-.claude/settings.local.json
-
-# Deployment files with sensitive data
-deploy/deploy_to_vultr.bat
-deploy/deploy.env
-
-# Vercel
-.vercel
+# ==================== Secrets (절대 커밋 금지) ====================
+secrets/
+*.pem
+*.key
+credentials.json
+service-account*.json

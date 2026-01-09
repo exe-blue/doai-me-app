@@ -25,6 +25,7 @@ import {
   Video,
   Calendar
 } from 'lucide-react';
+import styles from './HistoryDashboard.module.css';
 
 // ============================================
 // Types
@@ -477,8 +478,8 @@ export function HistoryDashboard() {
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-2 bg-neutral-800 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-purple-500"
-                            style={{ width: `${watch.watch_percent || 0}%` }}
+                            className={`h-full bg-purple-500 ${styles.watchProgressBar}`}
+                            style={{ '--progress-width': `${watch.watch_percent || 0}%` } as React.CSSProperties}
                           />
                         </div>
                         <span className="text-neutral-400 text-xs">
@@ -541,10 +542,8 @@ export function HistoryDashboard() {
                       <div className="flex items-center gap-2">
                         <div className="w-20 h-2 bg-neutral-800 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-green-500"
-                            style={{ 
-                              width: `${wl.total_tasks > 0 ? (wl.completed_tasks / wl.total_tasks) * 100 : 0}%` 
-                            }}
+                            className={`h-full bg-green-500 ${styles.workloadProgressBar}`}
+                            style={{ '--progress-width': `${wl.total_tasks > 0 ? (wl.completed_tasks / wl.total_tasks) * 100 : 0}%` } as React.CSSProperties}
                           />
                         </div>
                         <span className="text-neutral-400 text-xs font-mono">
