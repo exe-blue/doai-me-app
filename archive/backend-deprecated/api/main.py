@@ -8,12 +8,24 @@ DoAi.Me Backend API - FastAPI 메인 애플리케이션
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from contextlib import asynccontextmanager
 import logging
 import time
 
 # 설정 임포트
 from .config import settings
+
+# Rate Limiter 임포트
+from .rate_limiter import (
+    limiter,
+    rate_limit_exceeded_handler,
+    limit_health,
+    limit_read,
+    get_rate_limit_status,
+)
 
 # 라우터 임포트
 from .routers import commissions, maintenance, personas, youtube, wifi, nocturne, laixi
@@ -74,6 +86,17 @@ app.add_middleware(
     allow_headers=settings.get_cors_headers_list(),
 )
 
+# Rate Limiter 설정
+# slowapi를 사용한 요청 제한 (DDoS 방지)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+logger.info(
+    f"Rate Limiter enabled: {settings.rate_limit_enabled}, "
+    f"default: {settings.rate_limit_default}, "
+    f"storage: {settings.rate_limit_storage}"
+)
+
 
 # 요청 로깅 미들웨어
 @app.middleware("http")
@@ -120,7 +143,8 @@ app.include_router(laixi.router)  # /api/laixi - Laixi 로컬 디바이스 제�
 
 # 기본 엔드포인트
 @app.get("/")
-async def root():
+@limiter.limit(settings.rate_limit_read)
+async def root(request: Request):
     return {
         "name": "DoAi.Me Backend API",
         "version": "2.0.0",
@@ -129,7 +153,8 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
+@limiter.limit(settings.rate_limit_health)
+async def health_check(request: Request):
     """헬스 체크 엔드포인트"""
     return {
         "status": "healthy",
@@ -137,8 +162,16 @@ async def health_check():
     }
 
 
+@app.get("/api/rate-limit-status")
+@limiter.limit(settings.rate_limit_read)
+async def rate_limit_status(request: Request):
+    """Rate Limit 상태 조회 (모니터링용)"""
+    return get_rate_limit_status(request)
+
+
 @app.get("/api/info")
-async def api_info():
+@limiter.limit(settings.rate_limit_read)
+async def api_info(request: Request):
     """API 정보"""
     return {
         "endpoints": {

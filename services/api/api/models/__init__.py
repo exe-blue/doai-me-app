@@ -11,12 +11,33 @@ from .nocturne import (
     MoodTone,
 )
 
+from .persona_search import (
+    IdleSearchRequest,
+    IdleSearchResponse,
+    SearchHistoryItem,
+    SearchHistoryResponse,
+    PersonaSearchProfile,
+    PersonaSearchProfileResponse,
+    BatchIdleSearchRequest,
+    BatchIdleSearchResponse,
+)
+
 __all__ = [
+    # Nocturne
     "NocturneLine",
     "NocturneLineCreate",
     "NocturneLineResponse",
     "DailyMetrics",
     "PoeticElement",
     "MoodTone",
+    # Persona Search (P1)
+    "IdleSearchRequest",
+    "IdleSearchResponse",
+    "SearchHistoryItem",
+    "SearchHistoryResponse",
+    "PersonaSearchProfile",
+    "PersonaSearchProfileResponse",
+    "BatchIdleSearchRequest",
+    "BatchIdleSearchResponse",
 ]
 

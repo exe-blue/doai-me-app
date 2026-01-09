@@ -7,7 +7,7 @@ YouTube 자동화 API 엔드포인트
 @created 2026-01-01
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
@@ -15,6 +15,8 @@ from enum import IntEnum
 import logging
 
 from ..services.supabase_rpc import get_supabase_client
+from ..rate_limiter import limiter
+from ..config import settings
 
 # 로거 설정
 logger = logging.getLogger("youtube_api")
@@ -110,7 +112,9 @@ class ResultResponse(BaseModel):
 # === API 엔드포인트 ===
 
 @router.get("/videos", response_model=VideoResponse)
+@limiter.limit(settings.rate_limit_read)
 async def get_videos(
+    request: Request,
     status: Optional[str] = Query(None, description="필터링할 상태 (pending, completed, error)"),
     limit: int = Query(50, ge=1, le=200, description="조회 개수"),
     offset: int = Query(0, ge=0, description="오프셋")
@@ -157,7 +161,8 @@ async def get_videos(
 
 
 @router.post("/videos", response_model=dict)
-async def add_video(video: VideoInput):
+@limiter.limit(settings.rate_limit_write)
+async def add_video(request: Request, video: VideoInput):
     """
     영상 추가 (수동 또는 Webhook)
     """
@@ -190,7 +195,8 @@ async def add_video(video: VideoInput):
 
 
 @router.post("/results", response_model=ResultResponse)
-async def save_result(result: WatchResult):
+@limiter.limit(settings.rate_limit_write)
+async def save_result(request: Request, result: WatchResult):
     """
     시청 결과 저장
     
@@ -253,7 +259,8 @@ async def save_result(result: WatchResult):
 
 
 @router.get("/stats")
-async def get_stats():
+@limiter.limit(settings.rate_limit_read)
+async def get_stats(request: Request):
     """
     전체 통계 조회
     """
@@ -285,7 +292,8 @@ async def get_stats():
 
 
 @router.delete("/videos/{video_id}")
-async def delete_video(video_id: str):
+@limiter.limit(settings.rate_limit_write)
+async def delete_video(request: Request, video_id: str):
     """
     영상 삭제
     """

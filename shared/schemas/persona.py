@@ -261,6 +261,17 @@ class ActivityType(str, Enum):
     UNIQUE_DISCOVERY = "unique_discovery"
     VIRAL_COMMENT = "viral_comment"
     BEING_TALKED_TO = "being_talked_to"
+    # P1: IDLE 검색 시스템 추가
+    IDLE_SEARCH = "idle_search"           # IDLE 상태에서 자발적 검색
+    KEYWORD_GENERATED = "keyword_generated"  # OpenAI로 검색어 생성
+
+
+class SearchSource(str, Enum):
+    """검색어 생성 출처"""
+    AI_GENERATED = "ai_generated"      # OpenAI로 생성
+    TRAIT_BASED = "trait_based"        # Traits 기반 폴백
+    HISTORY_BASED = "history_based"    # 과거 검색 기반
+    FALLBACK = "fallback"              # 최종 폴백 키워드
 
 
 class AttentionReward(BaseModel):
@@ -314,6 +325,13 @@ ATTENTION_REWARDS: Dict[ActivityType, AttentionReward] = {
         uniqueness_bonus=0.005,
         special_effect="Void Time 리셋"
     ),
+    # P1: IDLE 검색 보상 추가
+    ActivityType.IDLE_SEARCH: AttentionReward(
+        activity=ActivityType.IDLE_SEARCH,
+        base_points=15,
+        uniqueness_bonus=0.02,  # 자발적 검색은 고유성에 큰 영향
+        special_effect="Formative Impact 적용"
+    ),
 }
 
 
@@ -327,6 +345,10 @@ class PersonaActivityLog(BaseModel):
     comment_text: Optional[str] = None
     points_earned: int = 0
     uniqueness_delta: float = 0.0
+    # P1: IDLE 검색 시스템 필드 추가
+    search_keyword: Optional[str] = Field(None, description="생성된 검색어")
+    search_source: Optional[SearchSource] = Field(None, description="검색어 생성 출처")
+    formative_impact: float = Field(default=0.0, ge=0, le=1, description="고유성 형성 영향도")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

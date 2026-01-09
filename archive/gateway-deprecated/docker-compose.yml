@@ -1,0 +1,92 @@
+# ============================================
+# DoAi.Me Gateway - Docker Compose
+# ============================================
+# Physical Link Layer - Orion 지시 (2024-12-30)
+# 
+# 역할:
+# - Node.js Gateway 서버 실행
+# - 호스트 ADB 서버와 연결 (USB 기기 접근)
+# 
+# 실행:
+#   docker-compose up -d
+#   docker-compose logs -f
+# ============================================
+
+version: '3.8'
+
+services:
+  # ============================================
+  # DoAi.Me Gateway Server
+  # ============================================
+  doai-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doai-gateway
+    restart: unless-stopped
+    
+    # 포트 매핑
+    ports:
+      - "3100:3100"
+    
+    # 환경 변수
+    environment:
+      - NODE_ENV=production
+      - GATEWAY_PORT=3100
+      - LOG_LEVEL=info
+      # ADB 서버 연결 (호스트)
+      # Docker Desktop (Windows/Mac): host.docker.internal
+      # Linux: 172.17.0.1 또는 network_mode: host 사용
+      - ADB_HOST=host.docker.internal
+      - ADB_PORT=5037
+    
+    # 볼륨 마운트
+    volumes:
+      # 로그 영속화
+      - ./logs:/app/logs
+      # 개발 시 소스 코드 마운트 (선택)
+      # - ./server.js:/app/server.js:ro
+    
+    # 호스트 접근 (Docker Desktop용)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
+    # 헬스 체크
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # 로깅
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ============================================
+# Linux 전용 설정 (USB 직접 접근 필요 시)
+# ============================================
+# Linux에서 USB 장치에 직접 접근하려면:
+# 1. network_mode: host 사용
+# 2. privileged: true 설정
+# 3. 또는 devices 마운트
+#
+# 예시:
+#   doai-gateway-linux:
+#     build: .
+#     network_mode: host
+#     privileged: true
+#     volumes:
+#       - /dev/bus/usb:/dev/bus/usb
+#     environment:
+#       - ADB_HOST=127.0.0.1
+#       - ADB_PORT=5037
+# ============================================
+
+networks:
+  default:
+    name: doai-gateway-net
+

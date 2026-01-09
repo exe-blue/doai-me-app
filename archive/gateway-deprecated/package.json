@@ -1,0 +1,40 @@
+{
+  "name": "doai-gateway",
+  "version": "2.0.0",
+  "description": "DoAi.Me Gateway - 통합 관제 서버 (ADB + Dashboard)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "lint": "eslint src/"
+  },
+  "keywords": [
+    "doai",
+    "adb",
+    "android",
+    "automation",
+    "gateway"
+  ],
+  "author": "Axon (Tech Lead)",
+  "license": "MIT",
+  "dependencies": {
+    "@devicefarmer/adbkit": "^3.2.6",
+    "@supabase/supabase-js": "^2.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "helmet": "^7.1.0",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

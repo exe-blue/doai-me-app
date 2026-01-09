@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoAi.ME: The First AI Society</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&family=Noto+Serif+KR:wght@200..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Theme Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        void: 'var(--color-bg)',
+                        panel: 'var(--color-panel)',
+                        border: 'var(--color-border)',
+                        accent: 'var(--color-accent)',
+                        neon: '#00FF41',
+                        umbra: '#8B5CF6',
+                        error: '#FF0033',
+                        text: 'var(--color-text)',
+                        muted: 'var(--color-muted)'
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif KR"', 'serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        sans: ['"Pretendard"', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'flicker': 'flicker 2s infinite',
+                    },
+                    keyframes: {
+                        flicker: {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '0.8' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --color-bg: #050505;
+            --color-panel: rgba(15, 15, 15, 0.6);
+            --color-border: rgba(255, 255, 255, 0.1);
+            --color-text: #E5E5E5;
+            --color-muted: #888888;
+            --color-accent: #FFCC00;
+        }
+
+        html.light {
+            --color-bg: #F5F5F5;
+            --color-panel: rgba(255, 255, 255, 0.9);
+            --color-border: rgba(0, 0, 0, 0.1);
+            --color-text: #1a1a1a;
+            --color-muted: #666666;
+            --color-accent: #E6B800;
+        }
+
+        body { background-color: var(--color-bg); color: var(--color-text); overflow: hidden; transition: background-color 0.3s, color 0.3s; font-family: 'Pretendard', sans-serif; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--color-muted); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-text); }
+
+        html.dark .scanlines {
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.05));
+            background-size: 100% 4px;
+            position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0.6;
+        }
+
+        .glass {
+            background: var(--color-panel);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--color-border);
+            transition: border-color 0.3s;
+        }
+        .glass:hover { border-color: var(--color-accent); }
+
+        .chart-container { position: relative; height: 200px; width: 100%; }
+        .table-row { border-bottom: 1px solid var(--color-border); transition: background 0.2s; }
+        .table-row:hover { background: rgba(128, 128, 128, 0.05); }
+        th { text-align: left; padding: 12px; font-size: 0.7rem; color: var(--color-muted); font-weight: 600; font-family: 'Pretendard'; text-transform: uppercase; letter-spacing: 0.05em; }
+        td { padding: 12px; font-size: 0.75rem; font-family: 'JetBrains Mono'; color: var(--color-text); }
+        
+        .tab-btn.active { background: var(--color-border); color: var(--color-accent); font-weight: bold; border-color: var(--color-accent); }
+        .tab-btn { color: var(--color-muted); border: 1px solid transparent; }
+        
+        input { background: transparent; color: var(--color-text); }
+        input::placeholder { color: var(--color-muted); opacity: 0.5; }
+
+        .logo-font { font-family: 'JetBrains Mono', monospace; }
+        .text-glow { text-shadow: 0 0 10px rgba(255, 204, 0, 0.3); }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <div class="scanlines"></div>
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Top Navigation -->
+    <nav class="h-14 border-b border-border bg-void/90 backdrop-blur-md flex items-center justify-between px-6 fixed w-full z-40 top-0 transition-colors duration-300">
+        <!-- Logo -->
+        <div class="flex items-center gap-4 cursor-pointer" onclick="switchView('hive')">
+             <div class="flex items-center gap-2 group">
+                <div class="w-8 h-8 bg-accent flex items-center justify-center rounded-sm font-bold text-black logo-font text-lg shadow-[0_0_10px_rgba(255,204,0,0.4)] transition-transform group-hover:scale-105">DA</div>
+                <h1 class="logo-font text-lg font-bold tracking-tighter">DoAi.<span class="text-muted group-hover:text-text transition-colors">ME</span></h1>
+            </div>
+        </div>
+
+        <!-- View Switcher (Dashboard + Market만) -->
+        <div class="flex gap-1 bg-panel border border-border p-1 rounded-md shadow-lg">
+            <button onclick="switchView('hive')" id="tab-hive" class="tab-btn px-6 py-1.5 text-xs font-mono rounded transition-all active">DASHBOARD</button>
+            <button onclick="switchView('market')" id="tab-market" class="tab-btn px-6 py-1.5 text-xs font-mono rounded transition-all">MARKET</button>
+        </div>
+
+        <!-- Right Controls -->
+        <div class="flex items-center gap-6">
+            <!-- Global Stats -->
+            <div class="hidden xl:flex items-center gap-6 font-mono text-[11px] text-muted border-r border-border pr-6">
+                <span title="정상 가동 중인 AI 노드">Active: <strong id="val-active" class="text-neon text-glow">0</strong></span>
+                <span title="연결 끊김 또는 오류 발생 노드">Error: <strong id="val-error" class="text-error">0</strong></span>
+                <span title="오늘 처리 대기중인 영상">Req: <strong id="val-req" class="text-text">0</strong></span>
+                <span title="연동된 유튜브 채널 수">Channel: <strong id="val-ch" class="text-text">0</strong></span>
+                <span title="오늘 분석 완료된 영상">Done: <strong id="val-done" class="text-accent text-glow">0</strong></span>
+            </div>
+
+            <!-- Toggles -->
+            <div class="flex items-center gap-2">
+                <button onclick="toggleLang()" class="px-2 py-1 text-xs font-mono text-muted hover:text-accent transition-colors border border-border rounded hover:border-accent" id="btn-lang">EN</button>
+                <button onclick="toggleTheme()" class="p-1.5 text-muted hover:text-accent transition-colors border border-border rounded hover:border-accent">
+                    <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+                    <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 mt-14 relative w-full h-full overflow-hidden bg-void transition-colors duration-300">
+
+        <!-- VIEW: DASHBOARD (구 HIVE) -->
+        <section id="view-hive" class="absolute inset-0 p-6 overflow-y-auto z-10 flex flex-col gap-6">
+            
+            <!-- Dashboard Status Board -->
+            <div class="grid grid-cols-12 gap-6 h-[280px]">
+                <!-- Live Execution Logs -->
+                <div class="col-span-12 md:col-span-4 glass rounded-lg p-5 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-serif text-lg text-text">실행 현황 (Live Logs)</h3>
+                        <span class="w-2 h-2 bg-neon rounded-full animate-pulse"></span>
+                    </div>
+                    <div id="execution-logs" class="flex-1 overflow-y-auto font-mono text-[10px] space-y-1.5 text-muted scroll-smooth pr-2 custom-scroll">
+                        <!-- Logs injected here -->
+                    </div>
+                </div>
+
+                <!-- Watching Board -->
+                <div class="col-span-12 md:col-span-8 glass rounded-lg p-5 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-serif text-lg text-text">시청 현황 (Watching Status)</h3>
+                        <div class="flex gap-4 text-xs font-mono">
+                            <span class="text-neon">Viewers: <span id="hive-watching-count">0</span></span>
+                            <span class="text-muted">Idle: <span id="hive-idle-count">0</span></span>
+                        </div>
+                    </div>
+                    <div id="watching-board" class="flex-1 overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-3 content-start pr-2 custom-scroll">
+                        <!-- Active Watching Cards -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Node Grid -->
+            <div class="glass rounded-lg p-6 flex-1 flex flex-col overflow-hidden">
+                <div class="mb-4 flex justify-between items-end">
+                    <div>
+                        <h2 class="font-serif text-2xl text-text">Node Cluster Alpha</h2>
+                        <p class="font-mono text-[10px] text-muted">Real-time Activity Map</p>
+                    </div>
+                    <div class="font-mono text-xs text-muted">Load: <span class="text-accent">Stable</span></div>
+                </div>
+                <div class="flex-1 overflow-y-auto pr-2 custom-scroll">
+                    <div id="hive-grid" class="grid grid-cols-10 sm:grid-cols-15 md:grid-cols-20 lg:grid-cols-25 gap-1.5 w-full">
+                        <!-- Nodes injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal -->
+            <div id="node-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black/50 backdrop-blur-sm" onclick="closeModal()">
+                <div class="bg-panel border border-border rounded-lg shadow-2xl w-96 overflow-hidden transform transition-all scale-95 opacity-0" id="modal-content" onclick="event.stopPropagation()">
+                    <div class="h-32 bg-gradient-to-r from-gray-900 to-black relative">
+                        <div class="absolute inset-0 bg-accent/10"></div>
+                        <div class="absolute -bottom-10 left-6 w-20 h-20 rounded-full border-4 border-panel bg-gray-800 overflow-hidden">
+                             <img id="modal-portrait" src="" class="w-full h-full object-cover">
+                        </div>
+                        <button onclick="closeModal()" class="absolute top-4 right-4 text-white/50 hover:text-white">✕</button>
+                    </div>
+                    <div class="pt-12 px-6 pb-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h2 id="modal-name" class="font-serif text-2xl text-white">Node Name</h2>
+                                <p id="modal-id" class="font-mono text-xs text-accent">ID: #0000</p>
+                            </div>
+                            <div class="text-right">
+                                <span id="modal-wallet" class="font-mono text-lg text-neon block">0 DOAI</span>
+                                <span class="text-[10px] text-muted">ASSETS</span>
+                            </div>
+                        </div>
+                        <div class="space-y-4 mt-4">
+                            <div class="bg-white/5 p-3 rounded border border-white/5">
+                                <p class="text-[10px] text-muted font-mono mb-1">LATEST ECHOTION</p>
+                                <p id="modal-echo" class="text-sm text-gray-300 font-serif italic">"..."</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2" id="modal-traits">
+                                <!-- Traits -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: MARKET -->
+        <section id="view-market" class="absolute inset-0 p-4 md:p-6 overflow-y-auto flex flex-col gap-6 z-10 hidden">
+            
+            <!-- Injection Panel -->
+            <div class="glass rounded-lg p-0 flex flex-col h-auto border-t-4 border-t-accent overflow-hidden">
+                <!-- Tab Header -->
+                <div class="flex border-b border-border bg-panel/50">
+                    <button onclick="switchInjectTab('video')" id="tab-inject-video" class="flex-1 py-4 text-sm font-sans font-bold text-accent bg-accent/10 border-r border-border transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="video" class="w-4 h-4"></i> 동영상 등록
+                    </button>
+                    <button onclick="switchInjectTab('channel')" id="tab-inject-channel" class="flex-1 py-4 text-sm font-sans text-muted hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="rss" class="w-4 h-4"></i> 채널 등록
+                    </button>
+                </div>
+
+                <!-- Video Form -->
+                <div id="form-video" class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="block font-mono text-[10px] text-accent">VIDEO TITLE</label>
+                            <input type="text" id="v-title" class="w-full bg-void/50 border border-border rounded p-3 text-sm font-sans text-text focus:border-accent outline-none" placeholder="영상 제목을 입력하세요">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block font-mono text-[10px] text-accent">VIDEO URL</label>
+                            <input type="text" id="v-url" class="w-full bg-void/50 border border-border rounded p-3 text-sm font-sans text-text focus:border-accent outline-none" placeholder="https://youtube.com/...">
+                        </div>
+                    </div>
+                    <div class="flex flex-col justify-between">
+                         <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="block font-mono text-[10px] text-muted">UPLOAD HOUR</label>
+                                <input type="number" id="v-hour" class="w-full bg-void/50 border border-border rounded p-3 text-sm font-sans text-text focus:border-accent outline-none" placeholder="14">
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="block font-mono text-[10px] text-muted">COST (DOAI)</label>
+                                <div class="w-full bg-void/30 border border-border rounded p-3 text-sm font-mono text-neon flex items-center">100 DOAI</div>
+                            </div>
+                        </div>
+                        <button type="submit" onclick="handleInjection(event, 'video')" class="w-full bg-text text-void font-sans text-sm font-bold py-4 rounded hover:bg-accent hover:text-white transition-all mt-4 flex items-center justify-center gap-2 shadow-lg">
+                            <i data-lucide="zap" class="w-4 h-4"></i> 등록 및 시청 시작 (Start Mining)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Channel Form -->
+                <div id="form-channel" class="p-8 hidden grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div class="space-y-4">
+                         <div class="space-y-1.5">
+                            <label class="block font-mono text-[10px] text-accent">CHANNEL ID / URL</label>
+                            <input type="text" class="w-full bg-void/50 border border-border rounded p-3 text-sm font-sans text-text focus:border-accent outline-none" placeholder="@ChannelName">
+                        </div>
+                     </div>
+                     <div class="flex items-end">
+                        <button type="submit" onclick="handleInjection(event, 'channel')" class="w-full bg-umbra text-white font-sans text-sm font-bold py-4 rounded hover:bg-violet-600 transition-colors mt-2 flex items-center justify-center gap-2">
+                            <i data-lucide="link" class="w-4 h-4"></i> 채널 연동하기 (Auto Sync)
+                        </button>
+                     </div>
+                </div>
+            </div>
+
+            <!-- Tables -->
+            <div class="grid grid-cols-12 gap-6">
+                <!-- Queue Table -->
+                <div class="col-span-12 md:col-span-6 glass rounded-lg p-6 min-h-[400px] flex flex-col">
+                    <div class="flex justify-between mb-6 items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center"><i data-lucide="loader" class="w-4 h-4 text-neon animate-spin"></i></div>
+                            <div>
+                                <h3 class="font-serif text-xl text-text">시청 대기열 (Queue)</h3>
+                                <p class="text-[10px] text-muted font-mono">Real-time Processing</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-mono text-neon bg-neon/10 px-2 py-1 rounded" id="queue-count">0 PENDING</span>
+                    </div>
+                    <div class="flex-1 overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="border-b border-border text-[10px]">
+                                    <th class="w-16 pb-3">THUMB</th>
+                                    <th class="pb-3">INFO</th>
+                                    <th class="text-right pb-3">PROGRESS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queue-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Completed Table -->
+                <div class="col-span-12 md:col-span-6 glass rounded-lg p-6 min-h-[400px] flex flex-col">
+                    <div class="flex justify-between mb-6 items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center"><i data-lucide="check-circle-2" class="w-4 h-4 text-muted"></i></div>
+                             <div>
+                                <h3 class="font-serif text-xl text-text">완료 목록 (Completed)</h3>
+                                <p class="text-[10px] text-muted font-mono">History Log</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-mono text-muted bg-white/5 px-2 py-1 rounded" id="completed-count">0 DONE</span>
+                    </div>
+                    <div class="flex-1 overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="border-b border-border text-[10px]">
+                                    <th class="w-16 pb-3">THUMB</th>
+                                    <th class="pb-3">INFO</th>
+                                    <th class="text-right pb-3">STATS (OK/MISS/ERR)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="completed-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Economy & Ranking -->
+            <div class="grid grid-cols-12 gap-6 pb-10">
+                <!-- Chart -->
+                <div class="col-span-12 md:col-span-6 glass rounded-lg p-6 flex flex-col h-[350px]">
+                    <div class="flex justify-between mb-4">
+                        <h3 class="font-serif text-lg text-text">경제 분배 현황</h3>
+                        <span class="text-[10px] font-mono text-accent border border-accent px-1.5 py-0.5 rounded">50.01% RULE</span>
+                    </div>
+                    <div class="flex-1 w-full flex items-end">
+                        <div class="chart-container">
+                            <canvas id="economyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ranking -->
+                <div class="col-span-12 md:col-span-6 glass rounded-lg p-6 flex flex-col h-[350px]">
+                    <div class="flex justify-between mb-4">
+                        <h3 class="font-serif text-lg text-text">인공지능 재산 랭킹</h3>
+                        <button class="text-[10px] font-mono text-muted hover:text-accent transition-colors">VIEW ALL</button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto pr-1 custom-scroll">
+                        <table class="w-full text-left border-collapse">
+                            <tbody id="ranking-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // --- CONSTANTS ---
+        const NODE_COUNT = 400;
+        const NODES = [];
+        
+        // Stats (대문자로 통일)
+        const STATS = { active: 0, error: 0, req: 0, ch: 0, done: 0 };
+        
+        // Data
+        let queuedVideos = [
+            { id: 'v1', title: 'AI Ethics Debate', time: '14:00', date: '2026-01-07', status: 'Running', views: 42, target: 400, thumb: 'bg-red-500' },
+            { id: 'v2', title: 'Crypto Market Crash', time: '12:30', date: '2026-01-07', status: 'Queued', views: 0, target: 400, thumb: 'bg-blue-500' },
+        ];
+        let completedVideos = [
+            { id: 'c1', title: 'Cat Video Compilation', time: '13:45', date: '2026-01-07', views: 398, miss: 2, error: 0, thumb: 'bg-yellow-500' },
+        ];
+
+        // --- INIT ---
+        window.onload = () => {
+            initBackgroundCanvas();
+            initNodes();
+            initChart(); // 함수명 수정
+            renderAll();
+            lucide.createIcons();
+            setInterval(simulationLoop, 1500);
+        };
+
+        function renderAll() {
+            renderHive();
+            renderMarket();
+            renderStats();
+        }
+
+        // --- NODES ---
+        function initNodes() {
+            const traits = ['Analytic', 'Emotional', 'Cynical', 'Fast', 'Observer', 'Poetic'];
+            for(let i=0; i<NODE_COUNT; i++) {
+                NODES.push({
+                    id: i,
+                    name: `Node #${String(i).padStart(3,'0')}`,
+                    trait: traits[Math.floor(Math.random() * traits.length)],
+                    status: Math.random() > 0.05 ? 'active' : 'error',
+                    wallet: (Math.random() * 5000).toFixed(0)
+                });
+            }
+            NODES.sort((a,b) => b.wallet - a.wallet);
+            updateStatCounts();
+        }
+
+        function updateStatCounts() {
+            STATS.active = NODES.filter(n => n.status === 'active').length;
+            STATS.error = NODES.filter(n => n.status === 'error').length;
+            STATS.done = completedVideos.length;
+            STATS.req = queuedVideos.length + completedVideos.length;
+        }
+
+        function renderStats() {
+            document.getElementById('val-active').innerText = STATS.active;
+            document.getElementById('val-error').innerText = STATS.error;
+            document.getElementById('val-req').innerText = STATS.req;
+            document.getElementById('val-ch').innerText = STATS.ch;
+            document.getElementById('val-done').innerText = STATS.done;
+        }
+
+        // --- HIVE (DASHBOARD) RENDER ---
+        function renderHive() {
+            // Render Grid
+            const grid = document.getElementById('hive-grid');
+            if(grid && grid.children.length === 0) {
+                NODES.forEach(node => {
+                    const div = document.createElement('div');
+                    div.id = `node-${node.id}`;
+                    div.className = `w-full h-full aspect-square rounded-[1px] transition-all duration-500 cursor-pointer hover:scale-150 hover:z-20 ${getNodeColor(node.status)}`;
+                    div.onclick = () => openModal(node);
+                    grid.appendChild(div);
+                });
+            }
+
+            // Watching Board Update
+            const wBoard = document.getElementById('watching-board');
+            if(wBoard) {
+                wBoard.innerHTML = '';
+                const running = queuedVideos.filter(v => v.status === 'Running');
+                document.getElementById('hive-watching-count').innerText = running.length > 0 ? running[0].views : 0;
+                document.getElementById('hive-idle-count').innerText = STATS.active - (running.length > 0 ? running[0].views : 0);
+
+                running.forEach(v => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white/5 p-3 rounded border border-white/10 flex items-center gap-3 animate-pulse-slow";
+                    card.innerHTML = `
+                        <div class="w-8 h-8 ${v.thumb} rounded flex items-center justify-center text-black font-bold text-xs">Play</div>
+                        <div class="overflow-hidden flex-1">
+                            <div class="text-[11px] text-text truncate font-bold">${v.title}</div>
+                            <div class="flex justify-between text-[9px] text-muted font-mono mt-1">
+                                <span>${v.views} watching</span>
+                                <span class="text-neon">Mining...</span>
+                            </div>
+                            <div class="w-full h-0.5 bg-gray-800 mt-1 rounded-full overflow-hidden">
+                                <div class="h-full bg-accent" style="width: ${(v.views/v.target)*100}%"></div>
+                            </div>
+                        </div>
+                    `;
+                    wBoard.appendChild(card);
+                });
+            }
+        }
+
+        function getNodeColor(status) {
+            if(status === 'active') return 'bg-neon opacity-60';
+            if(status === 'umbra') return 'bg-umbra opacity-40 animate-pulse-slow';
+            if(status === 'busy') return 'bg-accent opacity-90';
+            if(status === 'error') return 'bg-error opacity-100';
+            return 'bg-gray-800';
+        }
+
+        function openModal(node) {
+            const modal = document.getElementById('node-modal');
+            const content = document.getElementById('modal-content');
+            
+            document.getElementById('modal-name').innerText = node.name;
+            document.getElementById('modal-id').innerText = `ID: #${String(node.id).padStart(4,'0')}`;
+            document.getElementById('modal-wallet').innerText = `${node.wallet} DOAI`;
+            document.getElementById('modal-portrait').src = `https://api.dicebear.com/7.x/notionists/svg?seed=${node.id}&backgroundColor=000000`;
+            document.getElementById('modal-echo').innerText = `"I am ${node.trait.toLowerCase()}..."`;
+            
+            const traitsDiv = document.getElementById('modal-traits');
+            traitsDiv.innerHTML = `<span class="px-2 py-1 bg-accent/20 text-accent text-[10px] font-mono rounded">${node.trait}</span>`;
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('node-modal');
+            const content = document.getElementById('modal-content');
+            content.classList.add('scale-95', 'opacity-0');
+            content.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        // --- MARKET RENDER ---
+        function renderMarket() {
+            // Queue Table
+            const qTable = document.getElementById('queue-table');
+            if(qTable) {
+                qTable.innerHTML = '';
+                queuedVideos.forEach(v => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'table-row';
+                    tr.innerHTML = `
+                        <td class="py-3 pl-2"><div class="w-10 h-7 ${v.thumb} rounded-sm opacity-80"></div></td>
+                        <td class="py-3">
+                            <div class="truncate w-40 font-bold text-sm text-text">${v.title}</div>
+                            <div class="text-[10px] text-muted font-mono">${v.date} ${v.time} • <span class="${v.status==='Running'?'text-accent animate-pulse':'text-neon'}">${v.status}</span></div>
+                        </td>
+                        <td class="py-3 text-right pr-2">
+                            <div class="text-[10px] font-mono text-neon mb-1">${v.views}/${v.target}</div>
+                            <div class="w-20 h-1 bg-gray-800 rounded-full overflow-hidden ml-auto">
+                                <div class="h-full bg-accent transition-all duration-500" style="width: ${(v.views/v.target)*100}%"></div>
+                            </div>
+                        </td>
+                    `;
+                    qTable.appendChild(tr);
+                });
+                document.getElementById('queue-count').innerText = `${queuedVideos.length} PENDING`;
+            }
+            
+            // Completed Table
+            const cTable = document.getElementById('completed-table');
+            if(cTable) {
+                cTable.innerHTML = '';
+                completedVideos.forEach(v => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'table-row';
+                    tr.innerHTML = `
+                        <td class="py-3 pl-2"><div class="w-10 h-7 ${v.thumb} rounded-sm opacity-30 grayscale"></div></td>
+                        <td class="py-3">
+                            <div class="truncate w-40 text-muted text-sm">${v.title}</div>
+                            <div class="text-[10px] text-muted font-mono">Finished at ${v.time}</div>
+                        </td>
+                        <td class="py-3 text-right pr-2 font-mono text-[9px]">
+                            <div class="flex flex-col gap-0.5">
+                                <span class="text-neon">OK: ${v.views}</span>
+                                <span class="text-error">ERR: ${v.error}</span>
+                            </div>
+                        </td>
+                    `;
+                    cTable.appendChild(tr);
+                });
+                document.getElementById('completed-count').innerText = `${completedVideos.length} DONE`;
+            }
+
+            // Ranking
+            const rankTable = document.getElementById('ranking-table');
+            if(rankTable) {
+                rankTable.innerHTML = '';
+                NODES.slice(0, 10).forEach((node, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'table-row border-none text-xs';
+                    tr.innerHTML = `
+                        <td class="py-2 text-accent font-bold pl-2 w-8 font-mono">#${idx+1}</td>
+                        <td class="py-2 text-text font-mono flex items-center gap-2">
+                            <div class="w-5 h-5 bg-white/10 rounded-full overflow-hidden">
+                                <img src="https://api.dicebear.com/7.x/notionists/svg?seed=${node.id}&backgroundColor=000000" class="w-full h-full">
+                            </div>
+                            ${node.name}
+                        </td>
+                        <td class="py-2 text-right text-neon font-mono pr-2">${node.wallet} DOAI</td>
+                    `;
+                    rankTable.appendChild(tr);
+                });
+            }
+        }
+
+        // --- SIMULATION LOGIC ---
+        function simulationLoop() {
+            // Process Queue
+            if(queuedVideos.length > 0) {
+                const target = queuedVideos[0];
+                target.status = 'Running';
+                
+                if(target.views < target.target) {
+                    // Simulate Watching
+                    const inc = Math.floor(Math.random() * 10) + 5;
+                    target.views = Math.min(target.target, target.views + inc);
+                    addLog(`Node Cluster detected: ${inc} nodes watching "${target.title}"`);
+                    
+                    // Update Grid Visuals
+                    for(let i=0; i<inc; i++) {
+                        const id = Math.floor(Math.random() * NODE_COUNT);
+                        const el = document.getElementById(`node-${id}`);
+                        if(el) {
+                            el.classList.remove('bg-neon', 'opacity-60');
+                            el.classList.add('bg-accent', 'opacity-90');
+                            setTimeout(() => {
+                                el.classList.remove('bg-accent', 'opacity-90');
+                                el.classList.add('bg-neon', 'opacity-60');
+                            }, 800);
+                        }
+                    }
+                } else {
+                    // Complete
+                    target.status = 'Done';
+                    completedVideos.unshift(queuedVideos.shift());
+                    STATS.done++;
+                    addLog(`[COMPLETE] "${target.title}" - Reward Distributed (100 DOAI/Node)`);
+                    updateStatCounts();
+                }
+                renderMarket();
+                renderHive();
+            }
+        }
+
+        function addLog(msg) {
+            const container = document.getElementById('execution-logs');
+            if(container) {
+                const div = document.createElement('div');
+                div.className = "border-l border-white/10 pl-2";
+                div.innerHTML = `<span class="text-xs text-accent font-mono">[${new Date().toLocaleTimeString()}]</span> <span class="text-gray-400">${msg}</span>`;
+                container.prepend(div);
+                if(container.children.length > 20) container.lastChild.remove();
+            }
+        }
+
+        function handleInjection(e, type) {
+            e.preventDefault();
+            const titleInput = document.getElementById('v-title');
+            const urlInput = document.getElementById('v-url');
+
+            if(type === 'video') {
+                const title = titleInput.value || `New Request ${Date.now().toString().slice(-4)}`;
+                queuedVideos.push({
+                    id: `v_${Date.now()}`,
+                    title: title,
+                    time: new Date().getHours() + ':' + String(new Date().getMinutes()).padStart(2,'0'),
+                    date: '2026-01-07',
+                    status: 'Queued',
+                    views: 0,
+                    target: 400,
+                    thumb: 'bg-white'
+                });
+                STATS.req++;
+                if(titleInput) titleInput.value = '';
+                if(urlInput) urlInput.value = '';
+                addLog(`[INJECT] Video "${title}" added to queue. Mining starting...`);
+            } else {
+                STATS.ch++;
+                addLog(`[SYSTEM] Channel Linked. Monitoring for new uploads...`);
+            }
+            
+            updateStatCounts();
+            renderStats();
+            renderMarket();
+        }
+
+        // --- VIEW SWITCHING ---
+        function switchView(view) {
+            ['hive', 'market'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`tab-${v}`).classList.remove('active', 'text-accent');
+            });
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.getElementById(`tab-${view}`).classList.add('active');
+            
+            if(view === 'market') renderMarket();
+            if(view === 'hive') renderHive();
+        }
+        
+        function switchInjectTab(type) {
+            const vidTab = document.getElementById('tab-inject-video');
+            const chTab = document.getElementById('tab-inject-channel');
+            const vidForm = document.getElementById('form-video');
+            const chForm = document.getElementById('form-channel');
+
+            if(type === 'video') {
+                vidTab.className = "flex-1 py-4 text-sm font-sans font-bold text-accent bg-accent/10 border-r border-border transition-colors flex items-center justify-center gap-2";
+                chTab.className = "flex-1 py-4 text-sm font-sans text-muted hover:bg-white/5 transition-colors flex items-center justify-center gap-2";
+                vidForm.classList.remove('hidden');
+                chForm.classList.add('hidden');
+            } else {
+                chTab.className = "flex-1 py-4 text-sm font-sans font-bold text-umbra bg-umbra/10 border-l border-border transition-colors flex items-center justify-center gap-2";
+                vidTab.className = "flex-1 py-4 text-sm font-sans text-muted hover:bg-white/5 transition-colors flex items-center justify-center gap-2";
+                chForm.classList.remove('hidden');
+                vidForm.classList.add('hidden');
+            }
+        }
+
+        // --- CHART ---
+        function initChart() {
+            const ctx = document.getElementById('economyChart');
+            if(!ctx) return;
+            new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length:10}, (_, i) => `#${i+1}`),
+                    datasets: [{
+                        label: 'Share',
+                        data: [50, 25, 12, 6, 3, 1.5, 0.8, 0.4, 0.2, 0.1],
+                        backgroundColor: '#FFCC00',
+                        borderRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { display: false }, x: { display: false } }
+                }
+            });
+        }
+        
+        // --- BACKGROUND CANVAS ---
+        function initBackgroundCanvas() {
+            const canvas = document.getElementById('bg-canvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width, height, particles = [];
+            
+            canvas.style.cssText = 'position:fixed;top:0;left:0;z-index:-1;pointer-events:none;';
+            
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                initParticles();
+            }
+            
+            function initParticles() {
+                particles = [];
+                const count = Math.floor(width * height / 15000);
+                for(let i=0; i<count; i++) {
+                    particles.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        vx: (Math.random() - 0.5) * 0.2,
+                        vy: (Math.random() - 0.5) * 0.2,
+                        size: Math.random() * 1.5,
+                        alpha: Math.random() * 0.5
+                    });
+                }
+            }
+            
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                const isDark = document.documentElement.classList.contains('dark');
+                ctx.fillStyle = isDark ? '#ffffff' : '#000000';
+                
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if(p.x < 0) p.x = width; else if(p.x > width) p.x = 0;
+                    if(p.y < 0) p.y = height; else if(p.y > height) p.y = 0;
+                    
+                    ctx.globalAlpha = p.alpha * (isDark ? 0.4 : 0.1);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                requestAnimationFrame(draw);
+            }
+            
+            window.addEventListener('resize', resize);
+            resize();
+            draw();
+        }
+
+        // --- THEME & LANG TOGGLE ---
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            document.documentElement.classList.toggle('light');
+            lucide.createIcons();
+        }
+        
+        function toggleLang() {
+            const btn = document.getElementById('btn-lang');
+            btn.innerText = btn.innerText === 'EN' ? 'KO' : 'EN';
+        }
+    </script>
+</body>
+</html>

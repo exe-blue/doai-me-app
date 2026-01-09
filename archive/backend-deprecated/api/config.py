@@ -125,6 +125,28 @@ class Settings(BaseSettings):
         return [header.strip() for header in self.cors_allow_headers.split(",") if header.strip()]
 
     # ===========================================
+    # Rate Limiting Configuration
+    # ===========================================
+    # 전역 Rate Limit (기본값: 분당 100회)
+    rate_limit_default: str = "100/minute"
+    # 인증 엔드포인트 (로그인, API 키) - 더 엄격
+    rate_limit_auth: str = "10/minute"
+    # 검색/조회 엔드포인트 - 여유롭게
+    rate_limit_read: str = "200/minute"
+    # 쓰기 엔드포인트 (POST, PUT, DELETE) - 중간
+    rate_limit_write: str = "50/minute"
+    # 헬스체크 - 매우 여유롭게
+    rate_limit_health: str = "1000/minute"
+    # Rate Limit 활성화 여부
+    rate_limit_enabled: bool = True
+    # Rate Limit 저장소 타입 (memory, redis)
+    rate_limit_storage: str = "memory"
+    # Redis URL (rate_limit_storage가 redis일 때 사용)
+    rate_limit_redis_url: Optional[str] = None
+    # Rate Limit 초과 시 응답 메시지
+    rate_limit_message: str = "요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."
+
+    # ===========================================
     # Logging
     # ===========================================
     log_level: str = "INFO"

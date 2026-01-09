@@ -18,23 +18,25 @@ docker-compose up -d
 
 ```
 aifarm/
-├── backend/                # Backend API (FastAPI)
-│   ├── api/               # REST API
-│   ├── migrations/        # DB 마이그레이션
-│   └── n8n/               # n8n 워크플로우
+├── services/               # 서버 애플리케이션
+│   ├── cloud-gateway/     # Cloud Gateway (Vultr, FastAPI)
+│   └── api/               # Backend API (FastAPI)
 │
-├── gateway/                # Local Gateway (Node.js)
-│   └── src/               # WebSocket, ADB, Laixi 연동
+├── local/                  # 로컬 실행 컴포넌트
+│   └── gateway/           # Local Gateway (Node.js, ADB/Laixi)
 │
-├── dashboard/              # Web Dashboard (Vite + React)
-│   └── src/               # UI 컴포넌트
+├── apps/                   # 프론트엔드 애플리케이션
+│   ├── web/               # Admin Dashboard (Next.js)
+│   └── dashboard/         # Device Dashboard (Vite + React)
+│
+├── shared/                 # 공유 코드
+│   ├── schemas/           # Pydantic 스키마
+│   ├── models/            # 데이터 모델
+│   └── config/            # 설정 모듈
 │
 ├── autox-scripts/          # AutoX.js 스크립트 (Android)
 │   ├── handlers/          # 작업 핸들러
 │   └── modules/           # 공통 모듈
-│
-├── shared/                 # 공유 코드
-│   └── schemas/           # Pydantic 스키마
 │
 ├── infra/                  # 인프라 설정
 │   ├── caddy/             # Caddy 리버스 프록시
@@ -51,6 +53,15 @@ aifarm/
 │   ├── handoffs/          # 인수인계 문서
 │   └── decisions.md       # 기술 결정 로그
 │
+├── supabase/               # Supabase 설정
+│   └── migrations/        # DB 마이그레이션
+│
+├── tests/                  # 테스트
+│   ├── unit/              # 단위 테스트
+│   ├── integration/       # 통합 테스트
+│   └── e2e/               # E2E 테스트
+│
+├── archive/                # 미사용 코드 보관
 ├── scripts/                # 유틸리티 스크립트
 └── deploy/                 # 배포 스크립트
 ```
