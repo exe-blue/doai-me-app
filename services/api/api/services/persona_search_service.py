@@ -332,58 +332,30 @@ class PersonaSearchService:
         category_hint: Optional[str],
         exclude_keywords: Optional[List[str]]
     ) -> str:
-        """페르소나 맞춤 프롬프트 구성"""
+        """페르소나 맞춤 프롬프트 구성 (description 기반)"""
         name = persona.get("name", "알 수 없음")
-        age = persona.get("age", "알 수 없음")
+        description = persona.get("description", "")
+
+        # 기존 traits 방식도 지원 (하위 호환)
         interests = persona.get("interests", []) or []
+        interests_str = ", ".join(interests) if interests else ""
 
-        # 성격 특성 추출 (traits_xxx 컬럼들)
-        traits = {
-            "curiosity": persona.get("traits_curiosity", 50),
-            "enthusiasm": persona.get("traits_enthusiasm", 50),
-            "skepticism": persona.get("traits_skepticism", 50),
-            "empathy": persona.get("traits_empathy", 50),
-            "humor": persona.get("traits_humor", 50),
-            "expertise": persona.get("traits_expertise", 50),
-            "formality": persona.get("traits_formality", 50),
-            "verbosity": persona.get("traits_verbosity", 50),
-        }
+        # description이 있으면 그것을 사용, 없으면 interests 사용
+        profile_info = description if description else f"관심사: {interests_str}" if interests_str else "다양한 주제에 관심"
 
-        # 성격 특성 설명 구성 (70 이상인 것들)
-        personality_desc = []
-        if traits["curiosity"] > 70:
-            personality_desc.append("호기심이 많고 새로운 것을 탐구하는")
-        if traits["enthusiasm"] > 70:
-            personality_desc.append("열정적이고 트렌드에 민감한")
-        if traits["skepticism"] > 70:
-            personality_desc.append("비판적이고 분석을 좋아하는")
-        if traits["empathy"] > 70:
-            personality_desc.append("공감능력이 높고 감성적인")
-        if traits["humor"] > 70:
-            personality_desc.append("유머를 즐기고 재미를 추구하는")
-        if traits["expertise"] > 70:
-            personality_desc.append("전문적인 지식을 탐구하는")
-        if traits["formality"] > 70:
-            personality_desc.append("격식을 중시하고 정확한 정보를 선호하는")
-        if traits["verbosity"] > 70:
-            personality_desc.append("대화와 토론을 즐기는")
+        prompt = f"""당신은 "{name}"이라는 페르소나입니다.
 
-        # 관심사 문자열
-        interests_str = ", ".join(interests) if interests else "다양한 주제"
-        personality_str = ", ".join(personality_desc) if personality_desc else "평범한 성격의"
-
-        prompt = f"""당신은 {name}이라는 페르소나입니다.
-나이: {age}세
-성격: {personality_str}
-관심사: {interests_str}
+프로필:
+{profile_info}
 
 지금 심심해서 유튜브에서 뭔가를 검색하려고 합니다.
-당신의 성격과 관심사에 맞는 자연스러운 검색어를 하나만 생성해주세요.
+위 프로필에 맞는 자연스러운 검색어를 하나만 생성해주세요.
 
 조건:
-1. 한국어로 3-15자 사이
-2. 너무 일반적이지 않고 당신만의 개성이 드러나는
+1. 한국어로 2-20자 사이
+2. 프로필에 나온 관심사/특성과 관련된 검색어
 3. 실제로 유튜브에서 검색할 법한 자연스러운 표현
+4. 너무 일반적이지 않고 구체적인 검색어
 
 {f'카테고리 힌트: {category_hint}' if category_hint else ''}
 {f'이전에 검색한 것들은 피해주세요: {", ".join(exclude_keywords[:5])}' if exclude_keywords else ''}
@@ -397,23 +369,30 @@ class PersonaSearchService:
     async def _generate_with_openai(self, prompt: str) -> Optional[str]:
         """OpenAI로 검색어 생성"""
         if not self._openai:
+            logger.warning("OpenAI 클라이언트가 초기화되지 않음")
             return None
 
-        response = await self._openai.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "유튜브 검색어만 출력하세요. 따옴표 없이, 설명 없이, 검색어만요."
-                },
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=30,
-            temperature=0.9  # 높은 온도로 다양성 확보
-        )
+        try:
+            logger.info("OpenAI API 호출 시작...")
+            response = await self._openai.chat.completions.create(
+                model="gpt-4o-mini",  # 빠르고 저렴한 모델 사용
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "유튜브 검색어만 출력하세요. 따옴표 없이, 설명 없이, 검색어만요."
+                    },
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=30,
+                temperature=0.9  # 높은 온도로 다양성 확보
+            )
 
-        keyword = response.choices[0].message.content.strip()
-        return self._clean_keyword(keyword)
+            keyword = response.choices[0].message.content.strip()
+            logger.info(f"OpenAI 검색어 생성 성공: '{keyword}'")
+            return self._clean_keyword(keyword)
+        except Exception as e:
+            logger.error(f"OpenAI API 호출 실패: {e}")
+            raise
 
     async def _generate_with_anthropic(self, prompt: str) -> Optional[str]:
         """Anthropic으로 검색어 생성"""
@@ -459,8 +438,20 @@ class PersonaSearchService:
         persona: Dict[str, Any],
         exclude_keywords: Optional[List[str]] = None
     ) -> str:
-        """Traits 기반 폴백 검색어 생성"""
-        # 가장 높은 trait 찾기
+        """Description/Traits 기반 폴백 검색어 생성"""
+        # description에서 키워드 추출 시도
+        description = persona.get("description", "")
+        if description:
+            # description에서 관련 키워드 매칭
+            desc_keywords = self._extract_keywords_from_description(description)
+            if desc_keywords:
+                # 제외 키워드 필터링
+                if exclude_keywords:
+                    desc_keywords = [k for k in desc_keywords if k not in exclude_keywords]
+                if desc_keywords:
+                    return random.choice(desc_keywords)
+
+        # 기존 traits 기반 로직 (하위 호환)
         traits = {
             "curiosity": persona.get("traits_curiosity", 50),
             "enthusiasm": persona.get("traits_enthusiasm", 50),
@@ -490,6 +481,54 @@ class PersonaSearchService:
             return random.choice(available or FALLBACK_KEYWORDS)
 
         return random.choice(categories)
+
+    def _extract_keywords_from_description(self, description: str) -> List[str]:
+        """Description에서 검색 키워드 추출"""
+        # 키워드 매핑 (description 내용 → 검색어)
+        keyword_map = {
+            # 기술/IT
+            "기술": ["최신 테크 리뷰", "IT 뉴스", "가젯 언박싱"],
+            "IT": ["테크 유튜버", "IT 트렌드", "개발자 브이로그"],
+            "스마트폰": ["스마트폰 리뷰", "아이폰 vs 갤럭시", "폰 카메라 비교"],
+            "AI": ["AI 뉴스", "ChatGPT 활용법", "인공지능 미래"],
+            "프로그래밍": ["코딩 튜토리얼", "개발자 일상", "파이썬 강의"],
+            "개발": ["개발자 브이로그", "코딩 공부법", "주니어 개발자"],
+
+            # 요리/음식
+            "요리": ["초간단 레시피", "자취 요리", "원팬 요리"],
+            "레시피": ["간단 저녁 메뉴", "10분 요리", "자취생 레시피"],
+            "밀프렙": ["일주일 밀프렙", "도시락 준비", "건강 식단"],
+            "혼밥": ["혼밥 메뉴 추천", "혼밥 브이로그", "1인분 요리"],
+
+            # 게임
+            "게임": ["게임 리뷰", "신작 게임", "게임 공략"],
+            "FPS": ["발로란트 하이라이트", "오버워치 명장면", "배그 스쿼드"],
+            "롤": ["롤 챌린저 경기", "롤 시즌 메타", "롤 하이라이트"],
+            "e스포츠": ["LCK 하이라이트", "롤드컵", "e스포츠 명장면"],
+
+            # 음악/엔터
+            "음악": ["신곡 추천", "플레이리스트", "뮤직비디오"],
+            "영화": ["영화 리뷰", "넷플릭스 추천", "영화 해석"],
+
+            # 운동/건강
+            "운동": ["홈트레이닝", "헬스 루틴", "다이어트 운동"],
+            "헬스": ["헬스장 운동법", "웨이트 루틴", "벌크업 식단"],
+
+            # 뷰티/패션
+            "뷰티": ["데일리 메이크업", "스킨케어 루틴", "뷰티 하울"],
+            "패션": ["코디 추천", "패션 하울", "데일리룩"],
+
+            # 일반
+            "일상": ["일상 브이로그", "퇴근 후 루틴", "주말 일상"],
+            "여행": ["국내 여행지", "여행 브이로그", "호캉스 추천"],
+        }
+
+        found_keywords = []
+        for trigger, keywords in keyword_map.items():
+            if trigger in description:
+                found_keywords.extend(keywords)
+
+        return list(set(found_keywords))  # 중복 제거
 
     def _calculate_formative_impact(self, persona: Dict[str, Any]) -> float:
         """
