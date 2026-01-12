@@ -29,8 +29,6 @@ dependencies = [
     "loguru>=0.7.0",
     "prometheus-client>=0.19.0",
     "psutil>=5.9.0",
-    "slowapi>=0.1.9",
-    "aiohttp>=3.10.0",
 ]
 
 [project.optional-dependencies]
@@ -46,10 +44,10 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["shared*"]
+include = ["shared*", "backend*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "backend/tests"]
 asyncio_mode = "auto"
 addopts = "-v --tb=short"
 markers = [
@@ -64,18 +62,8 @@ target-version = ['py311']
 
 [tool.ruff]
 line-length = 100
-
-[tool.ruff.lint]
 select = ["E", "F", "W", "I"]
-ignore = ["E501", "W293", "W291"]  # Allow trailing whitespace for now
-
-[tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["E402", "F401"]  # Allow imports after sys.path manipulation
-"archive/**/*.py" = ["E402", "E722", "F401"]  # Deprecated code - minimal checks
-"scripts/**/*.py" = ["E402"]  # Scripts may need path setup
-"services/cloud-gateway/main.py" = ["E402"]  # Loads env before imports
-"services/api/api/routers/*.py" = ["F401"]  # Routers may import for re-export
-"local/**/*.py" = ["E402", "E722"]  # Local dev code
+ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

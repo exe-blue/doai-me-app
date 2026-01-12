@@ -1,7 +1,16 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import type { 
+  UserPermissions, 
+  AuthResult, 
+  MembershipTier, 
+  AdminRole 
+} from '@/lib/auth/types';
+import { checkPermission, type Action, type Resource } from '@/lib/auth/permissions';
 
 // Supabase Admin Client (service role)
 const supabaseAdmin = createClient(
@@ -10,17 +19,136 @@ const supabaseAdmin = createClient(
 );
 
 // ============================================
-// Auth Check (임시 - MVP용)
+// Auth Check (Production Ready)
 // ============================================
 
-export async function checkAdminAuth() {
-  // MVP: 인증 체크 건너뛰기 (나중에 @supabase/ssr로 마이그레이션)
-  // TODO: @supabase/ssr 사용하여 proper auth 구현
+/**
+ * 서버 액션용 인증 체크
+ * @supabase/ssr을 사용하여 쿠키 기반 세션 확인
+ */
+export async function checkAdminAuth(): Promise<AuthResult> {
+  try {
+    // Next.js 15: cookies()는 Promise를 반환하므로 await 필요
+    const cookieStore = await cookies();
+    
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll() {
+            // Server actions에서는 쿠키 설정 불필요
+          },
+        },
+      }
+    );
+    
+    // 세션 확인
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      return {
+        authorized: false,
+        permissions: getDefaultPermissions(),
+        error: '세션이 없습니다',
+      };
+    }
+    
+    // 사용자 권한 조회 (병렬)
+    const [membershipResult, adminResult] = await Promise.all([
+      supabaseAdmin
+        .from('user_memberships')
+        .select('tier, display_name')
+        .eq('user_id', session.user.id)
+        .single(),
+      supabaseAdmin
+        .from('admin_users')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .single(),
+    ]);
+    
+    const tier = membershipResult.data?.tier as MembershipTier | null;
+    const adminRole = adminResult.data?.role as AdminRole | null;
+    const displayName = membershipResult.data?.display_name;
+    
+    const permissions: UserPermissions = {
+      userId: session.user.id,
+      email: session.user.email ?? null,
+      tier,
+      adminRole,
+      isAdmin: adminRole === 'admin' || adminRole === 'owner',
+      isOwner: adminRole === 'owner',
+      displayName: displayName ?? null,
+    };
+    
+    // 관리자 접근 권한 확인
+    const authorized = adminRole !== null && adminRole !== 'pending';
+    
+    return {
+      authorized,
+      permissions,
+      error: authorized ? undefined : '관리자 권한이 없습니다',
+    };
+  } catch (error) {
+    console.error('[checkAdminAuth] Error:', error);
+    return {
+      authorized: false,
+      permissions: getDefaultPermissions(),
+      error: '인증 확인 중 오류가 발생했습니다',
+    };
+  }
+}
+
+/**
+ * 기본 권한 객체 (비인증 사용자)
+ */
+function getDefaultPermissions(): UserPermissions {
   return {
-    authorized: true,
-    role: 'admin',
-    userId: 'mvp-user',
+    userId: null,
+    email: null,
+    tier: null,
+    adminRole: null,
+    isAdmin: false,
+    isOwner: false,
+    displayName: null,
   };
+}
+
+/**
+ * 권한 확인 후 에러 throw 헬퍼
+ */
+async function requirePermission(
+  action: Action,
+  resource: Resource
+): Promise<AuthResult> {
+  const auth = await checkAdminAuth();
+  
+  if (!auth.authorized) {
+    throw new Error(auth.error || '인증이 필요합니다');
+  }
+  
+  const hasPermission = checkPermission(
+    auth.permissions.tier,
+    auth.permissions.adminRole,
+    action,
+    resource
+  );
+  
+  if (!hasPermission) {
+    const actionNames: Record<Action, string> = {
+      view: '조회',
+      create: '생성',
+      edit: '수정',
+      delete: '삭제',
+    };
+    throw new Error(`${actionNames[action]} 권한이 없습니다`);
+  }
+  
+  return auth;
 }
 
 // ============================================
@@ -130,8 +258,8 @@ export async function getDevicesList(nodeId?: string, status?: string) {
 }
 
 export async function retryDevice(deviceId: string) {
-  // TODO: Gateway에 재시도 명령 전송
-  // 현재는 상태만 리셋
+  await requirePermission('edit', 'devices');
+  
   const { error } = await supabaseAdmin
     .from('devices')
     .update({
@@ -164,6 +292,8 @@ export async function getChannels() {
 }
 
 export async function createChannel(formData: FormData) {
+  const auth = await requirePermission('create', 'content');
+
   const rawChannelCode = formData.get('channel_code') as string | null;
   const rawTitle = formData.get('title') as string | null;
   const rawPriority = formData.get('priority') as string | null;
@@ -195,7 +325,63 @@ export async function createChannel(formData: FormData) {
       channel_code: channelCode,
       title,
       priority,
+      created_by: auth.permissions.userId,
     });
+  
+  if (error) throw new Error(error.message);
+  
+  revalidatePath('/admin/content');
+  return { success: true };
+}
+
+export async function updateChannel(channelId: string, formData: FormData) {
+  const auth = await requirePermission('edit', 'content');
+  
+  const rawTitle = formData.get('title') as string | null;
+  const rawPriority = formData.get('priority') as string | null;
+  const rawIsActive = formData.get('is_active') as string | null;
+  
+  const updateData: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+    updated_by: auth.permissions.userId,
+  };
+  
+  if (rawTitle) {
+    const title = rawTitle.trim();
+    if (title.length > 0) {
+      updateData.title = title;
+    }
+  }
+  
+  if (rawPriority) {
+    let priority = parseInt(rawPriority, 10);
+    if (!isNaN(priority)) {
+      updateData.priority = Math.max(1, Math.min(10, priority));
+    }
+  }
+  
+  if (rawIsActive !== null) {
+    updateData.is_active = rawIsActive === 'true';
+  }
+  
+  const { error } = await supabaseAdmin
+    .from('media_channels')
+    .update(updateData)
+    .eq('id', channelId);
+  
+  if (error) throw new Error(error.message);
+  
+  revalidatePath('/admin/content');
+  return { success: true };
+}
+
+export async function deleteChannel(channelId: string) {
+  await requirePermission('delete', 'content');
+  
+  const { error } = await supabaseAdmin
+    .from('media_channels')
+    .delete()
+    .eq('id', channelId);
   
   if (error) throw new Error(error.message);
   
@@ -230,10 +416,7 @@ export async function getThreatContents() {
 }
 
 export async function createThreatContent(formData: FormData) {
-  const auth = await checkAdminAuth();
-  if (!auth.authorized || auth.role === 'viewer') {
-    throw new Error('Unauthorized');
-  }
+  const auth = await requirePermission('create', 'content');
 
   const rawTitle = formData.get('title') as string | null;
   const rawDescription = formData.get('description') as string | null;
@@ -248,9 +431,6 @@ export async function createThreatContent(formData: FormData) {
 
   // Validation: description
   const description = rawDescription?.trim();
-  if (!description || description.length === 0) {
-    throw new Error('description is required and cannot be empty');
-  }
 
   // Validation: threat_type
   const threatType = rawThreatType?.trim();
@@ -270,8 +450,74 @@ export async function createThreatContent(formData: FormData) {
       description,
       threat_type: threatType,
       severity,
-      created_by: auth.userId,
+      created_by: auth.permissions.userId,
     });
+  
+  if (error) throw new Error(error.message);
+  
+  revalidatePath('/admin/content');
+  return { success: true };
+}
+
+export async function updateThreatContent(threatId: string, formData: FormData) {
+  const auth = await requirePermission('edit', 'content');
+  
+  const rawTitle = formData.get('title') as string | null;
+  const rawDescription = formData.get('description') as string | null;
+  const rawThreatType = formData.get('threat_type') as string | null;
+  const rawSeverity = formData.get('severity') as string | null;
+  const rawIsActive = formData.get('is_active') as string | null;
+  
+  const updateData: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+    updated_by: auth.permissions.userId,
+  };
+  
+  if (rawTitle) {
+    const title = rawTitle.trim();
+    if (title.length > 0) {
+      updateData.title = title;
+    }
+  }
+  
+  if (rawDescription) {
+    updateData.description = rawDescription.trim();
+  }
+  
+  if (rawThreatType) {
+    updateData.threat_type = rawThreatType.trim();
+  }
+  
+  if (rawSeverity) {
+    let severity = parseInt(rawSeverity, 10);
+    if (!isNaN(severity)) {
+      updateData.severity = Math.max(1, Math.min(10, severity));
+    }
+  }
+  
+  // rawIsActive가 명시적으로 제공된 경우에만 업데이트 (빈 문자열 제외)
+  if (rawIsActive !== null && rawIsActive !== '') {
+    updateData.is_active = rawIsActive === 'true';
+  }
+  
+  const { error } = await supabaseAdmin
+    .from('threat_contents')
+    .update(updateData)
+    .eq('id', threatId);
+  
+  if (error) throw new Error(error.message);
+  
+  revalidatePath('/admin/content');
+  return { success: true };
+}
+
+export async function deleteThreatContent(threatId: string) {
+  await requirePermission('delete', 'content');
+  
+  const { error } = await supabaseAdmin
+    .from('threat_contents')
+    .delete()
+    .eq('id', threatId);
   
   if (error) throw new Error(error.message);
   
@@ -298,10 +544,7 @@ export async function getEconomyContents(status?: string) {
 }
 
 export async function createEconomyContent(formData: FormData) {
-  const auth = await checkAdminAuth();
-  if (!auth.authorized || auth.role === 'viewer') {
-    throw new Error('Unauthorized');
-  }
+  const auth = await requirePermission('create', 'content');
 
   const rawTitle = formData.get('title') as string | null;
   const openAt = formData.get('open_at') as string | null;
@@ -334,8 +577,71 @@ export async function createEconomyContent(formData: FormData) {
       open_at: openAtIso,
       total_reward: totalReward,
       max_participants: maxParticipants,
-      created_by: auth.userId,
+      created_by: auth.permissions.userId,
     });
+  
+  if (error) throw new Error(error.message);
+  
+  revalidatePath('/admin/content');
+  return { success: true };
+}
+
+export async function updateEconomyContent(contentId: string, formData: FormData) {
+  const auth = await requirePermission('edit', 'content');
+  
+  const rawTitle = formData.get('title') as string | null;
+  const rawOpenAt = formData.get('open_at') as string | null;
+  const rawTotalReward = formData.get('total_reward') as string | null;
+  const rawStatus = formData.get('status') as string | null;
+  
+  const updateData: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+    updated_by: auth.permissions.userId,
+  };
+  
+  if (rawTitle) {
+    const title = rawTitle.trim();
+    if (title.length > 0) {
+      updateData.title = title;
+    }
+  }
+  
+  if (rawOpenAt) {
+    const parsedDate = new Date(rawOpenAt);
+    if (!isNaN(parsedDate.getTime())) {
+      updateData.open_at = parsedDate.toISOString();
+    }
+  }
+  
+  if (rawTotalReward) {
+    const totalReward = parseFloat(rawTotalReward);
+    if (!isNaN(totalReward)) {
+      updateData.total_reward = totalReward;
+    }
+  }
+  
+  if (rawStatus) {
+    updateData.status = rawStatus;
+  }
+  
+  const { error } = await supabaseAdmin
+    .from('economy_contents')
+    .update(updateData)
+    .eq('id', contentId);
+  
+  if (error) throw new Error(error.message);
+  
+  revalidatePath('/admin/content');
+  return { success: true };
+}
+
+export async function deleteEconomyContent(contentId: string) {
+  await requirePermission('delete', 'content');
+  
+  const { error } = await supabaseAdmin
+    .from('economy_contents')
+    .delete()
+    .eq('id', contentId);
   
   if (error) throw new Error(error.message);
   
@@ -373,4 +679,95 @@ export async function getRecentActivities(limit: number = 50) {
   return data || [];
 }
 
+// ============================================
+// Member Management (소유자 전용)
+// ============================================
 
+export async function getMembers() {
+  await requirePermission('view', 'members');
+  
+  const { data, error } = await supabaseAdmin
+    .from('user_memberships')
+    .select(`
+      *,
+      users:user_id (
+        email
+      )
+    `)
+    .order('created_at', { ascending: false });
+  
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function updateMemberTier(userId: string, newTier: MembershipTier) {
+  const auth = await requirePermission('edit', 'members');
+  
+  // 소유자만 회원 등급 변경 가능
+  if (!auth.permissions.isOwner) {
+    throw new Error('소유자만 회원 등급을 변경할 수 있습니다');
+  }
+  
+  const validTiers: MembershipTier[] = ['associate', 'regular', 'special'];
+  if (!validTiers.includes(newTier)) {
+    throw new Error('유효하지 않은 회원 등급입니다');
+  }
+  
+  const { error } = await supabaseAdmin
+    .from('user_memberships')
+    .update({
+      tier: newTier,
+      updated_at: new Date().toISOString(),
+      updated_by: auth.permissions.userId,
+    })
+    .eq('user_id', userId);
+  
+  if (error) throw new Error(error.message);
+  
+  revalidatePath('/admin/members');
+  return { success: true };
+}
+
+export async function getAdminUsers() {
+  await requirePermission('view', 'members');
+  
+  const { data, error } = await supabaseAdmin
+    .from('admin_users')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function updateAdminRole(userId: string, newRole: AdminRole) {
+  const auth = await requirePermission('edit', 'members');
+  
+  // 소유자만 관리자 역할 변경 가능
+  if (!auth.permissions.isOwner) {
+    throw new Error('소유자만 관리자 역할을 변경할 수 있습니다');
+  }
+  
+  // 본인의 역할은 변경할 수 없음
+  if (userId === auth.permissions.userId) {
+    throw new Error('본인의 역할은 변경할 수 없습니다');
+  }
+  
+  const validRoles: AdminRole[] = ['pending', 'viewer', 'admin', 'owner'];
+  if (!validRoles.includes(newRole)) {
+    throw new Error('유효하지 않은 관리자 역할입니다');
+  }
+  
+  const { error } = await supabaseAdmin
+    .from('admin_users')
+    .update({
+      role: newRole,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
+  
+  if (error) throw new Error(error.message);
+  
+  revalidatePath('/admin/members');
+  return { success: true };
+}

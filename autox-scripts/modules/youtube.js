@@ -11,27 +11,85 @@ class YouTubeAutomation {
     }
 
     /**
-     * YouTube 앱 실행
+     * YouTube 앱 실행 (다중 폴백 지원)
+     * 4가지 방법을 순차적으로 시도하여 안정적인 실행 보장
      */
     launchYouTube() {
         this.logger.info('YouTube 앱 실행 중...');
 
-        try {
-            app.launch('com.google.android.youtube');
-            sleep(3000);
+        const MAX_RETRIES = 3;
+        const YOUTUBE_PACKAGE = 'com.google.android.youtube';
 
-            // 앱 실행 확인
-            if (currentPackage() === 'com.google.android.youtube') {
-                this.logger.info('YouTube 앱 실행 성공');
-                return true;
-            } else {
-                this.logger.error('YouTube 앱 실행 실패');
-                return false;
+        const launchMethods = [
+            { name: 'app.launch', fn: () => this._launchByAppLaunch() },
+            { name: 'Intent', fn: () => this._launchByIntent() },
+            { name: 'Shell', fn: () => this._launchByShell() },
+            { name: 'URL', fn: () => this._launchByUrl() }
+        ];
+
+        for (let retry = 0; retry < MAX_RETRIES; retry++) {
+            this.logger.info(`실행 시도 ${retry + 1}/${MAX_RETRIES}`);
+
+            for (const method of launchMethods) {
+                try {
+                    this.logger.debug(`${method.name} 방법 시도 중...`);
+                    method.fn();
+                    sleep(3000);
+
+                    if (currentPackage() === YOUTUBE_PACKAGE) {
+                        this.logger.info(`YouTube 앱 실행 성공 (${method.name})`);
+                        return true;
+                    }
+                } catch (e) {
+                    this.logger.debug(`${method.name} 방법 실패`, { error: e.message });
+                }
             }
-        } catch (e) {
-            this.logger.error('YouTube 앱 실행 예외', { error: e.message });
-            return false;
+
+            // 재시도 전 대기
+            if (retry < MAX_RETRIES - 1) {
+                this.logger.warn(`모든 방법 실패, ${retry + 2}번째 시도 준비 중...`);
+                sleep(2000);
+            }
         }
+
+        this.logger.error('YouTube 앱 실행 최종 실패 (모든 방법 시도 완료)');
+        return false;
+    }
+
+    /**
+     * 방법 1: app.launch() 사용
+     * @private
+     */
+    _launchByAppLaunch() {
+        app.launch('com.google.android.youtube');
+    }
+
+    /**
+     * 방법 2: Intent 기반 실행
+     * @private
+     */
+    _launchByIntent() {
+        const intent = new Intent();
+        intent.setPackage('com.google.android.youtube');
+        intent.setAction('android.intent.action.MAIN');
+        intent.addCategory('android.intent.category.LAUNCHER');
+        app.startActivity(intent);
+    }
+
+    /**
+     * 방법 3: Shell 명령어 사용 (am start)
+     * @private
+     */
+    _launchByShell() {
+        shell('am start -n com.google.android.youtube/.HomeActivity', true);
+    }
+
+    /**
+     * 방법 4: URL Scheme 사용
+     * @private
+     */
+    _launchByUrl() {
+        app.openUrl('https://www.youtube.com');
     }
 
     /**

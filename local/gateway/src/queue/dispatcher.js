@@ -1,23 +1,24 @@
 /**
  * Task Dispatcher
  * 작업 배분
- * 
+ *
  * Aria 명세서 기준:
  * - 기기 선택 알고리즘 (점수 기반)
  * - 특정 AI 시민 지정 시 해당 기기로
- * 
+ *
  * @author Axon (Tech Lead)
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 const { TaskStatus } = require('./task_queue');
 
 class Dispatcher {
-    constructor(logger, commander, deviceTracker, taskQueue) {
+    constructor(logger, commander, deviceTracker, taskQueue, discoveryManager = null) {
         this.logger = logger;
         this.commander = commander;
         this.deviceTracker = deviceTracker;
         this.taskQueue = taskQueue;
+        this.discoveryManager = discoveryManager;
         this.interval = null;
         this.dispatchIntervalMs = 1000; // 1초
     }
@@ -90,10 +91,19 @@ class Dispatcher {
 
     /**
      * 기기 선택
+     * DiscoveryManager 우선 사용, DeviceTracker 폴백
      */
     _selectDevice(task) {
         // Case 1: 특정 기기 지정
         if (task.payload?.target_device_id) {
+            // DiscoveryManager 우선 사용
+            if (this.discoveryManager) {
+                const device = this.discoveryManager.getDevice(task.payload.target_device_id);
+                if (device && device.status === 'ONLINE') {
+                    return { id: device.serial, ...device };
+                }
+            }
+            // DeviceTracker 폴백
             const device = this.deviceTracker.getDevice(task.payload.target_device_id);
             if (device && device.status === 'HEALTHY') {
                 return device;
@@ -101,9 +111,29 @@ class Dispatcher {
             return null; // 지정 기기 불가 시 대기
         }
 
-        // Case 2: 최적 기기 선택
-        const candidates = this.deviceTracker.getHealthyDevices()
-            .filter(d => this.taskQueue.getDeviceTaskCount(d.id) < 3);
+        // Case 2: 최적 기기 선택 - DiscoveryManager 우선
+        let candidates = [];
+
+        if (this.discoveryManager) {
+            candidates = this.discoveryManager.getOnlineDevices()
+                .map(d => ({ id: d.serial, ...d, status: 'HEALTHY' }))
+                .filter(d => this.taskQueue.getDeviceTaskCount(d.id) < 3);
+
+            this.logger.debug('[Dispatcher] DiscoveryManager 디바이스', {
+                count: candidates.length,
+                devices: candidates.map(d => d.id)
+            });
+        }
+
+        // DiscoveryManager에서 디바이스가 없으면 DeviceTracker 사용
+        if (candidates.length === 0) {
+            candidates = this.deviceTracker.getHealthyDevices()
+                .filter(d => this.taskQueue.getDeviceTaskCount(d.id) < 3);
+
+            this.logger.debug('[Dispatcher] DeviceTracker 폴백', {
+                count: candidates.length
+            });
+        }
 
         if (candidates.length === 0) return null;
 
@@ -129,11 +159,11 @@ class Dispatcher {
         score -= taskCount * 10;
 
         // 에러율 낮을수록 좋음 (-50점/에러)
-        score -= device.errorCount * 50;
+        score -= (device.errorCount || 0) * 50;
 
         // 최근 활동 기기 선호 (+10점)
         const recentMs = 60000; // 1분
-        if (Date.now() - device.lastSeen < recentMs) {
+        if (device.lastSeen && Date.now() - device.lastSeen < recentMs) {
             score += 10;
         }
 
@@ -145,7 +175,7 @@ class Dispatcher {
      */
     async dispatchImmediate(task) {
         const taskId = this.taskQueue.add(task);
-        
+
         // 우선순위가 높으면 즉시 처리
         if (task.priority >= 4) {
             await this._processQueue();
@@ -156,4 +186,3 @@ class Dispatcher {
 }
 
 module.exports = Dispatcher;
-

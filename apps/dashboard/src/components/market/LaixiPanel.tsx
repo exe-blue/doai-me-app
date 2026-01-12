@@ -7,19 +7,17 @@
  * YouTube 영상을 직접 시청하도록 명령합니다.
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  Smartphone, 
-  Play, 
-  Square, 
-  AlertCircle, 
-  CheckCircle, 
-  Loader2, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Smartphone,
+  Play,
+  Square,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
   RefreshCw,
-  Wifi,
   WifiOff,
-  Monitor,
-  ExternalLink 
+  Monitor
 } from 'lucide-react';
 
 // ============================================
@@ -60,9 +58,6 @@ export function LaixiPanel({ isDark }: LaixiPanelProps) {
   const [isWatching, setIsWatching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // 디바운스 타이머
-  const fetchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // ============================================
   // API Calls
@@ -158,7 +153,7 @@ export function LaixiPanel({ isDark }: LaixiPanelProps) {
       } else {
         setError(data.error || '시청 명령 실패');
       }
-    } catch (err) {
+    } catch {
       setError('서버 연결 실패');
     } finally {
       setIsLoading(false);
@@ -187,7 +182,7 @@ export function LaixiPanel({ isDark }: LaixiPanelProps) {
       } else {
         setError(data.error || '중지 명령 실패');
       }
-    } catch (err) {
+    } catch {
       setError('서버 연결 실패');
     } finally {
       setIsLoading(false);

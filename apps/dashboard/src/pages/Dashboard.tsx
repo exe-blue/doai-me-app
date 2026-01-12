@@ -9,7 +9,7 @@
  * @author Axon (Tech Lead)
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { NodeProvider, useNodes } from '@/contexts/NodeContext';
 import { Moon, Sun, Monitor, Smartphone, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 

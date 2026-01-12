@@ -16,10 +16,10 @@
     print(checker.to_dict(result))
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from shared.utils import get_logger
 
@@ -62,17 +62,14 @@ class HealthChecker:
     여러 컴포넌트의 헬스체크를 등록하고 실행
     """
 
-    def __init__(self, version: str = "2.0.0", on_status_change: Optional[Callable] = None):
+    def __init__(self, version: str = "2.0.0"):
         """
         Args:
             version: 서비스 버전
-            on_status_change: 상태 변경 시 콜백 (async fn(component, old_status, new_status))
         """
         self.version = version
         self._checks: Dict[str, Callable] = {}
         self._timeouts: Dict[str, float] = {}
-        self._last_statuses: Dict[str, HealthStatus] = {}
-        self._on_status_change = on_status_change
 
     def register(
         self,
@@ -152,10 +149,14 @@ class HealthChecker:
                     details=result.get("details"),
                 )
             else:
-                # 예상치 못한 반환값
+                # 예상치 못한 반환값 - DEGRADED로 표시하고 경고 로그
+                logger.warning(
+                    f"헬스체크 예상치 못한 반환값: {name}, type={type(result).__name__}, value={result}"
+                )
                 return ComponentHealth(
                     name=name,
-                    status=HealthStatus.HEALTHY,
+                    status=HealthStatus.DEGRADED,
+                    message=f"Unexpected return type: {type(result).__name__}",
                     latency_ms=latency,
                 )
 
@@ -181,37 +182,20 @@ class HealthChecker:
             HealthCheckResult 전체 결과
         """
         import asyncio
-        import inspect
 
         # 모든 체크 병렬 실행
         tasks = [self.check_one(name) for name in self._checks.keys()]
         components = await asyncio.gather(*tasks)
 
-        # 전체 상태 결정 및 상태 변경 감지
+        # 전체 상태 결정
         overall_status = HealthStatus.HEALTHY
 
         for component in components:
             if component.status == HealthStatus.UNHEALTHY:
                 overall_status = HealthStatus.UNHEALTHY
-            elif (
-                component.status == HealthStatus.DEGRADED
-                and overall_status != HealthStatus.UNHEALTHY
-            ):
+                break
+            elif component.status == HealthStatus.DEGRADED:
                 overall_status = HealthStatus.DEGRADED
-
-            # 상태 변경 감지 및 콜백 호출
-            old_status = self._last_statuses.get(component.name)
-            if old_status != component.status:
-                self._last_statuses[component.name] = component.status
-
-                if self._on_status_change:
-                    try:
-                        if inspect.iscoroutinefunction(self._on_status_change):
-                            await self._on_status_change(component, old_status, component.status)
-                        else:
-                            self._on_status_change(component, old_status, component.status)
-                    except Exception as e:
-                        logger.error(f"상태 변경 콜백 실패: {e}")
 
         return HealthCheckResult(
             status=overall_status,
@@ -259,10 +243,34 @@ async def check_supabase() -> Dict[str, Any]:
 
         client = get_client()
         # 간단한 쿼리로 연결 확인
-        client.table("devices").select("id").limit(1).execute()
+        result = client.table("devices").select("id").limit(1).execute()
+
+        # 결과 검증: result.data가 None이거나 에러가 있는지 확인
+        if hasattr(result, "error") and result.error is not None:
+            return {
+                "status": "unhealthy",
+                "message": f"Supabase query error: {result.error}",
+            }
+
+        # result.data가 None인 경우도 unhealthy로 처리
+        if not hasattr(result, "data") or result.data is None:
+            return {
+                "status": "unhealthy",
+                "message": "Supabase query returned no data attribute",
+            }
+
         return {"status": "healthy", "message": "Supabase connected"}
+
     except Exception as e:
-        return {"status": "unhealthy", "message": str(e)}
+        # Supabase/PostgREST APIError 등 모든 예외 처리
+        error_message = str(e)
+        # APIError에서 더 상세한 정보 추출
+        if hasattr(e, "message"):
+            error_message = e.message
+        elif hasattr(e, "details"):
+            error_message = f"{e}: {e.details}"
+
+        return {"status": "unhealthy", "message": error_message}
 
 
 def check_memory() -> Dict[str, Any]:

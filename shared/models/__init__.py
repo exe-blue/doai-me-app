@@ -4,9 +4,9 @@ Agent, Message, Task, Knowledge 도메인 모델
 """
 
 from .agent import AgentCapability, AgentConfig, AgentState, AgentStatus
-from .knowledge import Knowledge, KnowledgeType
 from .message import AgentMessage, MessageType, Priority
 from .task import Task, TaskStatus, TaskType
+from .knowledge import Knowledge, KnowledgeType
 
 __all__ = [
     # Agent

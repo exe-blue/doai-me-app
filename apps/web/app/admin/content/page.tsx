@@ -1,5 +1,6 @@
 // app/admin/content/page.tsx
 // Content Management Page (Channels, Threats, Economy)
+// 권한별 기능 분리: 특별회원(등록), 관리자(수정), 소유자(삭제)
 
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
@@ -8,6 +9,7 @@ import { AdminLayout } from '../components/AdminLayout';
 import { ChannelsSection } from './ChannelsSection';
 import { ThreatsSection } from './ThreatsSection';
 import { EconomySection } from './EconomySection';
+import { checkPermission } from '@/lib/auth/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +24,13 @@ export default async function ContentPage({
     redirect('/admin/unauthorized');
   }
 
+  const { permissions } = auth;
   const activeTab = searchParams.tab || 'channels';
+
+  // 권한 체크
+  const canCreate = checkPermission(permissions.tier, permissions.adminRole, 'create', 'content');
+  const canEdit = checkPermission(permissions.tier, permissions.adminRole, 'edit', 'content');
+  const canDelete = checkPermission(permissions.tier, permissions.adminRole, 'delete', 'content');
 
   // Fetch data based on tab
   const [channels, threats, economyContents] = await Promise.all([
@@ -32,7 +40,7 @@ export default async function ContentPage({
   ]);
 
   return (
-    <AdminLayout activeTab="content">
+    <AdminLayout activeTab="content" permissions={permissions}>
       <div className="space-y-6">
         {/* Header with Tabs */}
         <div className="flex items-center justify-between">
@@ -41,6 +49,22 @@ export default async function ContentPage({
             <p className="text-neutral-500 text-sm mt-1">
               채널, 위협 콘텐츠, 경제 콘텐츠 관리
             </p>
+          </div>
+          
+          {/* 권한 안내 - 독립적으로 각 권한 뱃지 표시 */}
+          <div className="hidden md:flex gap-2 text-xs">
+            {canDelete && (
+              <span className="px-2 py-1 bg-red-900/30 text-red-300 rounded">삭제 가능</span>
+            )}
+            {canEdit && (
+              <span className="px-2 py-1 bg-amber-900/30 text-amber-300 rounded">수정 가능</span>
+            )}
+            {canCreate && (
+              <span className="px-2 py-1 bg-emerald-900/30 text-emerald-300 rounded">등록 가능</span>
+            )}
+            {!canCreate && !canEdit && !canDelete && (
+              <span className="px-2 py-1 bg-neutral-800 text-neutral-400 rounded">조회 전용</span>
+            )}
           </div>
         </div>
 
@@ -60,13 +84,28 @@ export default async function ContentPage({
         {/* Content */}
         <Suspense fallback={<ContentSkeleton />}>
           {activeTab === 'channels' && (
-            <ChannelsSection channels={channels} canEdit={auth.role !== 'viewer'} />
+            <ChannelsSection 
+              channels={channels} 
+              canCreate={canCreate}
+              canEdit={canEdit}
+              canDelete={canDelete}
+            />
           )}
           {activeTab === 'threats' && (
-            <ThreatsSection threats={threats} canEdit={auth.role !== 'viewer'} />
+            <ThreatsSection 
+              threats={threats} 
+              canCreate={canCreate}
+              canEdit={canEdit}
+              canDelete={canDelete}
+            />
           )}
           {activeTab === 'economy' && (
-            <EconomySection contents={economyContents} canEdit={auth.role !== 'viewer'} />
+            <EconomySection 
+              contents={economyContents} 
+              canCreate={canCreate}
+              canEdit={canEdit}
+              canDelete={canDelete}
+            />
           )}
         </Suspense>
       </div>
@@ -114,5 +153,3 @@ function ContentSkeleton() {
     </div>
   );
 }
-
-

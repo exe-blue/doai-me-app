@@ -3,7 +3,7 @@
 shared/models/ 테스트
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -171,6 +171,7 @@ class TestTaskModels:
     def test_task_duration(self):
         """작업 시간 계산"""
         from shared.models import Task, TaskType
+        from shared.models.task import TaskResult
 
         task = Task(type=TaskType.FEATURE, title="테스트")
         task.start()
@@ -380,7 +381,7 @@ class TestKnowledgeModels:
         assert not knowledge.is_expired()
 
         # 이미 만료된 지식
-        knowledge.expires_at = datetime.utcnow() - timedelta(hours=1)
+        knowledge.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
         assert knowledge.is_expired()
 
     def test_knowledge_query(self):

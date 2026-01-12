@@ -22,9 +22,6 @@ import {
   type WormholeIntensityLevel,
 } from '@/app/components/society';
 
-// CSS
-import '@/app/styles/umbral.css';
-
 // ============================================
 // Page Component
 // ============================================

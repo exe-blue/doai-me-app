@@ -125,7 +125,7 @@ export function InjectionPanel({ isDark }: InjectionPanelProps) {
         setError(data.error || '영상 정보를 불러올 수 없습니다');
         setVideoInfo(null);
       }
-    } catch (err) {
+    } catch {
       setError('영상 정보 조회 중 오류가 발생했습니다');
       setVideoInfo(null);
     } finally {

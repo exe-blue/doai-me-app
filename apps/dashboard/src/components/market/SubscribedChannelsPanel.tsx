@@ -71,7 +71,7 @@ export function SubscribedChannelsPanel({ isDark }: SubscribedChannelsPanelProps
       } else {
         setError(data.error || '채널 목록을 불러올 수 없습니다');
       }
-    } catch (err) {
+    } catch {
       setError('네트워크 오류가 발생했습니다');
     } finally {
       setIsLoading(false);
@@ -363,7 +363,10 @@ function ChannelCard({
 
   // prop 변경 시 로컬 상태 동기화
   useEffect(() => {
-    setTargetViews(channel.target_views_default);
+    const frame = requestAnimationFrame(() => {
+      setTargetViews(channel.target_views_default);
+    });
+    return () => cancelAnimationFrame(frame);
   }, [channel.target_views_default]);
   return (
     <div

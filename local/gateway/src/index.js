@@ -79,8 +79,9 @@ const { initializeChromeRoutes } = require('./api/routes/chrome');
 // YouTube API Router
 const youtubeRouter = require('./api/routes/youtube');
 
-// Kernel API Router (placeholder for YouTube automation)
+// Kernel API Router (YouTube app automation)
 const kernelRouter = require('./api/routes/kernel');
+const { initKernelRouter } = require('./api/routes/kernel');
 
 const H264StreamServer = require('./stream/h264-stream');
 
@@ -115,7 +116,7 @@ const heartbeat = new HeartbeatMonitor(logger, commander, deviceTracker);
 
 // ==================== 작업 큐 ====================
 const taskQueue = new TaskQueue(logger);
-const dispatcher = new Dispatcher(logger, commander, deviceTracker, taskQueue);
+const dispatcher = new Dispatcher(logger, commander, deviceTracker, taskQueue, discoveryManager);
 
 // ==================== WebSocket Multiplexer (v3.0) ====================
 const wsMultiplexer = new WebSocketMultiplexer(logger, adbClient, discoveryManager, commander);
@@ -399,6 +400,10 @@ async function start() {
         } else {
             logger.info('[Gateway] ⏭️ Laixi 비활성화 (ADB 모드)');
         }
+
+        // Initialize Kernel Router with Laixi for YouTube app automation
+        initKernelRouter(deviceTracker, laixiAdapter);
+        logger.info('[Gateway] ✅ Kernel Router 초기화 완료 (YouTube app automation)');
 
         // 5.6. Vultr WSS 연결 (v2.1)
         logger.info('[Gateway] Vultr 연결 초기화...');

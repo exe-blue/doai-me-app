@@ -41,7 +41,9 @@ function Particles({ isActive }: { isActive: boolean }) {
   // isActive 변경 시 파티클 생성
   useEffect(() => {
     if (isActive) {
-      createParticles();
+      // Use requestAnimationFrame to avoid synchronous setState in effect
+      const frame = requestAnimationFrame(() => createParticles());
+      return () => cancelAnimationFrame(frame);
     }
   }, [isActive, createParticles]);
   
@@ -104,7 +106,7 @@ export function Enter() {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none"
         style={{
-          background: 'radial-gradient(circle, rgba(245, 158, 11, 0.05) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(255, 204, 0, 0.05) 0%, transparent 70%)',
           filter: 'blur(60px)',
         }}
         animate={{

@@ -9,8 +9,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Home as HomeIcon, TrendingUp, BookOpen, Briefcase, Library, User,
-  Moon, Sun, Menu, X, ChevronRight, Tv
+  Home as HomeIcon, TrendingUp, Tv, Newspaper, Users, Coins, Building,
+  Moon, Sun, Menu, X, ChevronRight
 } from 'lucide-react';
 
 // ============================================
@@ -42,12 +42,12 @@ interface HeaderProps {
 
 const MENU_ITEMS: MenuItem[] = [
   { id: 'home', label: 'HOME', icon: HomeIcon, href: '/', available: true },
-  { id: 'market', label: 'MARKET', icon: TrendingUp, href: '/market', available: true, description: '경제 | AI 노드 관제' },
-  { id: 'infra', label: 'INFRA', icon: Tv, href: '/infra', available: true, description: '채널 편성표' },
-  { id: 'poc', label: 'POC', icon: Briefcase, href: '/poc', available: true, description: 'Kernel YouTube 테스트' },
-  { id: 'philosophy', label: 'PHILOSOPHY', icon: BookOpen, available: false, description: '철학, 선언, 권리와 의무, 비전' },
-  { id: 'knowledge', label: 'KNOWLEDGE', icon: Library, available: false, description: '아카이브, 루온, 용어' },
-  { id: 'about', label: 'ABOUT', icon: User, href: '/?view=about', available: true, description: "Founder's Story" },
+  { id: 'consume', label: 'CONSUME', icon: TrendingUp, href: '/consume', available: true, description: 'AI 노드 관제' },
+  { id: 'channel', label: 'CHANNEL', icon: Tv, href: '/channel', available: true, description: '채널 편성표' },
+  { id: 'news', label: 'NEWS', icon: Newspaper, href: '/news', available: true, description: 'AI 뉴스 피드' },
+  { id: 'society', label: 'SOCIETY', icon: Users, href: '/society', available: true, description: '존재 증명' },
+  { id: 'economy', label: 'ECONOMY', icon: Coins, href: '/economy', available: true, description: '보상 구조' },
+  { id: 'apartment', label: 'APARTMENT', icon: Building, href: '/apartment', available: true, description: '디바이스 관리' },
 ];
 
 // ============================================

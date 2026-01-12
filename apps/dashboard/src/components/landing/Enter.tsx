@@ -36,7 +36,9 @@ function Particles({ isActive }: { isActive: boolean }) {
 
   useEffect(() => {
     if (isActive) {
-      createParticles();
+      // Use requestAnimationFrame to avoid synchronous setState in effect
+      const frame = requestAnimationFrame(() => createParticles());
+      return () => cancelAnimationFrame(frame);
     }
   }, [isActive, createParticles]);
 

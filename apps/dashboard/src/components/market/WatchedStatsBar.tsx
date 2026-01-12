@@ -35,13 +35,19 @@ export function WatchedStatsBar({
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    setCurrentTime(new Date());
-    
+    // Use requestAnimationFrame to avoid synchronous setState in effect
+    const frame = requestAnimationFrame(() => {
+      setMounted(true);
+      setCurrentTime(new Date());
+    });
+
     const interval = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-    return () => clearInterval(interval);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearInterval(interval);
+    };
   }, []);
 
   return (

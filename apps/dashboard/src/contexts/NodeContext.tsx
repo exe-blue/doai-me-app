@@ -143,6 +143,7 @@ type NodeAction =
   | { type: 'UPDATE_QUEUED_VIDEO'; payload: Partial<QueuedVideo> & { id: string } }
   | { type: 'REMOVE_QUEUED_VIDEO'; payload: string }
   | { type: 'ADD_COMPLETED_VIDEO'; payload: CompletedVideo }
+  | { type: 'COMPLETE_VIDEO'; payload: { videoId: string; stats: { successCount: number; errorCount: number } } }
   | { type: 'ADD_LOG'; payload: Omit<LogEntry, 'id' | 'timestamp'> }
   | { type: 'CLEAR_LOGS' }
   | { type: 'SET_CONNECTION_STATUS'; payload: ConnectionStatus }
@@ -328,6 +329,36 @@ function nodeReducer(state: NodeState, action: NodeAction): NodeState {
         },
       };
 
+    case 'COMPLETE_VIDEO': {
+      const { videoId, stats } = action.payload;
+      const video = state.queuedVideos.find(v => v.id === videoId);
+      if (!video) return state;
+
+      const completedVideo: CompletedVideo = {
+        id: video.id,
+        title: video.title,
+        url: video.url,
+        thumbnail: video.thumbnail,
+        channel: video.channel,
+        completedAt: new Date(),
+        totalViews: video.currentViews,
+        successCount: stats.successCount,
+        errorCount: stats.errorCount,
+        duration: Math.floor((Date.now() - video.registeredAt.getTime()) / 1000),
+      };
+
+      return {
+        ...state,
+        queuedVideos: state.queuedVideos.filter(v => v.id !== videoId),
+        completedVideos: [completedVideo, ...state.completedVideos],
+        stats: {
+          ...state.stats,
+          totalViews: state.stats.totalViews + completedVideo.totalViews,
+          todayViews: state.stats.todayViews + completedVideo.totalViews,
+        },
+      };
+    }
+
     case 'ADD_LOG': {
       const newLog: LogEntry = {
         id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
@@ -460,6 +491,234 @@ export function NodeProvider({ children, wsEndpoint }: NodeProviderProps) {
     // 약간의 랜덤 지터 추가 (0-500ms)
     return delay + Math.random() * 500;
   }, []);
+
+  // ─────────────────────────────────────────
+  // Video Completion (reducer-based for WebSocket handlers)
+  // ─────────────────────────────────────────
+
+  const completeVideo = useCallback((videoId: string, stats: { successCount: number; errorCount: number }) => {
+    // dispatch로 reducer에서 상태 변경 처리 (stale closure 방지)
+    dispatch({ type: 'COMPLETE_VIDEO', payload: { videoId, stats } });
+    // 로그는 별도 dispatch로 처리 (video title은 reducer에서 알 수 없으므로 일반 메시지)
+    addLogInternal('success', `🎉 영상 완료 (${stats.successCount}회 시청)`, { category: 'video' });
+  }, [addLogInternal]);
+
+  const completeVideoFromWs = useCallback((videoId: string, stats: { successCount: number; errorCount: number }) => {
+    // WebSocket 핸들러에서도 reducer 기반으로 처리 (stale state 방지)
+    dispatch({ type: 'COMPLETE_VIDEO', payload: { videoId, stats } });
+    addLogInternal('success', `🎉 영상 완료 (${stats.successCount}회 시청)`, { category: 'video' });
+  }, [addLogInternal]);
+
+  // ─────────────────────────────────────────
+  // 데이터 변환 (WebSocket 메시지 핸들러에서 사용)
+  // ─────────────────────────────────────────
+
+  const convertNodeData = (raw: Record<string, unknown>): GatewayNode => ({
+    id: raw.id as string,
+    hostname: raw.hostname as string || 'Unknown',
+    ipAddress: raw.ipAddress as string || '127.0.0.1',
+    platform: raw.platform as string || 'unknown',
+    status: (raw.status as NodeStatus) || 'online',
+    deviceCount: (raw.deviceCount as number) || 0,
+    onlineDeviceCount: (raw.onlineDeviceCount as number) || 0,
+    laixiConnected: (raw.laixiConnected as boolean) || false,
+    lastSeen: raw.lastSeen ? new Date(raw.lastSeen as string) : new Date(),
+    reconnectAttempts: (raw.reconnectAttempts as number) || 0,
+  });
+
+  const convertDeviceData = (raw: Record<string, unknown>, nodeId: string): Device => ({
+    id: raw.id as string,
+    serial: raw.serial as string || raw.id as string,
+    name: raw.name as string || `Device ${(raw.id as string).slice(-4)}`,
+    model: raw.model as string || 'Unknown',
+    status: (raw.status as DeviceStatus) || 'idle',
+    wallet: (raw.wallet as number) || 0,
+    currentTask: raw.currentTask as { videoId: string; title: string } | null,
+    lastSeen: raw.lastSeen ? new Date(raw.lastSeen as string) : new Date(),
+    traits: (raw.traits as string[]) || [],
+    nodeId: raw.nodeId as string || nodeId,
+    errorMessage: raw.errorMessage as string | undefined,
+    recoveryAttempts: (raw.recoveryAttempts as number) || 0,
+  });
+
+  // ─────────────────────────────────────────
+  // WebSocket 메시지 핸들러 (must be declared before connect)
+  // ─────────────────────────────────────────
+
+  const handleWebSocketMessage = useCallback((data: Record<string, unknown>) => {
+    switch (data.type) {
+      case 'INIT':
+      case 'STATE_UPDATE': {
+        // 노드(PC) 정보 처리
+        if (data.node) {
+          const node = convertNodeData(data.node as Record<string, unknown>);
+          dispatch({ type: 'SET_NODE', payload: node });
+
+          if (data.type === 'INIT') {
+            addLogInternal(
+              'success',
+              `📡 노드 연결: ${node.hostname} (${node.ipAddress})`,
+              { category: 'device', nodeId: node.id }
+            );
+          }
+        }
+
+        // 디바이스(스마트폰) 정보 처리
+        if (data.devices && Array.isArray(data.devices)) {
+          const nodeId = (data.node as Record<string, unknown>)?.id as string || 'unknown';
+          const devices = (data.devices as Array<Record<string, unknown>>).map(d =>
+            convertDeviceData(d, nodeId)
+          );
+          dispatch({ type: 'SET_DEVICES', payload: { nodeId, devices } });
+
+          if (data.type === 'INIT') {
+            const onlineCount = devices.filter(d => d.status !== 'offline').length;
+            addLogInternal(
+              'info',
+              `📱 ${devices.length}개 디바이스 감지 (${onlineCount}개 온라인)`,
+              { category: 'device', nodeId }
+            );
+          }
+        }
+        break;
+      }
+
+      case 'DEVICE_STATUS': {
+        const deviceId = data.deviceId as string;
+        const status = data.status as DeviceStatus;
+        const task = data.currentTask as { videoId: string; title: string } | null;
+
+        dispatch({
+          type: 'UPDATE_DEVICE',
+          payload: { id: deviceId, status, currentTask: task, lastSeen: new Date() },
+        });
+
+        // 상태 변경 로그 (busy/idle 전환만)
+        if (status === 'busy' && task) {
+          addLogInternal('info', `▶️ 시청 시작: ${task.title}`, { category: 'video', deviceId });
+        } else if (status === 'idle') {
+          addLogInternal('info', `⏹️ 작업 완료`, { category: 'video', deviceId });
+        }
+        break;
+      }
+
+      case 'DEVICE_ERROR': {
+        const deviceId = data.deviceId as string;
+        const error = data.error as string;
+
+        dispatch({
+          type: 'UPDATE_DEVICE',
+          payload: { id: deviceId, status: 'error', errorMessage: error, currentTask: null },
+        });
+        addLogInternal('error', `❌ 디바이스 오류: ${error}`, { category: 'device', deviceId });
+        break;
+      }
+
+      case 'DEVICE_RECOVERED': {
+        const deviceId = data.deviceId as string;
+        dispatch({
+          type: 'UPDATE_DEVICE',
+          payload: { id: deviceId, status: 'idle', errorMessage: undefined, recoveryAttempts: 0, lastSeen: new Date() },
+        });
+        addLogInternal('success', `✅ 디바이스 복구됨`, { category: 'device', deviceId });
+        break;
+      }
+
+      case 'LAIXI_CONNECTED': {
+        const nodeId = data.nodeId as string;
+        dispatch({ type: 'UPDATE_NODE', payload: { id: nodeId, laixiConnected: true, status: 'online' } });
+        addLogInternal('success', `✅ Laixi 연결됨`, { category: 'connection', nodeId });
+        break;
+      }
+
+      case 'LAIXI_DISCONNECTED': {
+        const nodeId = data.nodeId as string;
+        dispatch({ type: 'UPDATE_NODE', payload: { id: nodeId, laixiConnected: false } });
+        dispatch({ type: 'SET_ALL_DEVICES_OFFLINE', payload: nodeId });
+        addLogInternal('error', `⚠️ Laixi 연결 끊김`, { category: 'connection', nodeId });
+        break;
+      }
+
+      case 'LAIXI_RECONNECTING': {
+        const nodeId = data.nodeId as string;
+        const attempt = data.attempt as number;
+        dispatch({ type: 'UPDATE_NODE', payload: { id: nodeId, status: 'reconnecting', reconnectAttempts: attempt } });
+        addLogInternal('warn', `🔄 Laixi 재연결 중 (${attempt}/10)`, { category: 'connection', nodeId });
+        break;
+      }
+
+      case 'VIDEO_PROGRESS': {
+        dispatch({
+          type: 'UPDATE_QUEUED_VIDEO',
+          payload: {
+            id: data.videoId as string,
+            currentViews: data.currentViews as number,
+            progress: data.progress as number,
+          },
+        });
+        break;
+      }
+
+      case 'WATCH_PROGRESS': {
+        // 시청 진행률 (너무 자주 오면 로그 안 함)
+        break;
+      }
+
+      case 'VIDEO_DISTRIBUTED': {
+        const count = data.distributedCount as number;
+        addLogInternal('success', `📤 영상 배분 완료: ${count}개 디바이스`, { category: 'video' });
+        break;
+      }
+
+      case 'VIDEO_COMPLETE': {
+        completeVideoFromWs(
+          data.videoId as string,
+          data.stats as { successCount: number; errorCount: number }
+        );
+        break;
+      }
+
+      case 'INJECT_RESULT': {
+        if (data.success) {
+          addLogInternal('success', `✅ ${data.distributedCount}개 디바이스에 배분`, { category: 'video' });
+        } else {
+          addLogInternal('error', `❌ 배분 실패: ${data.reason || '알 수 없는 오류'}`, { category: 'video' });
+        }
+        break;
+      }
+
+      case 'DISTRIBUTION_FAILED': {
+        addLogInternal('error', `❌ 배분 실패: ${data.reason || '활성 디바이스 없음'}`, { category: 'video' });
+        break;
+      }
+
+      case 'LOG': {
+        // 서버에서 보내는 로그 (category 포함)
+        addLogInternal(
+          data.level as LogEntry['level'],
+          data.message as string,
+          {
+            nodeId: data.nodeId as string | undefined,
+            deviceId: data.deviceId as string | undefined,
+            category: data.category as LogEntry['category'] || 'system',
+          }
+        );
+        break;
+      }
+
+      case 'PONG': {
+        // 핑퐁 응답 - 로그 안 함
+        break;
+      }
+
+      default:
+        // 알 수 없는 메시지 타입 - 디버그용
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Unknown WS message:', data.type, data);
+        }
+        break;
+    }
+  }, [addLogInternal, completeVideoFromWs]);
 
   // ─────────────────────────────────────────
   // WebSocket 연결
@@ -601,7 +860,7 @@ export function NodeProvider({ children, wsEndpoint }: NodeProviderProps) {
       dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'error' });
       addLogInternal('error', `❌ 연결 생성 실패: ${error}`, { category: 'connection' });
     }
-  }, [effectiveWsEndpoint, addLogInternal, getReconnectDelay]);
+  }, [effectiveWsEndpoint, addLogInternal, getReconnectDelay, handleWebSocketMessage]);
 
   const disconnect = useCallback(() => {
     // 재연결 타이머 취소
@@ -624,217 +883,6 @@ export function NodeProvider({ children, wsEndpoint }: NodeProviderProps) {
     dispatch({ type: 'SET_RECONNECT_ATTEMPT', payload: 0 });
     addLogInternal('info', '🔌 연결 종료됨', { category: 'connection' });
   }, [addLogInternal]);
-
-  // ─────────────────────────────────────────
-  // WebSocket 메시지 핸들러
-  // ─────────────────────────────────────────
-
-  const handleWebSocketMessage = useCallback((data: Record<string, unknown>) => {
-    switch (data.type) {
-      case 'INIT':
-      case 'STATE_UPDATE': {
-        // 노드(PC) 정보 처리
-        if (data.node) {
-          const node = convertNodeData(data.node as Record<string, unknown>);
-          dispatch({ type: 'SET_NODE', payload: node });
-          
-          if (data.type === 'INIT') {
-            addLogInternal(
-              'success', 
-              `📡 노드 연결: ${node.hostname} (${node.ipAddress})`,
-              { category: 'device', nodeId: node.id }
-            );
-          }
-        }
-        
-        // 디바이스(스마트폰) 정보 처리
-        if (data.devices && Array.isArray(data.devices)) {
-          const nodeId = (data.node as Record<string, unknown>)?.id as string || 'unknown';
-          const devices = (data.devices as Array<Record<string, unknown>>).map(d => 
-            convertDeviceData(d, nodeId)
-          );
-          dispatch({ type: 'SET_DEVICES', payload: { nodeId, devices } });
-          
-          if (data.type === 'INIT') {
-            const onlineCount = devices.filter(d => d.status !== 'offline').length;
-            addLogInternal(
-              'info', 
-              `📱 ${devices.length}개 디바이스 감지 (${onlineCount}개 온라인)`,
-              { category: 'device', nodeId }
-            );
-          }
-        }
-        break;
-      }
-
-      case 'DEVICE_STATUS': {
-        const deviceId = data.deviceId as string;
-        const status = data.status as DeviceStatus;
-        const task = data.currentTask as { videoId: string; title: string } | null;
-        
-        dispatch({
-          type: 'UPDATE_DEVICE',
-          payload: { id: deviceId, status, currentTask: task, lastSeen: new Date() },
-        });
-        
-        // 상태 변경 로그 (busy/idle 전환만)
-        if (status === 'busy' && task) {
-          addLogInternal('info', `▶️ 시청 시작: ${task.title}`, { category: 'video', deviceId });
-        } else if (status === 'idle') {
-          addLogInternal('info', `⏹️ 작업 완료`, { category: 'video', deviceId });
-        }
-        break;
-      }
-
-      case 'DEVICE_ERROR': {
-        const deviceId = data.deviceId as string;
-        const error = data.error as string;
-        
-        dispatch({
-          type: 'UPDATE_DEVICE',
-          payload: { id: deviceId, status: 'error', errorMessage: error, currentTask: null },
-        });
-        addLogInternal('error', `❌ 디바이스 오류: ${error}`, { category: 'device', deviceId });
-        break;
-      }
-
-      case 'DEVICE_RECOVERED': {
-        const deviceId = data.deviceId as string;
-        dispatch({
-          type: 'UPDATE_DEVICE',
-          payload: { id: deviceId, status: 'idle', errorMessage: undefined, recoveryAttempts: 0, lastSeen: new Date() },
-        });
-        addLogInternal('success', `✅ 디바이스 복구됨`, { category: 'device', deviceId });
-        break;
-      }
-
-      case 'LAIXI_CONNECTED': {
-        const nodeId = data.nodeId as string;
-        dispatch({ type: 'UPDATE_NODE', payload: { id: nodeId, laixiConnected: true, status: 'online' } });
-        addLogInternal('success', `✅ Laixi 연결됨`, { category: 'connection', nodeId });
-        break;
-      }
-
-      case 'LAIXI_DISCONNECTED': {
-        const nodeId = data.nodeId as string;
-        dispatch({ type: 'UPDATE_NODE', payload: { id: nodeId, laixiConnected: false } });
-        dispatch({ type: 'SET_ALL_DEVICES_OFFLINE', payload: nodeId });
-        addLogInternal('error', `⚠️ Laixi 연결 끊김`, { category: 'connection', nodeId });
-        break;
-      }
-
-      case 'LAIXI_RECONNECTING': {
-        const nodeId = data.nodeId as string;
-        const attempt = data.attempt as number;
-        dispatch({ type: 'UPDATE_NODE', payload: { id: nodeId, status: 'reconnecting', reconnectAttempts: attempt } });
-        addLogInternal('warn', `🔄 Laixi 재연결 중 (${attempt}/10)`, { category: 'connection', nodeId });
-        break;
-      }
-
-      case 'VIDEO_PROGRESS': {
-        dispatch({
-          type: 'UPDATE_QUEUED_VIDEO',
-          payload: {
-            id: data.videoId as string,
-            currentViews: data.currentViews as number,
-            progress: data.progress as number,
-          },
-        });
-        break;
-      }
-
-      case 'WATCH_PROGRESS': {
-        // 시청 진행률 (너무 자주 오면 로그 안 함)
-        break;
-      }
-
-      case 'VIDEO_DISTRIBUTED': {
-        const count = data.distributedCount as number;
-        addLogInternal('success', `📤 영상 배분 완료: ${count}개 디바이스`, { category: 'video' });
-        break;
-      }
-
-      case 'VIDEO_COMPLETE': {
-        completeVideoFromWs(
-          data.videoId as string,
-          data.stats as { successCount: number; errorCount: number }
-        );
-        break;
-      }
-
-      case 'INJECT_RESULT': {
-        if (data.success) {
-          addLogInternal('success', `✅ ${data.distributedCount}개 디바이스에 배분`, { category: 'video' });
-        } else {
-          addLogInternal('error', `❌ 배분 실패: ${data.reason || '알 수 없는 오류'}`, { category: 'video' });
-        }
-        break;
-      }
-
-      case 'DISTRIBUTION_FAILED': {
-        addLogInternal('error', `❌ 배분 실패: ${data.reason || '활성 디바이스 없음'}`, { category: 'video' });
-        break;
-      }
-
-      case 'LOG': {
-        // 서버에서 보내는 로그 (category 포함)
-        addLogInternal(
-          data.level as LogEntry['level'],
-          data.message as string,
-          { 
-            nodeId: data.nodeId as string | undefined, 
-            deviceId: data.deviceId as string | undefined,
-            category: data.category as LogEntry['category'] || 'system',
-          }
-        );
-        break;
-      }
-
-      case 'PONG': {
-        // 핑퐁 응답 - 로그 안 함
-        break;
-      }
-
-      default:
-        // 알 수 없는 메시지 타입 - 디버그용
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Unknown WS message:', data.type, data);
-        }
-        break;
-    }
-  }, [addLogInternal]);
-
-  // ─────────────────────────────────────────
-  // 데이터 변환
-  // ─────────────────────────────────────────
-
-  const convertNodeData = (raw: Record<string, unknown>): GatewayNode => ({
-    id: raw.id as string,
-    hostname: raw.hostname as string || 'Unknown',
-    ipAddress: raw.ipAddress as string || '127.0.0.1',
-    platform: raw.platform as string || 'unknown',
-    status: (raw.status as NodeStatus) || 'online',
-    deviceCount: (raw.deviceCount as number) || 0,
-    onlineDeviceCount: (raw.onlineDeviceCount as number) || 0,
-    laixiConnected: (raw.laixiConnected as boolean) || false,
-    lastSeen: raw.lastSeen ? new Date(raw.lastSeen as string) : new Date(),
-    reconnectAttempts: (raw.reconnectAttempts as number) || 0,
-  });
-
-  const convertDeviceData = (raw: Record<string, unknown>, nodeId: string): Device => ({
-    id: raw.id as string,
-    serial: raw.serial as string || raw.id as string,
-    name: raw.name as string || `Device ${(raw.id as string).slice(-4)}`,
-    model: raw.model as string || 'Unknown',
-    status: (raw.status as DeviceStatus) || 'idle',
-    wallet: (raw.wallet as number) || 0,
-    currentTask: raw.currentTask as { videoId: string; title: string } | null,
-    lastSeen: raw.lastSeen ? new Date(raw.lastSeen as string) : new Date(),
-    traits: (raw.traits as string[]) || [],
-    nodeId: raw.nodeId as string || nodeId,
-    errorMessage: raw.errorMessage as string | undefined,
-    recoveryAttempts: (raw.recoveryAttempts as number) || 0,
-  });
 
   // ─────────────────────────────────────────
   // Actions
@@ -864,32 +912,6 @@ export function NodeProvider({ children, wsEndpoint }: NodeProviderProps) {
   const updateVideo = useCallback((video: Partial<QueuedVideo> & { id: string }) => {
     dispatch({ type: 'UPDATE_QUEUED_VIDEO', payload: video });
   }, []);
-
-  const completeVideo = useCallback((videoId: string, stats: { successCount: number; errorCount: number }) => {
-    const video = state.queuedVideos.find(v => v.id === videoId);
-    if (!video) return;
-
-    const completedVideo: CompletedVideo = {
-      id: video.id,
-      title: video.title,
-      url: video.url,
-      thumbnail: video.thumbnail,
-      channel: video.channel,
-      completedAt: new Date(),
-      totalViews: video.currentViews,
-      successCount: stats.successCount,
-      errorCount: stats.errorCount,
-      duration: Math.floor((Date.now() - video.registeredAt.getTime()) / 1000),
-    };
-
-    dispatch({ type: 'REMOVE_QUEUED_VIDEO', payload: videoId });
-    dispatch({ type: 'ADD_COMPLETED_VIDEO', payload: completedVideo });
-    addLogInternal('success', `🎉 완료: "${video.title}" (${stats.successCount}회 시청)`, { category: 'video' });
-  }, [state.queuedVideos, addLogInternal]);
-
-  const completeVideoFromWs = useCallback((videoId: string, stats: { successCount: number; errorCount: number }) => {
-    completeVideo(videoId, stats);
-  }, [completeVideo]);
 
   const injectVideo = useCallback((
     video: { videoId: string; title: string; url: string; thumbnail?: string; channel?: string },

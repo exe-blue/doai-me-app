@@ -12,9 +12,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Play, 
-  Pause, 
+import {
   Settings,
   Smartphone,
   Globe,
@@ -22,9 +20,6 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  RefreshCw,
-  ChevronDown,
-  Video,
   ThumbsUp,
   MessageSquare,
   Bell,
@@ -164,10 +159,10 @@ export function UnifiedControlPanel({
       };
 
       switch (config.mode) {
-        case 'laixi':
+        case 'laixi': {
           // Laixi Only: 로컬 디바이스에서 시청
           setExecutionStatus('Laixi 시청 명령 전송 중...');
-          
+
           const laixiRes = await fetch('/api/laixi', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -184,9 +179,9 @@ export function UnifiedControlPanel({
               }
             })
           });
-          
+
           const laixiData = await laixiRes.json();
-          
+
           if (laixiData.success) {
             result.success = true;
             result.deviceCount = laixiData.dispatched_count || 0;
@@ -195,8 +190,9 @@ export function UnifiedControlPanel({
             throw new Error(laixiData.error || 'Laixi 실행 실패');
           }
           break;
+        }
 
-        case 'kernel':
+        case 'kernel': {
           // Kernel Only: 브라우저 자동화
           setExecutionStatus('Kernel 브라우저 자동화 실행 중...');
           
@@ -268,11 +264,12 @@ export function UnifiedControlPanel({
           result.kernelActions = kernelActions;
           setExecutionStatus('Kernel 자동화 완료');
           break;
+        }
 
-        case 'hybrid':
+        case 'hybrid': {
           // Hybrid: Laixi 시청 + Kernel 인터랙션
           setExecutionStatus('Hybrid 모드: Laixi 시청 시작...');
-          
+
           // 1. Laixi로 시청
           const hybridLaixiRes = await fetch('/api/laixi', {
             method: 'POST',
@@ -327,6 +324,7 @@ export function UnifiedControlPanel({
           result.kernelActions = hybridKernelActions;
           setExecutionStatus('Hybrid 모드 완료');
           break;
+        }
       }
 
       setLastResult(result);

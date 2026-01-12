@@ -6,6 +6,8 @@ shared/utils/validators.py 테스트
 from datetime import datetime
 from uuid import UUID, uuid4
 
+import pytest
+
 
 class TestValidationError:
     """ValidationError 클래스 테스트"""

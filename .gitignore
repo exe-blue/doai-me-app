@@ -74,8 +74,6 @@ desktop.ini
 
 # ==================== Node.js ====================
 node_modules/
-.next/
-out/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -108,15 +106,43 @@ secrets/
 credentials.json
 service-account*.json
 
-# ==================== Sensitive Files (절대 커밋 금지) ====================
-# Claude 로컬 설정 (민감한 경로/IP 포함)
-.claude/settings.local.json
-
-# 배포 관련 민감 파일
-deploy/deploy_to_vultr.bat
-deploy/deploy.env
-
-# SSH 키 (절대 커밋 금지)
+# SSH Keys
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+id_ecdsa
+id_ecdsa.pub
+*_key
+*_key.pub
 vultr_key
-vultr_key.pub
-*.ppk
+
+.vercel
+
+# ==================== Claude Code ====================
+tmpclaude-*
+*.cwd
+.claude/settings.local.json
+.sisyphus/
+
+# ==================== Temporary/WIP Projects ====================
+apps/layout.tsx
+apps/resonance/
+nextjs-doai.me/
+studio-hello-world/
+packages/
+
+# ==================== WIP Services ====================
+services/cloud-gateway/core/
+services/cloud-gateway/handlers/
+services/cloud-gateway/main_refactored.py
+services/doaime-mcp/
+
+# ==================== WIP Docs & Tests ====================
+docs/backlog/
+docs/v0-handoff.md
+load_tests/
+
+# ==================== WIP Schemas & Migrations ====================
+shared/schemas/gateway.py
+supabase/migrations/20260111_user_memberships.sql

@@ -3,6 +3,8 @@
 shared/monitoring/metrics.py 테스트
 """
 
+import pytest
+
 
 class TestAgentMetrics:
     """Agent 메트릭 테스트"""
@@ -12,13 +14,17 @@ class TestAgentMetrics:
         from shared.monitoring import agent_tasks_total
 
         # 초기값 저장
-        initial = agent_tasks_total.labels(agent_type="test_worker", status="success")._value.get()
+        initial = agent_tasks_total.labels(
+            agent_type="test_worker", status="success"
+        )._value.get()
 
         # 증가
         agent_tasks_total.labels(agent_type="test_worker", status="success").inc()
 
         # 검증
-        current = agent_tasks_total.labels(agent_type="test_worker", status="success")._value.get()
+        current = agent_tasks_total.labels(
+            agent_type="test_worker", status="success"
+        )._value.get()
         assert current == initial + 1
 
     def test_agent_tasks_counter_with_different_labels(self):
@@ -136,7 +142,9 @@ class TestQueueMetrics:
         """큐 처리 카운터 테스트"""
         from shared.monitoring.metrics import queue_processed_total
 
-        queue_processed_total.labels(queue_name="device_commands", status="success").inc(50)
+        queue_processed_total.labels(queue_name="device_commands", status="success").inc(
+            50
+        )
 
         count = queue_processed_total.labels(
             queue_name="device_commands", status="success"
