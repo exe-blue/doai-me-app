@@ -33,11 +33,21 @@ const KERNEL_PROBABILITIES = {
   subscribe: { min: 0.05, max: 0.10 }, // 5-10% 확률
 };
 
-// 확률 계산 함수
+/**
+ * 확률 기반 액션 실행 여부 결정
+ * 
+ * 동작 방식:
+ * 1. min~max 범위에서 랜덤 확률(targetProbability)을 선택
+ * 2. Math.random()으로 생성한 값이 targetProbability보다 작으면 실행
+ * 
+ * 예: min=0.05, max=0.10 → 5~10% 확률로 true 반환
+ */
 function shouldExecuteAction(actionType: keyof typeof KERNEL_PROBABILITIES): boolean {
   const { min, max } = KERNEL_PROBABILITIES[actionType];
-  const threshold = min + Math.random() * (max - min);
-  return Math.random() < threshold;
+  // min~max 범위에서 랜덤 확률 선택 (예: 5~10% 사이)
+  const targetProbability = min + Math.random() * (max - min);
+  // 랜덤 값이 목표 확률보다 작으면 실행
+  return Math.random() < targetProbability;
 }
 
 // 랜덤 댓글 목록

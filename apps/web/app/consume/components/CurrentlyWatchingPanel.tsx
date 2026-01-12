@@ -66,27 +66,10 @@ export function CurrentlyWatchingPanel({
         ))}
       </div>
 
-      {/* 작업 중인 디바이스 목록 (영상이 없는데 디바이스가 바쁜 경우) */}
-      {runningVideos.length === 0 && busyDevices.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-white/10">
-          <div className="text-xs text-neutral-500 mb-2">작업 중인 디바이스:</div>
-          <div className="flex flex-wrap gap-2">
-            {busyDevices.map(device => (
-              <div
-                key={device.id}
-                className="flex items-center gap-2 px-2 py-1 bg-[#FFCC00]/10 border border-[#FFCC00]/30 rounded text-xs"
-              >
-                <span className="text-[#FFCC00]">{device.name}</span>
-                {device.currentTask && (
-                  <span className="text-neutral-400 truncate max-w-[150px]">
-                    {device.currentTask.title}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* 
+        참고: 작업 중인 디바이스 목록은 EmptyWatchingState 컴포넌트에서 처리됨
+        runningVideos.length === 0인 경우 이미 early return 되므로 이 블록은 도달 불가 
+      */}
     </div>
   );
 }

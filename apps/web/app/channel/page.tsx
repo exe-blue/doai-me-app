@@ -383,7 +383,7 @@ function ChannelCard({ channel, channelNumber, isSelected, isDark, onSelect, onD
   return (
     <div
       onClick={onSelect}
-      className={`channel-card cursor-pointer p-4 ${isSelected ? 'ring-2 ring-[#FFCC00] border-[#FFCC00]/50' : ''}`}
+      className={`group channel-card cursor-pointer p-4 ${isSelected ? 'ring-2 ring-[#FFCC00] border-[#FFCC00]/50' : ''}`}
     >
       {/* 채널 번호 */}
       <div className="channel-number">

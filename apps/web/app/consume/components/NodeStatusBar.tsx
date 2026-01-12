@@ -85,7 +85,7 @@ export function NodeStatusBar({
   return (
     <div className={`${isDark ? 'bg-white/5 border-white/10' : 'bg-white/80 border-black/10'} backdrop-blur-md border rounded-lg px-4 py-3`}>
       {/* 상단: 노드(PC) 정보 */}
-      <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/10">
+      <div className={`flex items-center justify-between mb-3 pb-3 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
         {/* 노드 정보 */}
         <div className="flex items-center gap-4">
           {/* 노드 아이콘 + 호스트명 */}
@@ -109,7 +109,7 @@ export function NodeStatusBar({
           </div>
 
           {/* Bridge 연결 상태 */}
-          <div className="flex items-center gap-2 pl-4 border-l border-white/10">
+          <div className={`flex items-center gap-2 pl-4 border-l ${isDark ? 'border-white/10' : 'border-black/10'}`}>
             {getConnectionIcon()}
             <span className="text-xs font-mono text-neutral-400">
               {getConnectionText()}
@@ -117,7 +117,7 @@ export function NodeStatusBar({
           </div>
 
           {/* Laixi 연결 상태 */}
-          <div className="flex items-center gap-2 pl-4 border-l border-white/10">
+          <div className={`flex items-center gap-2 pl-4 border-l ${isDark ? 'border-white/10' : 'border-black/10'}`}>
             <Zap className={`w-4 h-4 ${laixiConnected ? 'text-yellow-400' : 'text-neutral-600'}`} />
             <span className={`text-xs font-mono ${laixiConnected ? 'text-yellow-400' : 'text-neutral-500'}`}>
               {laixiConnected ? 'Laixi 연결됨' : 'Laixi 연결 안됨'}
@@ -149,7 +149,7 @@ export function NodeStatusBar({
 
       {/* 중단: 에러 디바이스 알림 (있을 경우) */}
       {errorDevices.length > 0 && (
-        <div className="mb-3 pb-3 border-b border-white/10">
+        <div className={`mb-3 pb-3 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
           <div className="flex items-center gap-2 text-red-400 mb-2">
             <AlertCircle className="w-4 h-4" />
             <span className="text-xs font-medium">{errorDevices.length}개 디바이스 오류</span>

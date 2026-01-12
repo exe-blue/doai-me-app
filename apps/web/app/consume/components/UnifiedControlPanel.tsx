@@ -627,7 +627,13 @@ export function UnifiedControlPanel({
       <div className="p-6">
         <button
           onClick={executeWorkload}
-          disabled={isExecuting || !videoUrl || (config.mode === 'laixi' && !laixiConnected) || (config.mode === 'kernel' && !kernelConfigured)}
+          disabled={
+            isExecuting || 
+            !videoUrl || 
+            (config.mode === 'laixi' && !laixiConnected) || 
+            (config.mode === 'kernel' && !kernelConfigured) ||
+            (config.mode === 'hybrid' && (!laixiConnected || !kernelConfigured))
+          }
           className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-lg font-bold text-lg transition-all ${
             isExecuting
               ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'

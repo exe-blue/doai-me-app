@@ -37,9 +37,12 @@ const ParticleNetwork = dynamic(() => import('../components/ParticleNetwork'), {
 // Main Page Component
 // ============================================
 
+// WebSocket 엔드포인트 - 환경 변수 또는 기본값 사용
+const WS_ENDPOINT = process.env.NEXT_PUBLIC_WS_ENDPOINT || 'ws://localhost:8080';
+
 export default function MarketPage() {
   return (
-    <NodeProvider wsEndpoint="ws://localhost:8080">
+    <NodeProvider wsEndpoint={WS_ENDPOINT}>
       <MarketContent />
     </NodeProvider>
   );
