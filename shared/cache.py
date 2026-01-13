@@ -18,6 +18,7 @@ Usage:
 """
 
 import asyncio
+import inspect
 import json
 import os
 from datetime import datetime, timezone
@@ -307,7 +308,7 @@ class Cache:
             return value
 
         # Compute value
-        if asyncio.iscoroutinefunction(factory):
+        if inspect.iscoroutinefunction(factory):
             value = await factory()
         else:
             value = factory()
