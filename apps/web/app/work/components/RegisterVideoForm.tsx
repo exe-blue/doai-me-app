@@ -112,7 +112,7 @@ export function RegisterVideoForm() {
             </div>
             <button
               type="button"
-              onClick={fetchVideoInfo}
+              onClick={handleFetchVideoInfo}
               disabled={!url || isLoading}
               className={cn(
                 "px-4 py-3 rounded-lg font-mono text-sm uppercase",
