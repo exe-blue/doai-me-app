@@ -61,6 +61,19 @@ export function Header() {
             ))}
           </nav>
 
+          {/* Sign Up Button (Desktop) */}
+          <Link
+            href="/auth/signup"
+            className={cn(
+              "hidden md:inline-flex items-center gap-2",
+              "border border-accent bg-accent/10 px-4 py-2",
+              "font-mono text-[11px] tracking-[0.15em] uppercase text-accent",
+              "hover:bg-accent hover:text-background transition-all duration-300",
+            )}
+          >
+            Sign Up
+          </Link>
+
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -88,6 +101,19 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
+              {/* Mobile Sign Up Button */}
+              <Link
+                href="/auth/signup"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={cn(
+                  "mt-4 inline-flex items-center justify-center",
+                  "border border-accent bg-accent/10 px-4 py-3",
+                  "font-mono text-[11px] tracking-[0.15em] uppercase text-accent",
+                  "hover:bg-accent hover:text-background transition-all duration-300",
+                )}
+              >
+                Sign Up
+              </Link>
             </div>
           </nav>
         )}
