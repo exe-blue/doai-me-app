@@ -25,6 +25,17 @@ load_dotenv(project_root / ".env")
 
 
 # =============================================================================
+# Integration Test Flag
+# =============================================================================
+
+# Skip integration tests if Supabase credentials are not available
+SKIP_INTEGRATION_TESTS = not (
+    os.getenv("SUPABASE_URL") and
+    (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY"))
+)
+
+
+# =============================================================================
 # 공통 Fixtures
 # =============================================================================
 

@@ -4,6 +4,14 @@ Prometheus 메트릭 및 헬스체크
 """
 
 from .health import HealthChecker, HealthCheckResult, HealthStatus, ComponentHealth
+from .log_collector import (
+    LogCollector,
+    LogLevel,
+    get_log_collector,
+    get_log_stats,
+    reset_log_collector,
+    search_logs,
+)
 from .metrics import (
     agent_task_duration,
     agent_tasks_total,
@@ -26,4 +34,11 @@ __all__ = [
     "HealthCheckResult",
     "HealthStatus",
     "ComponentHealth",
+    # Log Collection
+    "LogCollector",
+    "LogLevel",
+    "get_log_collector",
+    "get_log_stats",
+    "reset_log_collector",
+    "search_logs",
 ]
