@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     .limit(10);
 
   if (error) {
-    console.error(`[node_id=${node_id}] Pull failed`, error);
+    console.error('[node_id=%s] Pull failed', node_id, error);
     return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });
   }
 
