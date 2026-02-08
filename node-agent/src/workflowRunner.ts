@@ -6,6 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from './config.js';
 import { logInfo, logError } from './logger.js';
 import type { WorkflowPayload } from './queue.js';
+import { emulatorHealthGate } from './emulatorGate.js';
 import { devicePreflight } from './preflight.js';
 import { listDevices, screen as vendorScreen } from './vendorAdapter.js';
 import { buildStoragePath, uploadScreenshot } from './storage.js';
@@ -81,6 +82,21 @@ export async function runWorkflow(
   });
 
   try {
+    const gate = await emulatorHealthGate(runtime_handle);
+    if (!gate.ok) {
+      const endedAt = Date.now();
+      await emit('task_finished', {
+        task_id,
+        device_id,
+        runtime_handle,
+        status: 'failed',
+        failure_reason: gate.failure_reason,
+        timings: { startedAt, endedAt },
+        timestamp: endedAt,
+      });
+      return { ok: false, failure_reason: gate.failure_reason };
+    }
+
     const preflight = devicePreflight(runtime_handle);
     if (!preflight.ok) {
       await emit('task_finished', {

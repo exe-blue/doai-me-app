@@ -20,7 +20,7 @@
 - 디바이스 1대 = 1 Workflow 연속 실행; 작업 따로 큐에 넣기 금지
 - workflows 테이블: definition_json (DSL); runs.workflow_id 참조; frontend timeout overrides
 - ADB bootstrap recipe: locale/resolution/density/animations/stay-awake; accessibility manual fallback
-- Preflight: device (adb unauthorized → needs_usb_authorization); node (vendor WS + list)
+- Preflight (3중 문지기): Emulator Health Gate → Device Preflight (adb unauthorized → needs_usb_authorization) → 워크플로우; Node Preflight (vendor WS + list)는 주기/부팅 시, heartbeat에 vendor_ws_ok 보고
 
 ## Node Agent (TS)
 - Vendor WS locally; MAX_CONCURRENCY_PER_NODE=20; FIFO queue; device-level lock
