@@ -152,3 +152,13 @@
 3. Phase C (Node Agent) — can parallelize C1–C4 with B
 4. Phase D (Frontend)
 5. Phase E (Docs)
+
+---
+
+## 8. 다음에 할일 — Phase A Gates & Preflight
+
+Preflight 2계층 고정 + Emulator Health Gate 확정 사항은 별도 계획에서 실행한다.
+
+- **계획서**: `.sisyphus/plans/phase-a-gates-and-preflight.md`
+- **요약**: Emulator Health Gate(에뮬레이터 구동·ADB online·부팅 완료) → Device Preflight(매 run 직전, unauthorized fail-fast) → Node Preflight(주기/부팅, vendor WS + list, 노드 상태 보고). 3중 문지기 구조. PR 계획 포함.
+- **실행**: `/sisyphus` 또는 해당 계획서 기준으로 Phase A 구현 후 PR 생성.
