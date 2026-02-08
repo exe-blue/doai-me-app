@@ -1,0 +1,13 @@
+# Sentry Example Files Removal
+
+This marker file documents the removal of Sentry example demonstration files.
+
+## Files Removed:
+- app/api/sentry-example-api/route.ts
+- app/sentry-example-page/page.tsx  
+- lib/sentry-errors.ts
+
+## Reason:
+These files were demonstration/example files added by sentry[bot] that served no purpose in the production application and were causing actual errors to be reported.
+
+## Date: 2026-02-08
