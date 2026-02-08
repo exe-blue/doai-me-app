@@ -1,0 +1,27 @@
+---
+description: MVP Deploy Gate — 배포 살아있음 선행 조건, Phase D0 체크리스트
+alwaysApply: true
+---
+
+# Deploy Gate (Phase D0) — MVP 공식 편입
+
+**원칙**: “자동화가 된다”만으로는 MVP 합격이 아니다. **“배포가 살아있다”**가 선행 조건이다.
+
+## Phase D0: Deploy Gate (가장 먼저)
+
+배포 직후 아래 4개를 **고정 체크리스트**로 확인한다.
+
+| # | 경로 | 기대 |
+|---|------|------|
+| 1 | `/health` | 200 (프론트) |
+| 2 | `/api/health` | 200 (백엔드, 있으면) |
+| 3 | `/` | 200 (랜딩) |
+| 4 | `/dashboard` | 200 (콘솔) |
+
+- MVP 계획·회고 시 “Deploy Gate 통과”를 Phase D0으로 명시.
+- 4개 중 하나라도 실패하면 배포/프로젝트 설정(루트·브랜치·Node 버전 등)부터 점검. 참조: `docs/Vercel-404-Quick-Diagnosis.md`
+
+## 배포 후 룰 (필수)
+
+- **배포 후 반드시** 위 4개 경로(`/health`, `/api/health`, `/`, `/dashboard`)를 확인한다.
+- **오류가 나면**: 원인 체크(진단·해결책은 `docs/Vercel-404-Quick-Diagnosis.md`) 후 수정·재배포하고, **다시 4개 체크를 실행**한다. 전부 200이 나올 때까지 반복한다.
