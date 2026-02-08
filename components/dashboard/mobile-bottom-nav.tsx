@@ -12,7 +12,7 @@ import {
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { label: "대시보드", href: "/dashboard", icon: Home },
+  { label: "대시보드", href: "/", icon: Home },
   { label: "명령", href: "/commands", icon: Library },
   { label: "기기", href: "/devices", icon: Smartphone },
   { label: "실행", href: "/runs", icon: Brain },
@@ -23,7 +23,7 @@ export function MobileBottomNav() {
   const pathname = usePathname()
 
   const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard"
+    if (href === "/") return pathname === "/"
     return pathname.startsWith(href)
   }
 

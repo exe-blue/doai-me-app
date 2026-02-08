@@ -38,6 +38,7 @@ import {
 
 const mainItems = [
   { label: "대시보드", href: "/dashboard", icon: Home },
+  { label: "온보딩", href: "/onboarding", icon: Rocket },
   { label: "명령", href: "/commands", icon: Library },
   { label: "기기", href: "/devices", icon: Smartphone },
   { label: "실행", href: "/runs", icon: Brain },
@@ -47,7 +48,7 @@ const mainItems = [
 const moreItems = [
   { label: "기록 보관소", href: "/dashboard/artifacts", icon: Archive },
   { label: "Playbook", href: "/dashboard/playbooks", icon: BookOpen },
-  { label: "세팅", href: "/dashboard/onboarding", icon: Rocket },
+  { label: "세팅", href: "/dashboard/onboarding", icon: Circle },
   { label: "설정/권한", href: "/dashboard/settings", icon: SettingsIcon },
 ]
 

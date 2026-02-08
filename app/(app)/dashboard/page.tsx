@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -22,63 +21,55 @@ import {
   Radio,
 } from "lucide-react"
 import Link from "next/link"
-import { DeviceHeatmap, type DeviceTileData } from "@/components/dashboard/device-heatmap"
 
-type RunRow = { id: string; trigger: string; target: string; status: string; started: string }
-type ApiDevice = { id: string; device_id: string; online: boolean; last_error_message?: string | null }
+type DashboardRes = {
+  window: { type: string; hours: number; start: string; end: string }
+  kpis: {
+    runs_succeeded: number
+    runs_failed: number
+    devices_running: number
+    devices_online: number
+    devices_offline: number
+    needs_attention: number
+  }
+  series: {
+    runs_per_hour: { t: string; started: number; succeeded: number; failed: number }[]
+    device_offline_per_hour: { t: string; offline: number }[]
+    content_new_per_hour: { t: string; new: number }[]
+  }
+  topology: {
+    nodes_total: number
+    nodes_online: number
+    devices_total: number
+    by_node: { node_id: string; online: number; offline: number }[]
+  }
+  todo: { kind: string; count?: number; label: string; href: string }[]
+}
 
 export default function DashboardPage() {
-  const [runs, setRuns] = useState<RunRow[]>([])
-  const [devices, setDevices] = useState<ApiDevice[]>([])
+  const [data, setData] = useState<DashboardRes | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([
-      fetch("/api/runs").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/devices").then((r) => (r.ok ? r.json() : { devices: [] })),
-    ]).then(([rRes, dRes]) => {
-      if (cancelled) return
-      setRuns(Array.isArray(rRes) ? rRes : [])
-      setDevices(Array.isArray((dRes as { devices?: ApiDevice[] })?.devices) ? (dRes as { devices: ApiDevice[] }).devices : [])
-      setLoading(false)
-    })
+    fetch("/api/dashboard?window=24")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!cancelled && json) setData(json)
+        setLoading(false)
+      })
     return () => { cancelled = true }
   }, [])
 
-  const completed24h = runs.filter((r) => r.status === "completed").length
-  const failed24h = runs.filter((r) => r.status === "failed").length
-  const runningCount = runs.filter((r) => r.status === "running").length
-  const onlineCount = devices.filter((d) => d.online).length
-  const offlineCount = devices.filter((d) => !d.online).length
-  const totalDevices = devices.length
-  const errorRepeatCount = devices.filter((d) => d.last_error_message).length
+  const k = data?.kpis
+  const series = data?.series
+  const topo = data?.topology
+  const todoList = data?.todo ?? []
 
-  const heatmapTiles: (DeviceTileData | null)[] = devices.slice(0, 100).map((d, i) => ({
-    id: d.id,
-    device_id: d.device_id,
-    index: i + 1,
-    online: d.online,
-  }))
-  while (heatmapTiles.length < 100) heatmapTiles.push(null)
-
-  const triageItems = [
-    offlineCount > 0 && {
-      label: `Offline 기기 ${offlineCount}대 (스캔/재연결 필요)`,
-      href: "/devices?filter=offline",
-      button: "기기 보기",
-    },
-    failed24h > 0 && {
-      label: `최근 실패 run ${failed24h}건`,
-      href: "/runs",
-      button: "실행 보기",
-    },
-    errorRepeatCount > 0 && {
-      label: `에러 반복 디바이스 ${errorRepeatCount}대`,
-      href: "/devices",
-      button: "기기 보기",
-    },
-  ].filter(Boolean) as { label: string; href: string; button: string }[]
+  const runsPerHour = series?.runs_per_hour ?? []
+  const maxStarted = Math.max(1, ...runsPerHour.map((x) => x.started))
+  const offlinePerHour = series?.device_offline_per_hour ?? []
+  const maxOffline = Math.max(1, ...offlinePerHour.map((x) => x.offline))
 
   return (
     <div className="flex flex-col gap-6">
@@ -89,211 +80,191 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* A. KPI 카드 6개 */}
+      {/* A. KPI 카드 6개 — /api/dashboard kpis */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Card className="py-3">
-          <CardContent className="px-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-emerald-500" />
-              <span className="text-xs text-muted-foreground">실행 완료 (24h)</span>
-            </div>
-            <p className="mt-1 text-xl font-bold tracking-tight">{loading ? "—" : completed24h}</p>
-          </CardContent>
-        </Card>
-        <Card className="py-3">
-          <CardContent className="px-4">
-            <div className="flex items-center gap-2">
-              <XCircle className="size-4 text-red-500" />
-              <span className="text-xs text-muted-foreground">실패 (24h)</span>
-            </div>
-            <p className="mt-1 text-xl font-bold tracking-tight">{loading ? "—" : failed24h}</p>
-          </CardContent>
-        </Card>
-        <Card className="py-3">
-          <CardContent className="px-4">
-            <div className="flex items-center gap-2">
-              <Radio className="size-4 text-blue-500" />
-              <span className="text-xs text-muted-foreground">실행 중 디바이스</span>
-            </div>
-            <p className="mt-1 text-xl font-bold tracking-tight">{loading ? "—" : runningCount}</p>
-          </CardContent>
-        </Card>
-        <Card className="py-3">
-          <CardContent className="px-4">
-            <div className="flex items-center gap-2">
-              <Wifi className="size-4 text-emerald-500" />
-              <span className="text-xs text-muted-foreground">Online / 전체</span>
-            </div>
-            <p className="mt-1 text-xl font-bold tracking-tight">
-              {loading ? "—" : `${onlineCount} / ${totalDevices}`}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="py-3">
-          <CardContent className="px-4">
-            <div className="flex items-center gap-2">
-              <WifiOff className="size-4 text-red-500" />
-              <span className="text-xs text-muted-foreground">Offline</span>
-            </div>
-            <p className="mt-1 text-xl font-bold tracking-tight">{loading ? "—" : offlineCount}</p>
-            {offlineCount > 0 && (
-              <Button variant="link" className="h-auto p-0 text-xs mt-1" asChild>
-                <Link href="/devices?filter=offline">기기 보기</Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="py-3">
-          <CardContent className="px-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="size-4 text-amber-500" />
-              <span className="text-xs text-muted-foreground">즉시 조치 필요</span>
-            </div>
-            <p className="mt-1 text-xl font-bold tracking-tight">
-              {loading ? "—" : (offlineCount + errorRepeatCount + (failed24h > 0 ? 1 : 0))}
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/runs?status=done&window=24h" className="block">
+          <Card className="py-3 hover:bg-muted/50 transition-colors cursor-pointer">
+            <CardContent className="px-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="size-4 text-emerald-500" />
+                <span className="text-xs text-muted-foreground">실행 완료 (24h)</span>
+              </div>
+              <p className="mt-1 text-xl font-bold tracking-tight">{loading ? "—" : (k?.runs_succeeded ?? 0)}</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/runs?status=error&window=24h" className="block">
+          <Card className="py-3 hover:bg-muted/50 transition-colors cursor-pointer">
+            <CardContent className="px-4">
+              <div className="flex items-center gap-2">
+                <XCircle className="size-4 text-red-500" />
+                <span className="text-xs text-muted-foreground">실패 (24h)</span>
+              </div>
+              <p className="mt-1 text-xl font-bold tracking-tight">{loading ? "—" : (k?.runs_failed ?? 0)}</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/runs?status=running" className="block">
+          <Card className="py-3 hover:bg-muted/50 transition-colors cursor-pointer">
+            <CardContent className="px-4">
+              <div className="flex items-center gap-2">
+                <Radio className="size-4 text-blue-500" />
+                <span className="text-xs text-muted-foreground">실행 중 디바이스</span>
+              </div>
+              <p className="mt-1 text-xl font-bold tracking-tight">{loading ? "—" : (k?.devices_running ?? 0)}</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/devices?filter=online" className="block">
+          <Card className="py-3 hover:bg-muted/50 transition-colors cursor-pointer">
+            <CardContent className="px-4">
+              <div className="flex items-center gap-2">
+                <Wifi className="size-4 text-emerald-500" />
+                <span className="text-xs text-muted-foreground">Online / 전체</span>
+              </div>
+              <p className="mt-1 text-xl font-bold tracking-tight">
+                {loading ? "—" : `${k?.devices_online ?? 0} / ${(k?.devices_online ?? 0) + (k?.devices_offline ?? 0)}`}
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/devices?filter=offline" className="block">
+          <Card className="py-3 hover:bg-muted/50 transition-colors cursor-pointer">
+            <CardContent className="px-4">
+              <div className="flex items-center gap-2">
+                <WifiOff className="size-4 text-red-500" />
+                <span className="text-xs text-muted-foreground">Offline</span>
+              </div>
+              <p className="mt-1 text-xl font-bold tracking-tight">{loading ? "—" : (k?.devices_offline ?? 0)}</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/devices?filter=needs-attention" className="block">
+          <Card className="py-3 hover:bg-muted/50 transition-colors cursor-pointer">
+            <CardContent className="px-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="size-4 text-amber-500" />
+                <span className="text-xs text-muted-foreground">즉시 조치 필요</span>
+              </div>
+              <p className="mt-1 text-xl font-bold tracking-tight">{loading ? "—" : (k?.needs_attention ?? 0)}</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
-      {/* B. 24h 타임라인 (플레이스홀더) + 미니 히트맵 */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      {/* B. 시간대별 그래프 — series from /api/dashboard */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
           <CardHeader>
             <CardTitle className="text-base">시간대별 실행량 (24h)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-32 flex items-end gap-0.5">
-              {Array.from({ length: 24 }, (_, i) => (
+              {(runsPerHour.length ? runsPerHour : Array.from({ length: 24 }, (_, i) => ({ t: `${i}:00`, started: 0, succeeded: 0, failed: 0 }))).map((b, i) => (
                 <div
-                  key={i}
-                  className="flex-1 rounded-t bg-primary/20 min-h-2"
-                  style={{ height: `${15 + (i % 5) * 12}%` }}
-                  title={`${i}시`}
+                  key={b.t ?? i}
+                  className="flex-1 rounded-t bg-primary/30 min-h-1"
+                  style={{ height: `${(b.started / maxStarted) * 100}%` }}
+                  title={`${b.t} started: ${b.started} succeeded: ${b.succeeded} failed: ${b.failed}`}
                 />
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">0~23시 (실제 데이터 연동 예정)</p>
+            <p className="text-xs text-muted-foreground mt-2">0~23시 (started)</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">기기 미니맵</CardTitle>
-            <p className="text-xs text-muted-foreground">클릭 시 기기 화면으로</p>
+            <CardTitle className="text-base">Offline 기기 수 (24h)</CardTitle>
           </CardHeader>
           <CardContent>
-            <Link href="/devices" className="block w-fit">
-              <DeviceHeatmap
-                devices={heatmapTiles}
-                tileSize={24}
-                className="mx-auto"
-              />
-            </Link>
+            <div className="h-32 flex items-end gap-0.5">
+              {(offlinePerHour.length ? offlinePerHour : [{ t: data?.window?.start ?? "", offline: 0 }]).map((b, i) => (
+                <div
+                  key={b.t ?? i}
+                  className="flex-1 rounded-t bg-red-500/30 min-h-1"
+                  style={{ height: `${(b.offline / maxOffline) * 100}%` }}
+                  title={`${b.t} offline: ${b.offline}`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">MVP: 현재값</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* 시간대별 Offline (플레이스홀더) */}
+      {/* C. 토폴로지 — topology from /api/dashboard */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">시간대별 Offline 기기 수 (24h)</CardTitle>
+          <CardTitle className="text-base">토폴로지 요약</CardTitle>
+          <p className="text-xs text-muted-foreground">노드 수 · node별 Online/Offline</p>
         </CardHeader>
-        <CardContent>
-          <div className="h-24 flex items-end gap-0.5">
-            {Array.from({ length: 24 }, (_, i) => (
-              <div
-                key={i}
-                className="flex-1 rounded-t bg-red-500/20 min-h-1"
-                style={{ height: `${10 + (i % 4) * 10}%` }}
-                title={`${i}시`}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* C. 지금 해야 할 일 트리아지 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">지금 해야 할 일</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {triageItems.length === 0 ? (
-            <p className="text-sm text-muted-foreground">당장 조치할 항목이 없습니다.</p>
-          ) : (
-            <ul className="space-y-2">
-              {triageItems.map((item, i) => (
-                <li key={i} className="flex items-center justify-between gap-4 py-2 border-b last:border-0">
-                  <span className="text-sm">{item.label}</span>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={item.href}>
-                      <ExternalLink className="size-3 mr-1" />
-                      {item.button}
-                    </Link>
-                  </Button>
-                </li>
-              ))}
-            </ul>
+        <CardContent className="space-y-3">
+          <p className="text-sm">
+            노드 <span className="font-mono font-bold">{loading ? "—" : `${topo?.nodes_online ?? 0} / ${topo?.nodes_total ?? 0}`}</span> (online / 전체)
+            · 기기 <span className="font-mono font-bold">{topo?.devices_total ?? 0}</span>
+          </p>
+          {topo?.by_node && topo.by_node.length > 0 && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs">노드</TableHead>
+                    <TableHead className="text-xs">Online</TableHead>
+                    <TableHead className="text-xs">Offline</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topo.by_node.slice(0, 5).map((row) => (
+                    <TableRow key={row.node_id}>
+                      <TableCell className="font-mono text-xs">{row.node_id}</TableCell>
+                      <TableCell className="text-xs text-emerald-600">{row.online}</TableCell>
+                      <TableCell className="text-xs text-red-600">{row.offline}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {topo.by_node.length > 5 && (
+                <Button variant="link" className="mt-2 h-auto p-0 text-xs" asChild>
+                  <Link href="/devices">더보기</Link>
+                </Button>
+              )}
+            </div>
+          )}
+          {!loading && (!topo?.by_node?.length) && (
+            <p className="text-xs text-muted-foreground">기기 데이터 없음</p>
           )}
         </CardContent>
       </Card>
 
-      {/* 최근 실행 테이블 */}
+      {/* D. 즉시 조치 To-do — todo[] from /api/dashboard */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">최근 의식 실행</CardTitle>
+          <CardTitle className="text-base">즉시 조치</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="text-xs">실행 ID</TableHead>
-                <TableHead className="text-xs">트리거</TableHead>
-                <TableHead className="text-xs">대상</TableHead>
-                <TableHead className="text-xs">상태</TableHead>
-                <TableHead className="text-xs">시작</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {runs.slice(0, 10).map((run) => (
-                <TableRow key={run.id}>
-                  <TableCell className="font-mono text-xs">{run.id}</TableCell>
-                  <TableCell className="text-xs">{run.trigger}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px] font-mono">{run.target}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        run.status === "completed"
-                          ? "bg-emerald-500/10 text-emerald-500"
-                          : run.status === "failed"
-                            ? "bg-red-500/10 text-red-500"
-                            : run.status === "running"
-                              ? "bg-blue-500/10 text-blue-500"
-                              : ""
-                      }
-                    >
-                      {run.status === "completed" ? "완료" : run.status === "failed" ? "실패" : run.status === "running" ? "실행 중" : run.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{run.started}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" className="size-6" asChild>
-                      <Link href={`/runs/${run.id}`}>
-                        <ExternalLink className="size-3" />
-                        <span className="sr-only">상세</span>
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent>
+          <ul className="space-y-2">
+            {todoList.map((item, i) => (
+              <li key={`${item.kind}-${i}`} className="flex items-center justify-between gap-4 py-2 border-b last:border-0">
+                <span className="text-sm">{item.count != null ? `${item.label} ${item.count}` : item.label}</span>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={item.href}>
+                    <ExternalLink className="size-3 mr-1" />
+                    열기
+                  </Link>
+                </Button>
+              </li>
+            ))}
+          </ul>
         </CardContent>
       </Card>
+
+      <p className="text-sm text-muted-foreground">
+        <Link href="/runs" className="underline hover:no-underline">실행 목록</Link>
+        {" · "}
+        <Link href="/devices" className="underline hover:no-underline">기기 화면</Link>
+        {" · "}
+        <Link href="/content" className="underline hover:no-underline">콘텐츠</Link>
+      </p>
     </div>
   )
 }

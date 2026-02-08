@@ -1,140 +1,110 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Suspense, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePolling } from "@/lib/api";
+import { POLL_INTERVAL_DEVICES_MS } from "@/lib/constants";
+import { toDevicesVM } from "@/lib/viewmodels/devicesVM";
+import { DeviceHeatmap } from "@/components/DeviceHeatmap";
+import { HeatmapSkeleton } from "@/components/Skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { DeviceHeatmap, type DeviceTileData } from "@/components/dashboard/device-heatmap"
-import { Badge } from "@/components/ui/badge"
-import { Slider } from "@/components/ui/slider"
-import { Radio, Search, Wifi, WifiOff, Loader2 } from "lucide-react"
-import { toast } from "sonner"
+} from "@/components/ui/dialog";
+import { Wifi, WifiOff, Radio } from "lucide-react";
+import { toast } from "sonner";
 
-const TILE_SIZE_MIN = 24
-const TILE_SIZE_MAX = 56
-
-type ApiDevice = {
-  id: string
-  device_id: string
-  node_id: string | null
-  last_seen_at: string | null
-  last_error_message: string | null
-  online: boolean
+function parseSel(sel: string | null): number | null {
+  if (!sel) return null;
+  const n = Number.parseInt(sel, 10);
+  return Number.isNaN(n) ? null : n;
 }
 
-function useDevices(filter: string) {
-  const [devices, setDevices] = useState<ApiDevice[]>([])
-  const [loading, setLoading] = useState(true)
+function DevicesPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get("filter");
+  const selFromUrl = searchParams.get("sel");
+  const selectedIndex = parseSel(selFromUrl);
+  const [indexSearch, setIndexSearch] = useState("");
+  const [scanOpen, setScanOpen] = useState(false);
+  const [scanIp, setScanIp] = useState("192.168.0.0/24");
+  const [scanPorts, setScanPorts] = useState("5555");
+  const [scanning, setScanning] = useState(false);
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    const params = new URLSearchParams()
-    if (filter === "online") params.set("online_only", "true")
-    const res = await fetch(`/api/devices?${params}`)
-    const data = await res.json()
-    let list = data.devices ?? []
-    if (filter === "offline") list = list.filter((d: ApiDevice) => !d.online)
-    setDevices(list)
-    setLoading(false)
-  }, [filter])
+  const { data: raw, loading, refetch } = usePolling<unknown>(
+    "/api/nodes/status",
+    POLL_INTERVAL_DEVICES_MS,
+    { enabled: true }
+  );
 
-  useEffect(() => {
-    let cancelled = false
-    const params = new URLSearchParams()
-    if (filter === "online") params.set("online_only", "true")
-    fetch(`/api/devices?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return
-        let list = data.devices ?? []
-        if (filter === "offline") list = list.filter((d: ApiDevice) => !d.online)
-        setDevices(list)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [filter])
+  const vm = toDevicesVM(raw as Parameters<typeof toDevicesVM>[0]);
+  const heatmapItems = vm?.heatmapItems ?? [];
+  const tileSize = 36;
+  const selectedItem = selectedIndex != null ? heatmapItems.find((i) => i.index === selectedIndex) : null;
 
-  return { devices, loading, refresh }
-}
-
-export default function StatusPage() {
-  const [filter, setFilter] = useState("all")
-  const [indexSearch, setIndexSearch] = useState("")
-  const [tileSize, setTileSize] = useState(36)
-  const [selectedDevice, setSelectedDevice] = useState<DeviceTileData | null>(null)
-  const [scanOpen, setScanOpen] = useState(false)
-  const [scanIp, setScanIp] = useState("192.168.0.0/24")
-  const [scanPorts, setScanPorts] = useState("5555")
-  const [scanning, setScanning] = useState(false)
-
-  const { devices, loading, refresh } = useDevices(filter)
-
-  const filteredDevices = indexSearch.trim()
-    ? devices.filter((_, i) => String(i + 1).includes(indexSearch.trim()))
-    : devices
-  const tiles: (DeviceTileData | null)[] = filteredDevices.slice(0, 100).map((d, i) => ({
-    id: d.id,
-    device_id: d.device_id,
-    index: i + 1,
-    online: d.online,
-    runStatus: null,
-  }))
-  while (tiles.length < 100) tiles.push(null)
+  const setSelectedIndex = (index: number) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("sel", String(index));
+    router.replace(url.pathname + url.search, { scroll: false });
+  };
 
   const handleScan = async () => {
-    setScanning(true)
+    setScanning(true);
     const res = await fetch("/api/nodes/scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ip_range: scanIp.trim(),
-        ports: scanPorts.split(",").map((p) => parseInt(p.trim(), 10) || 5555),
+        ports: scanPorts.split(",").map((p) => Number.parseInt(p.trim(), 10) || 5555),
       }),
-    })
-    setScanning(false)
+    });
+    setScanning(false);
     if (res.ok) {
-      setScanOpen(false)
-      toast.success("스캔 시작됨. 결과는 곧 반영됩니다.")
-      refresh()
+      setScanOpen(false);
+      toast.success("스캔 시작됨. 결과는 곧 반영됩니다.");
+      refetch();
     } else {
-      const err = await res.json()
-      toast.error(err.error ?? "스캔 실패")
+      const err = await res.json();
+      toast.error(err.error ?? "스캔 실패");
     }
-  }
+  };
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Status</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">기기</h1>
         <p className="text-muted-foreground text-sm mt-1">
           디바이스 Online/Offline 히트맵. 인덱스로 한눈에 맞춥니다.
         </p>
+        <Link
+          href="/onboarding"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mt-2"
+        >
+          <Radio className="size-3.5" />
+          온보딩 바로가기
+        </Link>
       </div>
 
       <Card>
         <CardHeader className="pb-2">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <Search className="size-4 text-muted-foreground" />
               <Input
                 placeholder="인덱스 검색"
                 value={indexSearch}
@@ -142,28 +112,25 @@ export default function StatusPage() {
                 className="w-24 h-8"
               />
             </div>
-            <Select value={filter} onValueChange={setFilter}>
+            <Select
+              value={filterParam ?? "all"}
+              onValueChange={(v) => {
+                const url = new URL(window.location.href);
+                if (v === "all") url.searchParams.delete("filter");
+                else url.searchParams.set("filter", v);
+                router.replace(url.pathname + url.search);
+              }}
+            >
               <SelectTrigger className="w-28 h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">전체</SelectItem>
                 <SelectItem value="online">Online</SelectItem>
                 <SelectItem value="offline">Offline</SelectItem>
+                <SelectItem value="needs-attention">즉시 조치</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">타일</Label>
-              <Slider
-                value={[tileSize]}
-                min={TILE_SIZE_MIN}
-                max={TILE_SIZE_MAX}
-                step={2}
-                onValueChange={([v]) => setTileSize(v ?? 36)}
-                className="w-24"
-              />
-              <span className="text-xs text-muted-foreground">{tileSize}px</span>
-            </div>
             <Dialog open={scanOpen} onOpenChange={setScanOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -193,13 +160,12 @@ export default function StatusPage() {
                     />
                   </div>
                   <Button onClick={handleScan} disabled={scanning}>
-                    {scanning ? <Loader2 className="size-4 animate-spin" /> : null}
-                    <span className="ml-2">시작</span>
+                    {scanning ? "시작 중…" : "시작"}
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
-            <Button variant="ghost" size="sm" onClick={refresh}>
+            <Button variant="ghost" size="sm" onClick={() => refetch()}>
               새로고침
             </Button>
           </div>
@@ -207,56 +173,56 @@ export default function StatusPage() {
         <CardContent className="flex flex-wrap gap-6">
           <div>
             {loading ? (
-              <div className="flex items-center gap-2 text-muted-foreground p-8">
-                <Loader2 className="size-4 animate-spin" />
-                로딩 중…
-              </div>
+              <HeatmapSkeleton />
             ) : (
               <DeviceHeatmap
-                devices={tiles}
+                items={heatmapItems}
                 tileSize={tileSize}
-                onTileClick={(d) => setSelectedDevice(d)}
-                selectedId={selectedDevice?.id}
+                onTileClick={(item) => setSelectedIndex(item.index)}
+                selectedIndex={selectedIndex}
               />
             )}
           </div>
-          {selectedDevice && (
+          {selectedItem && (
             <Card className="w-72 shrink-0">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <span>Device #{selectedDevice.index}</span>
-                  <Badge variant={selectedDevice.online ? "default" : "destructive"} className="text-xs">
-                    {selectedDevice.online ? (
-                      <>
-                        <Wifi className="size-3" />
-                        <span className="ml-1">Online</span>
-                      </>
-                    ) : (
-                      <>
-                        <WifiOff className="size-3" />
-                        <span className="ml-1">Offline</span>
-                      </>
-                    )}
-                  </Badge>
-                </CardTitle>
+                <p className="text-sm font-medium flex items-center justify-between gap-2">
+                  <span>#{selectedItem.index}</span>
+                  {selectedItem.online ? (
+                    <span className="flex items-center gap-1 text-emerald-600">
+                      <Wifi className="size-3" />
+                      Online
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-red-600">
+                      <WifiOff className="size-3" />
+                      Offline
+                    </span>
+                  )}
+                </p>
               </CardHeader>
               <CardContent className="text-xs space-y-2">
-                <p className="text-muted-foreground">
-                  device_id: {selectedDevice.device_id}
-                </p>
-                <p className="text-muted-foreground">
-                  last_seen: {(devices.find((d) => d.id === selectedDevice.id) as ApiDevice | undefined)?.last_seen_at
-                    ? new Date((devices.find((d) => d.id === selectedDevice.id) as ApiDevice).last_seen_at!).toLocaleString("ko-KR")
-                    : "—"}
-                </p>
-                <p className="text-muted-foreground">
-                  last_error: {(devices.find((d) => d.id === selectedDevice.id) as ApiDevice | undefined)?.last_error_message ?? "—"}
-                </p>
+                {selectedItem.last_seen && (
+                  <p className="text-muted-foreground">last_seen: {new Date(selectedItem.last_seen).toLocaleString("ko-KR")}</p>
+                )}
+                {selectedItem.last_error_message && (
+                  <p className="text-destructive truncate" title={selectedItem.last_error_message}>
+                    {selectedItem.last_error_message}
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
+}
+
+export default function DevicesPage() {
+  return (
+    <Suspense fallback={<HeatmapSkeleton className="p-8" />}>
+      <DevicesPageContent />
+    </Suspense>
+  );
 }

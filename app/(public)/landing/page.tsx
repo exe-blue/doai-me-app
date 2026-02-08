@@ -16,13 +16,12 @@ import Link from 'next/link';
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://doai.me';
 
-/** 로그인/권한 있으면 대시보드로. 없으면 랜딩. (JWT 붙일 때 doai-auth 또는 sb-access-token 등 설정) */
 const AUTH_COOKIE_NAMES = ['doai-auth', 'sb-access-token'] as const;
 
-export default async function HomePage() {
+export default async function LandingPage() {
   const cookieStore = await cookies();
   const hasAuth = AUTH_COOKIE_NAMES.some((name) => cookieStore.get(name)?.value);
-  if (hasAuth) redirect('/dashboard');
+  if (hasAuth) redirect('/');
 
   const websiteStructuredData = generateWebsiteStructuredData(baseUrl);
   const personStructuredData = generatePersonStructuredData();
@@ -42,25 +41,24 @@ export default async function HomePage() {
         }}
       />
       <HeroSection />
-      {/* 상단 CTA: 콘솔 진입 + 상태 카드(더미) */}
       <section id="cta" className="px-4 sm:px-6 py-12 border-t border-border/30">
         <div className="mx-auto max-w-7xl space-y-8">
           <h2 className="text-xl font-semibold tracking-tight">빠른 링크</h2>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/dashboard"
+              href="/"
               className="rounded-lg border border-primary bg-primary/10 px-4 py-2 font-mono text-sm text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
             >
               대시보드
             </Link>
             <Link
-              href="/dashboard/runs"
+              href="/runs"
               className="rounded-lg border border-border px-4 py-2 font-mono text-sm text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
             >
               Runs
             </Link>
             <Link
-              href="/dashboard/devices"
+              href="/devices"
               className="rounded-lg border border-border px-4 py-2 font-mono text-sm text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
             >
               Devices
@@ -90,7 +88,6 @@ export default async function HomePage() {
               Workflows (Stub)
             </Link>
           </div>
-          {/* 상태 카드(더미) — 나중에 API 연결 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">오늘 실행 수</p>
@@ -102,7 +99,7 @@ export default async function HomePage() {
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">최근 실패</p>
-              <Link href="/dashboard/runs" className="text-sm text-primary hover:underline mt-1 inline-block">Runs에서 확인</Link>
+              <Link href="/runs" className="text-sm text-primary hover:underline mt-1 inline-block">Runs에서 확인</Link>
             </div>
           </div>
         </div>

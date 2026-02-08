@@ -50,6 +50,30 @@
 
   --glow-color: oklch(0.45 0.2 142 / 0.15);
   --glow-color-strong: oklch(0.45 0.2 142 / 0.25);
+
+  /* 상태 색상 규약 (운영 도구) */
+  --status-online: oklch(0.55 0.18 142);
+  --status-offline: oklch(0.55 0.02 30);
+  --status-running: oklch(0.6 0.2 250);
+  --status-error: oklch(0.55 0.22 25);
+  --status-done: oklch(0.6 0.16 142);
+  --status-wait: oklch(0.6 0.02 250);
+
+  /* 디자인 토큰 (lib/tokens.ts) — Heatmap/KPI 공통 */
+  --green-2: oklch(0.95 0.06 142);
+  --red-2: oklch(0.96 0.04 25);
+  --gray-2: oklch(0.96 0.005 142);
+  --gray-5: oklch(0.88 0.01 142);
+  --gray-6: oklch(0.82 0.01 142);
+  --gray-10: oklch(0.45 0.02 142);
+  --gray-12: oklch(0.2 0.02 142);
+  --blue-6: oklch(0.55 0.2 250);
+  --amber-6: oklch(0.65 0.18 75);
+  --red-7: oklch(0.5 0.22 25);
+
+  /* 간격 규약 */
+  --space-card: 0.625rem;
+  --space-section: 1.5rem;
 }
 
 .dark {
@@ -88,6 +112,27 @@
 
   --glow-color: oklch(0.7 0.18 142 / 0.12);
   --glow-color-strong: oklch(0.7 0.18 142 / 0.22);
+
+  --status-online: oklch(0.65 0.17 142);
+  --status-offline: oklch(0.5 0.02 30);
+  --status-running: oklch(0.65 0.18 250);
+  --status-error: oklch(0.55 0.2 25);
+  --status-done: oklch(0.65 0.15 142);
+  --status-wait: oklch(0.55 0.02 250);
+
+  --green-2: oklch(0.2 0.08 142);
+  --red-2: oklch(0.22 0.06 25);
+  --gray-2: oklch(0.18 0.01 142);
+  --gray-5: oklch(0.32 0.02 142);
+  --gray-6: oklch(0.4 0.02 142);
+  --gray-10: oklch(0.58 0.02 142);
+  --gray-12: oklch(0.92 0 0);
+  --blue-6: oklch(0.6 0.2 250);
+  --amber-6: oklch(0.7 0.18 75);
+  --red-7: oklch(0.55 0.22 25);
+
+  --space-card: 0.625rem;
+  --space-section: 1.5rem;
 }
 
 @theme inline {
@@ -129,6 +174,14 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-status-online: var(--status-online);
+  --color-status-offline: var(--status-offline);
+  --color-status-running: var(--status-running);
+  --color-status-error: var(--status-error);
+  --color-status-done: var(--status-done);
+  --color-status-wait: var(--status-wait);
+  --spacing-card: var(--space-card);
+  --spacing-section: var(--space-section);
 }
 
 @layer base {

@@ -38,15 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error?.message ?? 'Insert failed' }, { status: 500 });
     }
 
-    return NextResponse.json(
-      {
-        scan_job_id: job.id,
-        status: job.status,
-        ip_range: job.ip_range,
-        ports: job.ports,
-      },
-      { status: 202 }
-    );
+    return NextResponse.json({ scan_job_id: job.id }, { status: 202 });
   } catch (err) {
     console.error('[nodes/scan] Error', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

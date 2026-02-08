@@ -6,37 +6,85 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = req.nextUrl;
+    const statusFilter = searchParams.get('status') || undefined;
+    const windowParam = searchParams.get('window') || undefined;
+
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !key) {
       return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
     }
     const supabase = createClient(url, key);
-    const { data: runs, error } = await supabase
+
+    let query = supabase
       .from('runs')
-      .select('id, status, trigger, scope, created_at')
+      .select('id, status, trigger, scope, created_at, started_at, finished_at')
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(50);
+
+    if (windowParam === '24h' || windowParam === '1h') {
+      const hours = windowParam === '1h' ? 1 : 24;
+      const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+      query = query.gte('created_at', since);
+    }
+    if (statusFilter === 'running') query = query.eq('status', 'running');
+    else if (statusFilter === 'failed' || statusFilter === 'error') query = query.eq('status', 'failed');
+    else if (statusFilter === 'succeeded' || statusFilter === 'done') query = query.in('status', ['completed', 'completed_with_errors']);
+    else if (statusFilter === 'queued') query = query.eq('status', 'queued');
+    else if (statusFilter === 'stopped') query = query.eq('status', 'stopped');
+
+    const { data: runs, error } = await query;
     if (error) {
       console.error('[runs] List failed', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json(
-      (runs ?? []).map((r) => ({
-        id: r.id,
-        status: r.status,
-        trigger: r.trigger ?? 'manual',
-        target: r.scope ?? 'ALL',
-        started: r.created_at
-          ? new Date(r.created_at).toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : '—',
-      }))
-    );
+
+    const runIds = (runs ?? []).map((r) => r.id);
+    const countsByRun: Record<string, { running: number; done: number; error: number; waiting: number; skipped_offline: number }> = {};
+    for (const id of runIds) {
+      countsByRun[id] = { running: 0, done: 0, error: 0, waiting: 0, skipped_offline: 0 };
+    }
+
+    if (runIds.length > 0) {
+      const { data: tasks } = await supabase
+        .from('device_tasks')
+        .select('run_id, status')
+        .in('run_id', runIds);
+      for (const t of tasks ?? []) {
+        const r = (t as { run_id: string; status: string }).run_id;
+        if (!countsByRun[r]) continue;
+        const c = countsByRun[r];
+        if ((t as { status: string }).status === 'running') c.running++;
+        else if ((t as { status: string }).status === 'completed') c.done++;
+        else if ((t as { status: string }).status === 'failed') c.error++;
+        else if ((t as { status: string }).status === 'pending' || (t as { status: string }).status === 'queued') c.waiting++;
+      }
+      const { data: rds } = await supabase.from('run_device_states').select('run_id, status').in('run_id', runIds);
+      for (const row of rds ?? []) {
+        const r = (row as { run_id: string; status: string }).run_id;
+        if (!countsByRun[r]) continue;
+        const c = countsByRun[r];
+        const s = (row as { status: string }).status;
+        if (s === 'running') c.running++;
+        else if (s === 'succeeded') c.done++;
+        else if (s === 'failed' || s === 'stopped') c.error++;
+        else if (s === 'queued') c.waiting++;
+      }
+    }
+
+    const items = (runs ?? []).map((r) => ({
+      run_id: r.id,
+      title: (r as { title?: string }).title ?? null,
+      status: r.status,
+      created_at: (r.created_at as string) ?? null,
+      started_at: (r.started_at as string) ?? null,
+      counts: countsByRun[r.id] ?? { running: 0, done: 0, error: 0, waiting: 0, skipped_offline: 0 },
+    }));
+
+    return NextResponse.json({ items });
   } catch (err) {
     console.error('[runs] GET error', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
@@ -87,13 +135,16 @@ async function resolveWorkflowOrPlaybook(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const mode = body.mode === 'workflow' ? 'workflow' : 'playbook';
+    const target = body.target && typeof body.target === 'object' ? body.target : {};
+    const scope = target.scope ?? body.scope ?? 'ALL';
+    const defaults = body.defaults && typeof body.defaults === 'object' ? body.defaults : {};
     const {
       trigger = 'manual',
-      scope = 'ALL',
       youtubeVideoId = null,
-      workflow_id: workflowIdText = null,
-      playbook_id: playbookIdParam = null,
-      params: runParams = {},
+      workflow_id: workflowIdText = body.workflow_id ?? null,
+      playbook_id: playbookIdParam = body.playbook_id ?? null,
+      params: runParams = body.params ?? {},
       timeoutOverrides = {},
       globalTimeoutMs,
     } = body;
@@ -162,6 +213,7 @@ export async function POST(req: NextRequest) {
         params: Object.keys(paramsPayload).length ? paramsPayload : null,
         timeout_overrides: Object.keys(normalizedOverrides).length ? normalizedOverrides : null,
         global_timeout_ms: global_ms ?? null,
+        target: Object.keys(target).length ? target : {},
       })
       .select('id, created_at')
       .single();
@@ -175,10 +227,7 @@ export async function POST(req: NextRequest) {
     const created_at = new Date(run.created_at).getTime();
     console.log(`[run_id=${run_id}] Created run; workflow_id=${workflow_id ?? '—'}, playbook_id=${playbook_id ?? '—'}`);
 
-    return NextResponse.json(
-      { run_id, status: 'queued', created_at },
-      { status: 201 }
-    );
+    return NextResponse.json({ run_id }, { status: 201 });
   } catch (err) {
     console.error('[runs] Error', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

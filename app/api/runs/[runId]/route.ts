@@ -1,96 +1,145 @@
 /**
- * DoAi.Me MVP — GET run summary (nodes aggregation, totals)
+ * GET /api/runs/:runId — Run 모니터 (폴링 1.5s). run + heatmap + selected
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import {
+  HEATMAP_COLS,
+  HEATMAP_TILE_SIZE,
+  runDeviceStateToHeatmapItem,
+} from '@/lib/heatmap';
+
+const ONLINE_WINDOW_SEC = 30;
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ runId: string }> }
 ) {
   const { runId } = await params;
+  const selectedIndex = req.nextUrl.searchParams.get('selected')
+    ? Number(req.nextUrl.searchParams.get('selected'))
+    : null;
+
   if (!runId) {
     return NextResponse.json({ error: 'runId required' }, { status: 400 });
   }
 
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
-  }
-  const supabase = createClient(url, key);
+  const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-  const { data: run, error: runErr } = await supabase
+  const { data: runRow, error: runErr } = await supabase
     .from('runs')
-    .select(`
-      id,
-      status,
-      trigger,
-      scope,
-      youtube_video_id,
-      created_at,
-      started_at,
-      finished_at,
-      workflow_id,
-      workflows ( workflow_id, name )
-    `)
+    .select('id, status, trigger, scope, created_at, started_at, finished_at, target, workflow_id, playbook_id')
     .eq('id', runId)
     .single();
 
-  if (runErr || !run) {
+  if (runErr || !runRow) {
     return NextResponse.json({ error: 'Run not found' }, { status: 404 });
   }
 
-  const workflow = Array.isArray(run.workflows) ? run.workflows[0] : run.workflows;
-  const workflow_id = workflow?.workflow_id ?? null;
+  const run = {
+    run_id: runRow.id,
+    title: (runRow as { title?: string }).title ?? null,
+    status: runRow.status,
+    created_at: (runRow.created_at as string) ?? null,
+    started_at: (runRow.started_at as string) ?? null,
+    defaults: {
+      online_window_sec: ONLINE_WINDOW_SEC,
+      device_grace_wait_ms: 15000,
+      concurrency: 1,
+    },
+  };
 
-  const { data: tasks } = await supabase
-    .from('device_tasks')
-    .select('node_id, status, failure_reason')
-    .eq('run_id', runId);
+  const { data: deviceStates } = await supabase
+    .from('run_device_states')
+    .select('device_index, status, current_step_index, last_seen, last_error_message')
+    .eq('run_id', runId)
+    .order('device_index');
 
-  const byNode = new Map<
-    string,
-    { succeeded: number; failed: number; timeout: number }
-  >();
-  let succeeded = 0;
-  let failed = 0;
-  let timeout = 0;
-  for (const t of tasks ?? []) {
-    const nid = t.node_id ?? 'unknown';
-    if (!byNode.has(nid)) byNode.set(nid, { succeeded: 0, failed: 0, timeout: 0 });
-    const agg = byNode.get(nid)!;
-    if (t.status === 'completed') {
-      agg.succeeded++;
-      succeeded++;
-    } else if (t.failure_reason === 'timeout') {
-      agg.timeout++;
-      timeout++;
-    } else {
-      agg.failed++;
-      failed++;
+  const deviceIndexes = (deviceStates ?? []).map((d) => (d as { device_index: number }).device_index);
+  const onlineByIndex: Record<number, boolean> = {};
+  if (deviceIndexes.length > 0) {
+    const { data: devs } = await supabase
+      .from('devices')
+      .select('index_no, last_seen_at')
+      .in('index_no', deviceIndexes);
+    const threshold = new Date(Date.now() - ONLINE_WINDOW_SEC * 1000).toISOString();
+    for (const d of devs ?? []) {
+      const idx = (d as { index_no: number }).index_no;
+      const last = (d as { last_seen_at: string | null }).last_seen_at;
+      onlineByIndex[idx] = last != null && last >= threshold;
     }
   }
 
-  const nodes = Array.from(byNode.entries()).map(([node_id, summary]) => ({
-    node_id,
-    status: tasks?.some((t) => t.node_id === node_id && t.status === 'running')
-      ? 'running'
-      : 'completed',
-    summary,
-  }));
+  const totalSteps = 0; // could be from playbook/workflow step count
+  const heatmapItems = (deviceStates ?? []).map((s) => {
+    const d = s as { device_index: number; status: string; current_step_index?: number; last_seen?: string; last_error_message?: string };
+    return runDeviceStateToHeatmapItem(
+      d.device_index,
+      onlineByIndex[d.device_index] ?? false,
+      d.status,
+      d.current_step_index,
+      totalSteps || undefined,
+      d.last_seen,
+      d.last_error_message
+    );
+  });
+
+  const heatmap = {
+    cols: HEATMAP_COLS,
+    tileSize: HEATMAP_TILE_SIZE,
+    items: heatmapItems,
+  };
+
+  let selected: {
+    index: number;
+    current_step?: { step_index: number; step_id: string; status: string; started_at: string };
+    logs_tail?: string[];
+    last_artifacts?: { kind: string; url: string; created_at: string }[];
+  } | null = null;
+
+  const idx = selectedIndex ?? heatmapItems.find((i) => i.activity === 'running')?.index ?? heatmapItems[0]?.index;
+  if (idx != null && !Number.isNaN(idx)) {
+    const { data: steps } = await supabase
+      .from('run_steps')
+      .select('step_index, step_id, status, started_at')
+      .eq('run_id', runId)
+      .eq('device_index', idx)
+      .order('step_index', { ascending: false })
+      .limit(1);
+    const current = (steps ?? [])[0] as { step_index: number; step_id: string; status: string; started_at: string } | undefined;
+    const { data: arts } = await supabase
+      .from('artifacts')
+      .select('kind, public_url, created_at')
+      .eq('run_id', runId)
+      .eq('device_index', idx)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    selected = {
+      index: idx,
+      ...(current && {
+        current_step: {
+          step_index: current.step_index,
+          step_id: current.step_id,
+          status: current.status,
+          started_at: current.started_at ?? '',
+        },
+      }),
+      logs_tail: [],
+      last_artifacts: (arts ?? []).map((a) => ({
+        kind: (a as { kind: string }).kind ?? 'screenshot',
+        url: (a as { public_url: string }).public_url ?? '',
+        created_at: (a as { created_at: string }).created_at ?? '',
+      })),
+    };
+  }
 
   return NextResponse.json({
-    run_id: run.id,
-    trigger: run.trigger ?? 'manual',
-    scope: run.scope ?? 'ALL',
-    workflow_id,
-    status: run.status,
-    created_at: run.created_at ? new Date(run.created_at).getTime() : null,
-    started_at: run.started_at ? new Date(run.started_at).getTime() : null,
-    ended_at: run.finished_at ? new Date(run.finished_at).getTime() : null,
-    nodes,
-    totals: { succeeded, failed, timeout },
+    run,
+    heatmap,
+    ...(selected && { selected }),
   });
 }

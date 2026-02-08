@@ -53,14 +53,21 @@ export async function GET(
       }
     }
 
-    const stepsWithAsset = (steps ?? []).map((s) => ({
-      ...s,
-      command_asset: commandAssets[s.command_asset_id] ?? null,
+    const stepsOut = (steps ?? []).map((s) => ({
+      id: (s as { id?: string }).id ?? `s-${(s as { sort_order: number }).sort_order}`,
+      ref: (s as { command_asset_id: string }).command_asset_id,
+      probability: Number((s as { probability: number }).probability ?? 1),
+      timeoutMs: (s as { timeout_ms: number | null }).timeout_ms ?? 30000,
+      onFailure: (s as { on_failure: string }).on_failure ?? 'stop',
+      retryCount: (s as { retry_count: number }).retry_count ?? 0,
+      params: ((s as { params: Record<string, unknown> }).params as Record<string, unknown>) ?? {},
     }));
 
     return NextResponse.json({
-      ...playbook,
-      steps: stepsWithAsset,
+      id: playbook.id,
+      title: (playbook as { name: string }).name,
+      steps: stepsOut,
+      updated_at: (playbook as { updated_at: string }).updated_at,
     });
   } catch (err) {
     console.error('[playbooks/:id] GET error', err);
