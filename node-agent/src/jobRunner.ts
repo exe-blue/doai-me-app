@@ -72,7 +72,7 @@ export async function runJob(job: PullJob, callback: CallbackBuffer): Promise<vo
     if (step_type === 'adb' && job.step_command) {
       const timeoutMs = job.timeout_ms ?? 30_000;
       const retry = job.retry_count ?? 1;
-      const { ok, lastError } = await runAdbScript(handle, job.step_command, timeoutMs, retry);
+      const { ok, lastError } = await runAdbScript(handle, job.step_command, timeoutMs, retry, config.adbPath);
       if (!ok) {
         await sendCallback(callback, job, 'run_step_update', {
           step: {

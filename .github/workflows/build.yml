@@ -6,6 +6,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
+  # Requires SonarCloud "Automatic Analysis" to be OFF (CI-only). See docs/guide/sonarqube-ci.md
   sonarqube:
     name: SonarQube
     runs-on: macos-latest

@@ -28,9 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
-import { Upload, Loader2, ChevronUp, ChevronDown, Play, Save, BookOpen } from "lucide-react"
+import { Upload, Loader2, ChevronUp, ChevronDown, Play, Save } from "lucide-react"
 import { toast } from "sonner"
 
 type CommandAsset = {
@@ -59,7 +58,7 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [q, setQ] = useState("")
-  const [typeFilter, setTypeFilter] = useState<string>("")
+  const [typeFilter, setTypeFilter] = useState<string | undefined>(undefined)
   const [folderFilter, setFolderFilter] = useState<string>("")
   const [selectedSteps, setSelectedSteps] = useState<BuilderStep[]>([])
   const [playbookName, setPlaybookName] = useState("")
@@ -78,7 +77,9 @@ export default function LibraryPage() {
     fetch(`/api/library/list?${params}`, { signal: ac.signal })
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled) setItems(data.items ?? [])
+        const raw = data.items ?? []
+        const safe = raw.filter((x: { id?: unknown }) => x.id != null && String(x.id).trim() !== "")
+        if (!cancelled) setItems(safe)
       })
       .catch(() => {})
       .finally(() => {
@@ -98,7 +99,10 @@ export default function LibraryPage() {
     if (q) params.set("q", q)
     fetch(`/api/library/list?${params}`)
       .then((res) => res.json())
-      .then((data) => setItems(data.items ?? []))
+      .then((data) => {
+        const raw = data.items ?? []
+        setItems(raw.filter((x: { id?: unknown }) => x.id != null && String(x.id).trim() !== ""))
+      })
       .finally(() => setLoading(false))
   }
 
@@ -343,12 +347,12 @@ export default function LibraryPage() {
                 onChange={(e) => setFolderFilter(e.target.value)}
                 className="w-28"
               />
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <Select value={typeFilter ?? "__all__"} onValueChange={(v) => setTypeFilter(v === "__all__" ? undefined : v)}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="타입" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">전체</SelectItem>
+                  <SelectItem value="__all__">전체</SelectItem>
                   <SelectItem value="adb_script">adb_script</SelectItem>
                   <SelectItem value="js">js</SelectItem>
                   <SelectItem value="json">json</SelectItem>

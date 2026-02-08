@@ -1,8 +1,10 @@
 #requires -RunAsAdministrator
+# Run: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+# Or: powershell.exe -ExecutionPolicy Bypass -File .\install.ps1
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$AppName = "doai\node-runner"
+$AppName = 'doai\node-runner'
 $ProgramFilesDir = Join-Path $env:ProgramFiles $AppName
 $ProgramDataDir  = Join-Path $env:ProgramData  $AppName
 $LogsDir          = Join-Path $ProgramDataDir "logs"
@@ -42,15 +44,14 @@ if (-not (Test-Path $ConfigPath)) {
     server_base_url     = "https://<your-vercel>.vercel.app"
     node_id             = "PC-01"
     node_shared_secret  = "REPLACE_ME"
-    adb_path            = "C:\Program Files (x86)\xiaowei\tools\adb.exe"
+    adb_path            = 'C:\Program Files (x86)\xiaowei\tools\adb.exe'
     poll_interval_ms    = 1500
     max_jobs            = 1
     online_window_sec   = 30
     lease_sec           = 30
     artifacts_dir       = $CacheDir
-  } | ConvertTo-Json -Depth 10
-
-  $template | Out-File -FilePath $ConfigPath -Encoding UTF8
+  }
+  $template | ConvertTo-Json -Depth 10 | Out-File -FilePath $ConfigPath -Encoding UTF8
   Write-Host "Created config template: $ConfigPath"
   Write-Host "IMPORTANT: Edit config.json (server_base_url/node_id/node_shared_secret) then restart service."
 } else {

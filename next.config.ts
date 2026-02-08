@@ -15,6 +15,9 @@ const config: NextConfig = {
   },
   async redirects() {
     return [
+      { source: '/', destination: '/landing', permanent: false },
+      { source: '/command_catalogs', destination: '/commands', permanent: true },
+      { source: '/command_catalogs/', destination: '/commands', permanent: true },
       { source: '/dashboard/library', destination: '/commands', permanent: true },
       { source: '/dashboard/library/', destination: '/commands', permanent: true },
       { source: '/dashboard/devices', destination: '/devices', permanent: true },

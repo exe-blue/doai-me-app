@@ -4,28 +4,28 @@
 
 import * as Sentry from "@sentry/nextjs";
 
-Sentry.init({
-  dsn: "https://00976bcdde309a218c366517b0ff4925@o4510426212007936.ingest.us.sentry.io/4510850578513920",
+function getIntegrations() {
+  try {
+    return [Sentry.replayIntegration()];
+  } catch {
+    return [];
+  }
+}
 
-  // Add optional integrations for additional features
-  integrations: [Sentry.replayIntegration()],
+try {
+  Sentry.init({
+    dsn: "https://00976bcdde309a218c366517b0ff4925@o4510426212007936.ingest.us.sentry.io/4510850578513920",
 
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
+    integrations: getIntegrations(),
 
-  // Define how likely Replay events are sampled.
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
-  replaysSessionSampleRate: 0.1,
-
-  // Define how likely Replay events are sampled when an error occurs.
-  replaysOnErrorSampleRate: 1.0,
-
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
-});
+    tracesSampleRate: 1,
+    enableLogs: true,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1,
+    sendDefaultPii: true,
+  });
+} catch (e) {
+  console.warn("[Sentry] Init failed, app will continue without error reporting:", e);
+}
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

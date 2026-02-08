@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -68,6 +69,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.6",
+    "playwright": "^1.58.2",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",

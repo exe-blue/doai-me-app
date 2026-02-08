@@ -30,25 +30,20 @@ jobs:
         working-directory: node-agent
         run: npm ci
 
-      # Build node-agent (TypeScript → dist/). For exe: bundle to single file then pkg, or use node20 + pkg with CJS entry.
+      # Build node-agent (tsup → dist-bundle/index.cjs single CJS file)
       - name: Build node-agent
         working-directory: node-agent
         run: npm run build
 
-      # Build node-runner.exe (adapt to your runner: pkg dist/index.js, or esbuild bundle + pkg, or nexe)
+      # Build node-runner.exe with pkg (input = CJS bundle)
       - name: Build node-runner.exe
         shell: pwsh
         run: |
           npm install -g pkg
-          # ESM: pkg does not support ESM. Option A) add a CJS wrapper entry that imports dist. Option B) use esbuild to bundle to CJS then pkg.
-          # Placeholder: copy dist/index.js as single entry; if ESM, replace with esbuild step + pkg the bundle.
-          if (Test-Path node-agent/dist/index.js) {
-            pkg -t node20-win-x64 -o dist/node-runner.exe node-agent/dist/index.js
-          } else {
-            Write-Warning "node-agent/dist/index.js not found; create a build step that produces a single CJS entry for pkg."
-            New-Item -ItemType Directory -Force -Path dist | Out-Null
-            # No exe produced - workflow will fail at next step unless you fix the build
-          }
+          $cjs = "node-agent/dist-bundle/index.cjs"
+          if (-not (Test-Path $cjs)) { throw "CJS bundle not found: $cjs" }
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          pkg -t node18-win-x64 -o dist/node-runner.exe $cjs
           if (-not (Test-Path dist/node-runner.exe)) { throw "dist/node-runner.exe not found" }
 
       # Download WinSW (no binary in repo)
@@ -72,6 +67,32 @@ jobs:
           Copy-Item -Force tools/winsw/node-runner-service.xml "$out/node-runner-service.xml"
           Copy-Item -Force tools/winsw/install.ps1 "$out/install.ps1"
           Copy-Item -Force tools/winsw/update.ps1 "$out/update.ps1"
+          Copy-Item -Force tools/winsw/node-runner-setup.iss "$out/node-runner-setup.iss"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y
+
+      - name: Build setup.exe
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = $tag.TrimStart("v")
+          $out = "release/node-runner-win-x64-v$ver"
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC not found: $iscc" }
+          & $iscc "/DMyAppVersion=$ver" "$out/node-runner-setup.iss"
+          if (-not (Test-Path "$out/setup.exe")) { throw "setup.exe was not created" }
+
+      - name: Verify setup.exe
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart("v")
+          $setup = "release/node-runner-win-x64-v$ver/setup.exe"
+          if (-not (Test-Path $setup)) { throw "setup.exe missing: $setup" }
+          $len = (Get-Item $setup).Length
+          if ($len -lt 1MB) { throw "setup.exe too small ($len bytes), likely corrupt" }
+          Write-Host "setup.exe OK, size $([math]::Round($len/1MB, 2)) MB"
 
       - name: Zip package
         shell: pwsh
@@ -83,13 +104,24 @@ jobs:
           if (Test-Path $zip) { Remove-Item -Force $zip }
           Compress-Archive -Path "$folder/*" -DestinationPath $zip -Force
 
-          $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower()
-          "$hash  $zip" | Out-File -FilePath sha256sums.txt -Encoding ascii
+          $hashes = @()
+          $hashes += (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower() + "  $zip"
+          $hashes += (Get-FileHash -Algorithm SHA256 "$folder/setup.exe").Hash.ToLower() + "  node-runner-setup-v$ver.exe"
+          $hashes -join "`n" | Out-File -FilePath sha256sums.txt -Encoding ascii
 
+      - name: Rename setup.exe for release
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart("v")
+          $folder = "release/node-runner-win-x64-v$ver"
+          Copy-Item -Force "$folder/setup.exe" "node-runner-setup-v$ver.exe"
+
+      # All artifacts (zip + setup.exe + hashes) are uploaded to the Release on every tag push.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             node-runner-win-x64-v*.zip
+            node-runner-setup-v*.exe
             sha256sums.txt
           generate_release_notes: true

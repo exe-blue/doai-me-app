@@ -18,10 +18,11 @@ function parseLines(script: string): string[] {
 function runOneLine(
   runtime_handle: string,
   line: string,
-  timeoutMs: number
+  timeoutMs: number,
+  adbPath: string = 'adb'
 ): Promise<{ ok: boolean; stderr?: string }> {
   return new Promise((resolve) => {
-    const adb = spawn('adb', ['-s', runtime_handle, 'shell', line], {
+    const adb = spawn(adbPath, ['-s', runtime_handle, 'shell', line], {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let stderr = '';
@@ -46,7 +47,8 @@ export async function runAdbScript(
   runtime_handle: string,
   script: string,
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
-  retryCount: number = DEFAULT_RETRY
+  retryCount: number = DEFAULT_RETRY,
+  adbPath: string = 'adb'
 ): Promise<{ ok: boolean; lastError?: string }> {
   const lines = parseLines(script);
   if (lines.length === 0) return { ok: true };
@@ -56,7 +58,7 @@ export async function runAdbScript(
     const line = lines[i];
     let lastErr: string | undefined;
     for (let r = 0; r <= retryCount; r++) {
-      const { ok, stderr } = await runOneLine(runtime_handle, line, perLineTimeout);
+      const { ok, stderr } = await runOneLine(runtime_handle, line, perLineTimeout, adbPath);
       if (ok) {
         logInfo('ADB line OK', { runtime_handle, lineIndex: i + 1, total: lines.length });
         break;

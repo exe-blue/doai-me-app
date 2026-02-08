@@ -3,6 +3,7 @@
 .env.local
 .env.*.local
 node-agent/.env
+node-agent/.env.local
 
 # Dependencies
 node_modules/
@@ -11,6 +12,7 @@ node_modules/
 .next/
 dist/
 out/
+node-agent/dist-bundle/
 
 # IDE
 .idea/

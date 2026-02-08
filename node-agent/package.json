@@ -4,16 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "build": "tsup",
+    "build:types": "tsc",
+    "start": "node -r ./load-env.cjs dist-bundle/index.cjs",
+    "dev": "node -r ./load-env.cjs --import tsx src/index.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^17.2.4",
     "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsup": "^8.3.5",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

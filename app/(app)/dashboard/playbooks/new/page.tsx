@@ -156,11 +156,13 @@ export default function NewPlaybookPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {assets.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.title} ({a.asset_type})
-                        </SelectItem>
-                      ))}
+                      {assets
+                        .filter((a) => typeof a.id === "string" && a.id.trim().length > 0)
+                        .map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.title} ({a.asset_type})
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <Input

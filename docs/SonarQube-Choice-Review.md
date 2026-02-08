@@ -5,6 +5,16 @@
 
 ---
 
+## 0. globalThis / window (Sonar: Prefer globalThis)
+
+- **정책**: Sonar가 “Prefer `globalThis` over `window`”를 제안해도, **환경별로 분리**해 사용한다.
+  - **브라우저 전용 코드** (앱/컴포넌트): `window` 유지. `globalThis`로 통일하지 않음.
+  - **Node 전용 코드** (API, node-agent): `global` 또는 지역/모듈 변수 사용.
+  - **브라우저·Node 공용 유틸**: `typeof window !== 'undefined' ? window : global` 분기. 한 곳에서만 분기하고 나머지는 그 참조 사용.
+- **이유**: 브라우저/Node 경계가 명확하고, 공용 번들에서 `globalThis` 대신 환경별 이름을 쓰면 가독성·타입이 맞음.
+
+---
+
 ## 1. Cognitive Complexity (S3776) — 리팩터 필요
 
 ### 1.1 `node-agent/src/workflowDsl.ts` (약 59행)

@@ -52,7 +52,7 @@ function ContentTabs() {
   const tab = searchParams.get("tab") === "channels" ? "channels" : "status"
 
   const [statusFilter, setStatusFilter] = useState<string>("new")
-  const [channelFilter, setChannelFilter] = useState<string>("")
+  const [channelFilter, setChannelFilter] = useState<string | undefined>(undefined)
   const [contentItems, setContentItems] = useState<ContentItem[]>([])
   const [contentLoading, setContentLoading] = useState(true)
   const [runCreating, setRunCreating] = useState<string | null>(null)
@@ -184,17 +184,19 @@ function ContentTabs() {
                     <SelectItem value="all">전체</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={channelFilter} onValueChange={setChannelFilter}>
+                <Select value={channelFilter ?? "__all__"} onValueChange={(v) => setChannelFilter(v === "__all__" ? undefined : v)}>
                   <SelectTrigger className="w-40 h-8">
                     <SelectValue placeholder="채널" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">전체</SelectItem>
-                    {channels.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.title || c.channel_id}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="__all__">전체</SelectItem>
+                    {channels
+                      .filter((c) => typeof c.id === "string" && c.id.trim().length > 0)
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.title || c.channel_id}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>

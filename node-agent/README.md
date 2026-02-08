@@ -1,17 +1,29 @@
 # DoAi.Me Node Agent (Windows runner)
 
-Poll → job → ADB/screenshot → upload → callback. 1–2s poll; callbacks include `event_id` (idempotent) and `lease_token`.
+Poll → job → ADB/screenshot → upload → callback. 1–2s poll; callbacks include `event_id` (idempotent) and `lease_token`. Heartbeat includes `runner_version`.
 
-## 실행 (10줄)
+## 실행
+
+**옵션 A — 환경변수**
 
 ```bash
 cd node-agent
 cp .env.example .env
-# .env에 NODE_ID, SUPABASE_*, NODE_AGENT_SHARED_SECRET, VENDOR_WS_URL, BACKEND_URL 설정
+# .env에 NODE_ID, BACKEND_URL, NODE_AGENT_SHARED_SECRET, SUPABASE_*, VENDOR_WS_URL 설정
 npm install
 npm run build
-node dist/index.js
+node dist-bundle/index.cjs
 ```
+
+**옵션 B — config 파일 (Windows 서비스/EXE 권장)**
+
+```bash
+node dist-bundle/index.cjs --config "C:\ProgramData\doai\node-runner\config.json"
+# 또는
+node-runner.exe --config "C:\ProgramData\doai\node-runner\config.json"
+```
+
+`--help` / `-h`: CLI 도움말 (--config 설명 포함).
 
 개발 시: `npm run dev` (tsx로 실행).
 

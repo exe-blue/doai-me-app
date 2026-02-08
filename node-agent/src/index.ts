@@ -11,7 +11,7 @@ import type { PullResponse } from './jobTypes.js';
 import { listDevices, nodePreflight } from './vendorAdapter.js';
 
 const callbackBuffer = new CallbackBuffer();
-const POLL_INTERVAL_MS = 1500;
+const POLL_INTERVAL_MS = config.pollIntervalMs;
 const HEARTBEAT_INTERVAL_MS = 30_000;
 
 async function sendHeartbeat(vendor_ws_ok: boolean, devicesCount: number): Promise<void> {
@@ -28,6 +28,7 @@ async function sendHeartbeat(vendor_ws_ok: boolean, devicesCount: number): Promi
         type: 'node_heartbeat',
         payload: {
           node_id: config.nodeId,
+          runner_version: config.runnerVersion,
           vendor_ws_ok,
           connected_devices_count: devicesCount,
           running_devices_count: 0,

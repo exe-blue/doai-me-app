@@ -12,6 +12,7 @@
 | **exe 빌드/릴리즈 작업을 개발 에이전트에게 맡기기** | [node-runner-windows-packaging.md](node-runner-windows-packaging.md) 맨 아래 **「개발 에이전트 핸드오프 프롬프트 (복붙용)」** 블록 전체를 복사해 에이전트에게 붙여넣기. 이 문서(node-runner-exe-build-points.md)는 수정 포인트·워크플로 치환용. |
 | **릴리즈 zip 만들기(태그 푸시)** | `git tag -a v0.1.1 -m "..."` → `git push origin v0.1.1`. GitHub Actions `release-node-runner`가 돌면서 exe → zip → Release에 첨부. (CJS 번들+--config 적용된 뒤부터 성공) |
 | **노드 PC(윈도우)에서 실행** | 1) Releases에서 `node-runner-win-x64-v*.zip` 내려받기 2) 풀기 3) 관리자 PowerShell에서 `.\install.ps1` 4) `C:\ProgramData\doai\node-runner\config.json` 수정 5) `C:\Program Files\doai\node-runner\winsw.exe restart` (업데이트: `.\update.ps1 -RepoOwner exe-blue -RepoName doai-me-app`) |
+| **한 번에 설치(설치형)** | Releases에서 `node-runner-setup-v*.exe` 내려받기 → 실행(관리자 권한) → 설치 경로·서비스 등록·config 템플릿까지 자동. 이후 `C:\ProgramData\doai\node-runner\config.json`만 수정 후 서비스 재시작. |
 
 ---
 
@@ -21,7 +22,7 @@
 |------|-----|
 | **소스 엔트리** | `node-agent/src/index.ts` |
 | **tsc 출력** | `node-agent/dist/index.js` (및 기타 .js) — **ESM** (NodeNext) |
-| **pkg용 CJS 번들(신규)** | `node-agent/dist/node-runner.cjs` 또는 프로젝트 루트 `dist/node-runner.cjs` |
+| **pkg용 CJS 번들** | `node-agent/dist-bundle/index.cjs` (tsup 출력) |
 
 엔트리는 **한 곳**: `node-agent/src/index.ts`. 여기서 `--config` 파싱 및 config.json 로딩을 추가한다.
 
@@ -31,16 +32,9 @@
 
 | 항목 | 값 |
 |------|-----|
-| **현재** | `tsc` 만 사용 (`node-agent/package.json` → `"build": "tsc"`) |
-| **출력** | ESM (`module: "NodeNext"`), 다중 파일 (`node-agent/dist/*.js`) |
-| **필요** | **CJS 단일 파일**이 있어야 pkg가 안정 동작. 따라서 **tsup 또는 esbuild**로 번들 단계 추가 필요. |
-
-권장 예:
-
-- **tsup:** `node-agent/package.json`에 `"bundle": "tsup src/index.ts --format cjs --outDir dist --minify --no-splitting"` → 출력 예: `node-agent/dist/index.cjs`
-- **esbuild:** `esbuild node-agent/src/index.ts --bundle --platform=node --format=cjs --outfile=node-agent/dist/node-runner.cjs`
-
-그 후 **pkg 입력**은 이 단일 CJS 파일만 가리키면 된다.
+| **현재** | **tsup** 사용 (`node-agent/package.json` → `"build": "tsup"`) |
+| **출력** | CJS 단일 파일 `node-agent/dist-bundle/index.cjs` |
+| **엔트리** | `node-agent/tsup.config.ts` → entry: `src/index.ts`, format: cjs, outDir: dist-bundle |
 
 ---
 
@@ -48,8 +42,8 @@
 
 | 항목 | 값 |
 |------|-----|
-| **현재** | `node-agent/dist/index.js` (ESM → pkg 비권장/실패 가능) |
-| **변경 후** | CJS 번들 파일 하나. 예: `node-agent/dist/node-runner.cjs` 또는 `node-agent/dist/index.cjs` |
+| **현재** | `node-agent/dist-bundle/index.cjs` (tsup CJS 번들) |
+| **워크플로** | pkg 입력: `node-agent/dist-bundle/index.cjs` → 출력: `dist/node-runner.exe` |
 
 워크플로는 **먼저 CJS 번들 생성**, 그 다음 **pkg는 그 파일만** 입력으로 사용한다.
 
