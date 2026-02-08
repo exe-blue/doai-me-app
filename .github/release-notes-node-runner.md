@@ -13,7 +13,9 @@
 | `WORKER_API_KEY` / `WORKER_TOKEN` | 워커 인증 키 (백엔드 `WORKER_SECRET_TOKEN` 또는 `NODE_AGENT_SHARED_SECRET`와 동일 값) | (서버에서 발급) |
 | `ADB_PATH` | (선택) ADB 실행 파일 경로 | `C:\path\to\adb.exe` |
 
-서비스는 `%ProgramData%\doai\node-runner\config.json` 사용 (설치 시 템플릿 생성). JSON 키: `node_id`, `server_base_url`, `node_shared_secret`.
+- **자동 설정**: `%ProgramData%\doai\node-runner`에 `.env` 파일을 복사해 두면 해당 변수로 자동 채워집니다. `config.json`이 placeholder(REPLACE_ME)여도 .env 값이 우선 사용됩니다.
+- **서비스 이름**: Windows 서비스 이름은 `doai` (서비스 관리자에서 "doai"로 표시).
+- 서비스는 `%ProgramData%\doai\node-runner\config.json` 사용 (설치 시 템플릿 생성). JSON 키: `node_id`, `server_base_url`, `node_shared_secret`.
 
 - **서버(백엔드)**: 노드 인증에 사용할 시크릿을 **하나**만 설정 (MVP 권장: `NODE_SHARED_SECRET` 또는 `WORKER_SECRET_TOKEN`). Vercel/환경 변수에 동일한 값을 넣으세요.
 - **node-runner**: `config.json`의 `node_shared_secret`을 서버와 **동일한 값**으로 설정. `REPLACE_ME` 또는 placeholder URL이면 "설정 불완전"으로 폴링/스캔이 시작되지 않습니다.

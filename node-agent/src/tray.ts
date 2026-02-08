@@ -76,9 +76,10 @@ export async function runTray(mainLoop: () => Promise<void>): Promise<void> {
         if (action.seq_id === 0) openLogFolder();
         else if (action.seq_id === 1) systray.kill(true);
       });
+      await new Promise(() => {}); // keep process alive; tray only exits on "종료"
     } catch (e) {
-      logError('Tray failed (run headless)', e as Error, {});
-      process.exit(1);
+      logError('Tray unavailable (run without tray)', e as Error, {});
+      await mainLoop();
     }
     return;
   }
@@ -109,7 +110,7 @@ export async function runTray(mainLoop: () => Promise<void>): Promise<void> {
     logInfo('Tray started', { node_id: config.nodeId });
     await mainLoop();
   } catch (e) {
-    logError('Tray failed', e as Error, { node_id: config.nodeId });
+    logError('Tray unavailable, running without tray', e as Error, { node_id: config.nodeId });
     await mainLoop();
   }
 }

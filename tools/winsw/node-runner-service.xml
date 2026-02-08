@@ -1,7 +1,7 @@
 <service>
-  <id>DoaiNodeRunner</id>
-  <name>DOAI Node Runner</name>
-  <description>DOAI node runner service (pull/execute/callback)</description>
+  <id>doai</id>
+  <name>doai</name>
+  <description>doai node runner (pull/execute/callback)</description>
 
   <!-- WinSW 자체 로그 -->
   <logpath>%ProgramData%\doai\node-runner\logs</logpath>

@@ -128,18 +128,25 @@ function str(key: keyof ConfigFile, envKey: string): string {
   return getEnv(envKey);
 }
 
-function strRequiredOptional(key: keyof ConfigFile, envKeys: string[]): string {
-  const v = fileConfig[key];
-  if (v != null && typeof v === 'string') return v;
-  for (const k of envKeys) {
-    const env = getEnvOptional(k);
-    if (env) return env;
-  }
-  return '';
-}
-
 const PLACEHOLDER_SECRET = 'REPLACE_ME';
 const PLACEHOLDER_URL_PATTERNS = /<your-vercel>|REPLACE|placeholder/i;
+
+/** File value wins; if file has placeholder or empty, use env (so .env in ProgramData can auto-fill). */
+function strRequiredOptional(key: keyof ConfigFile, envKeys: string[]): string {
+  let v: string = '';
+  const fromFile = fileConfig[key];
+  if (fromFile != null && typeof fromFile === 'string') v = fromFile;
+  const isPlaceholder =
+    (key === 'node_shared_secret' && v.trim().toUpperCase() === PLACEHOLDER_SECRET) ||
+    (key === 'server_base_url' && PLACEHOLDER_URL_PATTERNS.test(v));
+  if (isPlaceholder || !v.trim()) {
+    for (const k of envKeys) {
+      const env = getEnvOptional(k);
+      if (env?.trim()) return env;
+    }
+  }
+  return v;
+}
 
 /** Returns list of missing or invalid config (placeholder) for user-facing message. Blocks polling/scan until fixed. */
 export function validateRequiredKeys(): string[] {
