@@ -150,8 +150,20 @@ export async function POST(req: NextRequest) {
     },
   };
 
-  const handler = handlers[type];
-  if (handler) await handler();
+  let handler: (() => Promise<void>) | undefined;
+  if (
+    typeof type === 'string' &&
+    Object.prototype.hasOwnProperty.call(handlers, type)
+  ) {
+    const possibleHandler = handlers[type];
+    if (typeof possibleHandler === 'function') {
+      handler = possibleHandler;
+    }
+  }
+
+  if (handler) {
+    await handler();
+  }
 
   return NextResponse.json({ ok: true });
 }
