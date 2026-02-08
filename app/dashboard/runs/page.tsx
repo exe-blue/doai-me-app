@@ -158,7 +158,10 @@ export default function RunsPage() {
         const ids = (d.nodes ?? []).map((n) => n.node_id)
         if (ids.length > 0) {
           setNodeList(ids)
-          setSelectedNodeIds(ids)
+          setSelectedNodeIds((prev) => {
+            const intersection = prev.filter((id) => ids.includes(id))
+            return prev.length === 0 || intersection.length === 0 ? ids : intersection
+          })
         }
       })
       .catch(() => {})
@@ -320,8 +323,9 @@ export default function RunsPage() {
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {STEP_KEYS.map((key) => (
                       <div key={key}>
-                        <Label className="text-xs">{key} (초, {STEP_TIMEOUT_SEC_MIN}~{STEP_TIMEOUT_SEC_MAX})</Label>
+                        <Label htmlFor={`timeout-${key}`} className="text-xs">{key} (초, {STEP_TIMEOUT_SEC_MIN}~{STEP_TIMEOUT_SEC_MAX})</Label>
                         <Input
+                          id={`timeout-${key}`}
                           type="number"
                           min={STEP_TIMEOUT_SEC_MIN}
                           max={STEP_TIMEOUT_SEC_MAX}
