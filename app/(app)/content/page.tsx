@@ -138,7 +138,7 @@ function ContentTabs() {
         if (r.ok) {
           setAddChannelInput("")
           fetchChannels()
-        } else return r.json().then((j) => Promise.reject(new Error(j.error ?? "Failed")))
+        } else return r.json().then((j) => { throw new Error(j.error ?? "Failed"); })
       })
       .finally(() => setAddChannelLoading(false))
   }
@@ -146,7 +146,7 @@ function ContentTabs() {
   const handleSync = (channelId: string) => {
     setSyncLoading(channelId)
     fetch(`/api/channels/${channelId}/sync`, { method: "POST" })
-      .then((r) => r.ok ? fetchChannels() : Promise.reject())
+      .then((r) => { if (!r.ok) throw new Error("Sync failed"); return fetchChannels(); })
       .finally(() => setSyncLoading(null))
   }
 

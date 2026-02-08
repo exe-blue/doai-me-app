@@ -44,7 +44,8 @@ export function DeviceHeatmap({
   const byIndex = new Map(items.map((i) => [i.index, i]));
   const cells = Array.from({ length: TOTAL }, (_, i) => {
     const idx = i + 1;
-    return byIndex.get(idx) ?? { index: idx, online: false, activity: "idle" as const };
+    const existing = byIndex.get(idx);
+    return existing ?? { index: idx, online: false, activity: "idle" as const, empty: true };
   });
 
   return (
@@ -57,7 +58,12 @@ export function DeviceHeatmap({
     >
       {cells.map((item) => {
         const isSelected = selectedIndex !== null && selectedIndex !== undefined && item.index === selectedIndex;
-        const bg = item.online ? tokens.device.onlineBg : tokens.device.offlineBg;
+        const isEmpty = "empty" in item && item.empty;
+        const bg = isEmpty
+          ? tokens.device.offlineBgDim
+          : item.online
+            ? tokens.device.onlineBg
+            : tokens.device.offlineBg;
         const borderColor = getBorderColor(item.activity ?? "idle");
         return (
           <button

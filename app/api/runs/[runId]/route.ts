@@ -1,9 +1,11 @@
 /**
- * GET /api/runs/:runId — Run 모니터 (폴링 1.5s). run + heatmap + selected
+ * GET /api/runs/:runId — Run 모니터 (폴링). VM 형태 고정: run, heatmap.items[], selected{ index, current_step?, logs_tail[], last_artifacts[] }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/nextjs';
+import { getRequestId, withRequestId } from '@/lib/requestId';
 import {
   HEATMAP_COLS,
   HEATMAP_TILE_SIZE,
@@ -16,13 +18,14 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ runId: string }> }
 ) {
+  Sentry.setTag('request_id', getRequestId(req));
   const { runId } = await params;
   const selectedIndex = req.nextUrl.searchParams.get('selected')
     ? Number(req.nextUrl.searchParams.get('selected'))
     : null;
 
   if (!runId) {
-    return NextResponse.json({ error: 'runId required' }, { status: 400 });
+    return withRequestId(NextResponse.json({ error: 'runId required' }, { status: 400 }), req);
   }
 
   const supabase = createClient(
@@ -37,7 +40,7 @@ export async function GET(
     .single();
 
   if (runErr || !runRow) {
-    return NextResponse.json({ error: 'Run not found' }, { status: 404 });
+    return withRequestId(NextResponse.json({ error: 'Run not found' }, { status: 404 }), req);
   }
 
   const run = {
@@ -105,12 +108,19 @@ export async function GET(
   if (idx != null && !Number.isNaN(idx)) {
     const { data: steps } = await supabase
       .from('run_steps')
-      .select('step_index, step_id, status, started_at')
+      .select('step_index, step_id, status, started_at, finished_at, error_message')
       .eq('run_id', runId)
       .eq('device_index', idx)
-      .order('step_index', { ascending: false })
-      .limit(1);
-    const current = (steps ?? [])[0] as { step_index: number; step_id: string; status: string; started_at: string } | undefined;
+      .order('step_index', { ascending: true });
+    const stepsList = (steps ?? []) as { step_index: number; step_id: string; status: string; started_at: string | null; finished_at: string | null; error_message: string | null }[];
+    const current = stepsList.length > 0 ? stepsList[stepsList.length - 1] : undefined;
+    const logs_tail: string[] = stepsList
+      .slice(-50)
+      .map((s) => {
+        const ts = s.started_at ? new Date(s.started_at).toISOString() : '—';
+        const err = s.error_message ? ` | ${s.error_message}` : '';
+        return `[${s.step_index}] ${s.step_id} ${s.status} ${ts}${err}`;
+      });
     const { data: arts } = await supabase
       .from('artifacts')
       .select('kind, public_url, created_at')
@@ -128,7 +138,7 @@ export async function GET(
           started_at: current.started_at ?? '',
         },
       }),
-      logs_tail: [],
+      logs_tail,
       last_artifacts: (arts ?? []).map((a) => ({
         kind: (a as { kind: string }).kind ?? 'screenshot',
         url: (a as { public_url: string }).public_url ?? '',
@@ -137,9 +147,12 @@ export async function GET(
     };
   }
 
-  return NextResponse.json({
-    run,
-    heatmap,
-    ...(selected && { selected }),
-  });
+  return withRequestId(
+    NextResponse.json({
+      run,
+      heatmap,
+      ...(selected && { selected }),
+    }),
+    req
+  );
 }

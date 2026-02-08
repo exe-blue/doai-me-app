@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { HEATMAP_COLS, HEATMAP_MINI_TILE_SIZE, deviceToHeatmapItem } from '@/lib/heatmap';
+import { HEATMAP_COLS, HEATMAP_MINI_TILE_SIZE } from '@/lib/heatmap';
 
 const ONLINE_WINDOW_SEC = 30;
 const DEFAULT_WINDOW_HOURS = 24;
@@ -138,22 +138,28 @@ export async function GET(req: NextRequest) {
     const newContent24h = (contentsInWindow ?? []).length;
     todo.push({ kind: 'content_new', count: newContent24h, label: '24h 신규 콘텐츠', href: '/content' });
 
+    // mini_heatmap: 노드 단위. 노드당 100슬롯(10×10). items는 sparse, UI에서 100칸으로 정규화.
     const { data: devicesForHeatmap } = await supabase
       .from('devices')
-      .select('index_no, last_seen_at, last_error_message')
-      .order('index_no', { ascending: true, nullsFirst: false });
+      .select('index_no, node_id, last_seen_at')
+      .not('index_no', 'is', null);
     const onlineCutoffISO = new Date(Date.now() - ONLINE_WINDOW_SEC * 1000).toISOString();
-    let miniRow = 1;
-    const mini_heatmap_items = (devicesForHeatmap ?? []).map((d) => {
-      const index = (d as { index_no: number | null }).index_no ?? miniRow++;
-      const lastSeen = (d as { last_seen_at: string | null }).last_seen_at;
-      const online = lastSeen != null && lastSeen >= onlineCutoffISO;
-      return deviceToHeatmapItem(
-        index,
-        online,
-        lastSeen ?? undefined,
-        (d as { last_error_message: string | null }).last_error_message ?? undefined
-      );
+    const mini_heatmap_nodes = byNode.map((node, i) => {
+      const node_id = node.node_id;
+      const items: { index: number; online: boolean }[] = (devicesForHeatmap ?? [])
+        .filter((d) => (d as { node_id: string | null }).node_id === node_id)
+        .map((d) => {
+          const index = (d as { index_no: number }).index_no;
+          const lastSeen = (d as { last_seen_at: string | null }).last_seen_at;
+          const online = lastSeen != null && lastSeen >= onlineCutoffISO;
+          return { index, online };
+        });
+      return {
+        node_id,
+        label: `노드 ${i + 1}`,
+        items,
+        counts: { online: node.online, offline: node.offline },
+      };
     });
 
     const body = {
@@ -179,9 +185,8 @@ export async function GET(req: NextRequest) {
       },
       todo,
       mini_heatmap: {
-        cols: HEATMAP_COLS,
-        tileSize: HEATMAP_MINI_TILE_SIZE,
-        items: mini_heatmap_items,
+        slot: { cols: 10, rows: 10, perNode: 100 },
+        nodes: mini_heatmap_nodes,
       },
     };
 

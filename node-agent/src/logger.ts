@@ -8,11 +8,18 @@ type LogContext = {
   node_id?: string;
   device_serial?: string;
   device_id?: string;
+  device_index?: number;
   runtime_handle?: string;
   workflow_id?: string;
   count?: number;
   avd?: string;
   status?: number;
+  line?: string;
+  lineIndex?: number;
+  total?: number;
+  attempt?: number;
+  stderr?: string;
+  step_index?: number;
 };
 
 function fmt(ctx: LogContext): string {
@@ -24,8 +31,12 @@ function fmt(ctx: LogContext): string {
   if (ctx.runtime_handle) parts.push(`runtime_handle=${ctx.runtime_handle}`);
   if (ctx.workflow_id) parts.push(`workflow_id=${ctx.workflow_id}`);
   if (ctx.count !== undefined) parts.push(`count=${ctx.count}`);
+  if (ctx.device_index !== undefined) parts.push(`device_index=${ctx.device_index}`);
   if (ctx.avd) parts.push(`avd=${ctx.avd}`);
   if (ctx.status !== undefined) parts.push(`status=${ctx.status}`);
+  if (ctx.lineIndex !== undefined) parts.push(`lineIndex=${ctx.lineIndex}`);
+  if (ctx.stderr) parts.push(`stderr=${ctx.stderr}`);
+  if (ctx.step_index !== undefined) parts.push(`step_index=${ctx.step_index}`);
   return parts.length ? `[${parts.join(' ')}] ` : '';
 }
 

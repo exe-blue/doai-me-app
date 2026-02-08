@@ -1,0 +1,69 @@
+{
+  "catalog_id": "youtube_dom_actions_v1",
+  "domain": "youtube_web",
+  "version": 1,
+  "actions": [
+    {
+      "id": "playVideo",
+      "method": "click",
+      "selector": "button.ytp-play-button",
+      "notes": "영상 재생/일시정지 토글"
+    },
+    {
+      "id": "skipAd",
+      "method": "click",
+      "selector": "button.ytp-ad-skip-button, button.ytp-skip-ad-button",
+      "notes": "광고 건너뛰기"
+    },
+    {
+      "id": "likeVideo",
+      "method": "click",
+      "selector": "like-button-view-model button[aria-label*='좋아요'], #segmented-like-button button",
+      "notes": "영상 좋아요"
+    },
+    {
+      "id": "scrollToComments",
+      "method": "scroll",
+      "selector": "#comments",
+      "notes": "댓글 영역으로 스크롤"
+    },
+    {
+      "id": "writeComment",
+      "method": "type",
+      "selector": "#contenteditable-root",
+      "params": { "text": "{{COMMENT_TEXT}}" },
+      "notes": "댓글 입력"
+    },
+    {
+      "id": "openDescription",
+      "method": "click",
+      "selector": "button[aria-label*='설명'], #description-button",
+      "notes": "설명 펼치기"
+    },
+    {
+      "id": "muteUnmute",
+      "method": "click",
+      "selector": "button.ytp-mute-button",
+      "notes": "음소거 토글"
+    },
+    {
+      "id": "setVolume",
+      "method": "setValue",
+      "selector": "input.ytp-volume-slider",
+      "params": { "value": "{{VOLUME}}" },
+      "notes": "볼륨 0–100"
+    },
+    {
+      "id": "toggleFullscreen",
+      "method": "click",
+      "selector": "button.ytp-fullscreen-button",
+      "notes": "전체화면 토글"
+    },
+    {
+      "id": "openTranscript",
+      "method": "click",
+      "selector": "button[aria-label*='자막'], .ytp-subtitles-button",
+      "notes": "자막 패널 열기"
+    }
+  ]
+}

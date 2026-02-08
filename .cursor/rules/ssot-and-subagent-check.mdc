@@ -1,0 +1,35 @@
+---
+description: SSOT (DB/API/state tokens) and subagent work log; daily E2E convergence check
+alwaysApply: true
+---
+
+# 단일 진실(SSOT) & 서브에이전트 작업 로그 & 매일 E2E
+
+## 1. 단일 진실(SSOT)
+
+- **DB 스키마** + **API 스펙** + **상태 토큰**(online/offline, activity)이 진실의 원천이다.
+- 계약이 바뀌면 해당 계약 문서와 관련 에이전트(DB/Node/UI)에 공지 후 진행한다.
+
+## 2. 서브에이전트 작업 전후 3줄
+
+모든 서브 에이전트는 작업 **전** 또는 **후**에 반드시 아래를 3줄로 남긴다.
+
+1. **내가 바꾸는 것**: (파일 / 테이블 / 엔드포인트)
+2. **성공 조건**: (눈으로 확인 가능한 것 1~2개)
+3. **롤백 방법**: (되돌리는 방법: revert 커밋, 마이그레이션 롤백, 환경변수 복구 등)
+
+예시:
+
+```text
+1. 바꾸는 것: app/api/nodes/pull/route.ts, run_device_states.lease_until
+2. 성공 조건: pull 시 job 1건 반환, callback 시 lease 만료 후 재할당됨
+3. 롤백: 해당 커밋 revert, migration down
+```
+
+## 3. 매일 합쳐지는 체크 (E2E 1개)
+
+매일 아래 시나리오 1개가 통과하는지 확인한다.
+
+- **Run 생성** → **노드 pull** → **ADB 실행** → **callback** → **/runs/[runId]** 에서 히트맵 / 로그 / 스크린샷 확인
+
+이 한 사이클이 돌면 “오늘 빌드”는 통과로 본다. 실패 시 버그로 추적하고, 체크리스트/버그 템플릿(QA 에이전트)으로 정리한다.

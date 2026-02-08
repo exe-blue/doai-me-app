@@ -1,0 +1,30 @@
+<service>
+  <id>DoaiNodeRunner</id>
+  <name>DOAI Node Runner</name>
+  <description>DOAI node runner service (pull/execute/callback)</description>
+
+  <!-- WinSW 자체 로그 -->
+  <logpath>%ProgramData%\doai\node-runner\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10485760</sizeThreshold>
+    <keepFiles>10</keepFiles>
+  </log>
+
+  <!-- 실제 실행 파일 -->
+  <executable>%ProgramFiles%\doai\node-runner\node-runner.exe</executable>
+  <arguments>--config "%ProgramData%\doai\node-runner\config.json"</arguments>
+
+  <!-- 작업 디렉토리 -->
+  <workingdirectory>%ProgramFiles%\doai\node-runner</workingdirectory>
+
+  <!-- 자동 재시작 정책 -->
+  <onfailure action="restart" delay="5 sec"/>
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="30 sec"/>
+
+  <!-- 부팅 자동 시작 -->
+  <startmode>Automatic</startmode>
+
+  <!-- 우아한 종료 대기 -->
+  <stoptimeout>20 sec</stoptimeout>
+</service>

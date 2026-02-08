@@ -15,6 +15,8 @@ export type CallbackPayload = {
   device_serial?: string;
 };
 
+/** Reuse same event_id on retry for idempotency (server dedupes by event_id). */
+
 const RETRY_DELAYS_MS = [1000, 2000, 5000, 10000, 30000];
 const MAX_RETRIES = 5;
 const QUEUE_DIR = join(process.cwd(), 'data');

@@ -12,6 +12,33 @@ export interface HeatmapItem {
   label?: string;
   last_seen?: string;
   last_error_message?: string;
+  /** true = 빈 상자(슬롯만 있고 기기 없음) */
+  empty?: boolean;
+  /** 노드 ID (/devices?node= 필터용) */
+  node_id?: string;
+}
+
+/** L1: 입력이 비어도 slots개 칸으로 채움. 빈 인덱스는 { index, online: false, activity: "idle", empty: true }. */
+export function normalizeToSlots(
+  items: { index: number; online: boolean; [k: string]: unknown }[],
+  slots = 100
+): HeatmapItem[] {
+  const map = new Map(items.map((i) => [i.index, i]));
+  return Array.from({ length: slots }, (_, k) => {
+    const idx = k + 1;
+    const existing = map.get(idx);
+    if (existing != null) {
+      return {
+        index: idx,
+        online: existing.online,
+        activity: (existing.activity as HeatmapActivity) ?? 'idle',
+        empty: false,
+        ...(existing.last_seen && { last_seen: existing.last_seen }),
+        ...(existing.last_error_message && { last_error_message: existing.last_error_message }),
+      };
+    }
+    return { index: idx, online: false, activity: 'idle' as const, empty: true };
+  });
 }
 
 export const HEATMAP_COLS = 10;

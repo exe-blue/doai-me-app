@@ -1,8 +1,16 @@
 {
   "crons": [
     {
-      "path": "/api/cron/sync-channels",
+      "path": "/api/cron/youtube-sync",
       "schedule": "*/3 * * * *"
     }
+  ]
+}
+{
+  "crons": [
+    {
+      "path": "/api/cron/content-metrics-sync",
+      "schedule": "*/30 * * * *"
+      }
   ]
 }

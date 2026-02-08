@@ -7,7 +7,7 @@ import { POLL_INTERVAL_DASHBOARD_MS } from "@/lib/constants";
 import { toDashboardVM } from "@/lib/viewmodels/dashboardVM";
 import { KpiCard } from "@/components/KpiCard";
 import { ChartCard } from "@/components/ChartCard";
-import { DeviceHeatmap } from "@/components/DeviceHeatmap";
+import { MiniMap } from "@/components/MiniMap";
 import { HeatmapSkeleton } from "@/components/Skeleton";
 import { ExternalLink } from "lucide-react";
 
@@ -23,15 +23,10 @@ export default function DashboardPage() {
   const k = vm?.kpis;
   const series = vm?.series;
   const todoList = vm?.todo ?? [];
-  const miniHeatmapItems = vm?.miniHeatmapItems ?? [];
+  const miniHeatmapByNode = vm?.miniHeatmapByNode ?? [];
   const runsPerHour = series?.runs_per_hour ?? [];
-  const offlinePerHour = series?.offline_per_hour ?? [];
   const maxStarted = Math.max(1, ...runsPerHour.map((x) => x.value));
-  const maxOffline = Math.max(1, ...offlinePerHour.map((x) => x.value));
-
-  const handleMiniHeatmapClick = (index: number) => {
-    router.push(`/devices?sel=${index}`);
-  };
+  const currentOffline = k?.devices_offline ?? 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,33 +59,21 @@ export default function DashboardPage() {
             ))}
           </div>
         </ChartCard>
-        <ChartCard title="Offline 기기 수 (24h)" subtitle="시간대별">
-          <div className="h-32 flex items-end gap-0.5">
-            {(offlinePerHour.length ? offlinePerHour : [{ t: "", value: 0 }]).map((b, i) => (
-              <div
-                key={b.t ?? i}
-                className="flex-1 rounded-t bg-red-500/30 min-h-1"
-                style={{ height: `${(b.value / maxOffline) * 100}%` }}
-                title={`${b.t} offline: ${b.value}`}
-              />
-            ))}
+        <ChartCard title="현재 Offline" subtitle="현재 시점 Offline 기기 수">
+          <div className="h-32 flex items-center justify-center">
+            <span className="text-3xl font-bold text-red-600 dark:text-red-400">
+              {loading ? "—" : currentOffline}
+            </span>
           </div>
         </ChartCard>
       </section>
 
       <section>
-        <ChartCard title="기기 미니맵" subtitle="클릭 시 기기 화면으로">
+        <ChartCard title="기기 미니맵" subtitle="노드 선택 후 타일 클릭 시 기기 화면으로">
           {loading ? (
             <HeatmapSkeleton />
-          ) : miniHeatmapItems.length > 0 ? (
-            <DeviceHeatmap
-              items={miniHeatmapItems}
-              mini
-              tileSize={24}
-              onTileClick={(item) => handleMiniHeatmapClick(item.index)}
-            />
           ) : (
-            <p className="text-sm text-muted-foreground">기기 데이터 없음</p>
+            <MiniMap nodes={miniHeatmapByNode} />
           )}
         </ChartCard>
       </section>

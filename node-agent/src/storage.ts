@@ -1,6 +1,6 @@
 /**
- * DoAi.Me MVP Orchestration v1 — Supabase Storage upload
- * Path: {youtubeVideoId}/{node_id}/{device_id}/{run_id}/{timestamp}.png
+ * DoAi.Me MVP — Supabase Storage upload
+ * 규칙(고정): artifacts/{run_id}/{device_index}/{timestamp}.png
  * Timeout: 30s upload
  */
 
@@ -8,6 +8,12 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { logInfo, logError } from './logger.js';
 import { UPLOAD_TIMEOUT_MS } from './config.js';
 
+/** Canonical path for artifacts bucket. */
+export function buildArtifactPath(runId: string, deviceIndex: number, timestamp: number): string {
+  return `${runId}/${deviceIndex}/${timestamp}.png`;
+}
+
+/** Legacy path (e.g. workflow runner). Prefer buildArtifactPath for new code. */
 export function buildStoragePath(
   youtubeVideoId: string,
   nodeId: string,

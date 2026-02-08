@@ -2,17 +2,19 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePolling } from "@/lib/api";
-import { POLL_INTERVAL_RUN_MONITOR_MS } from "@/lib/constants";
+import { LOADER_DELAY_MS, POLL_INTERVAL_RUN_MONITOR_MS } from "@/lib/constants";
 import { toRunMonitorVM } from "@/lib/viewmodels/runMonitorVM";
+import type { RunMonitorVM } from "@/lib/viewmodels/runMonitorVM";
 import { DeviceHeatmap } from "@/components/DeviceHeatmap";
 import { HeatmapSkeleton } from "@/components/Skeleton";
+import { Loader } from "@/components/Loader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Square } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
 
 const statusLabel: Record<string, string> = {
   queued: "대기열",
@@ -28,6 +30,7 @@ export default function RunMonitorPage() {
   const runId = params.runId as string;
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [stopLoading, setStopLoading] = useState(false);
+  const [showDelayedLoader, setShowDelayedLoader] = useState(false);
 
   const pollUrl =
     runId && selectedIndex != null
@@ -39,7 +42,16 @@ export default function RunMonitorPage() {
     enabled: !!runId,
   });
 
-  const vm = toRunMonitorVM(raw as Parameters<typeof toRunMonitorVM>[0]);
+  useEffect(() => {
+    if (!loading) {
+      setShowDelayedLoader(false);
+      return;
+    }
+    const t = setTimeout(() => setShowDelayedLoader(true), LOADER_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [loading]);
+
+  const vm: RunMonitorVM | null = toRunMonitorVM(raw as Parameters<typeof toRunMonitorVM>[0]);
   const run = vm?.run;
   const heatmapItems = vm?.heatmapItems ?? [];
   const selected = vm?.selected ?? null;
@@ -47,6 +59,7 @@ export default function RunMonitorPage() {
   const tileSize = 36;
   const selectedItem = selected ? heatmapItems.find((i) => i.index === selected.index) : null;
   const isWaiting = selectedItem?.activity === "waiting";
+  const lastScreenshot = selected?.last_artifacts?.find((a) => a.kind === "screenshot" && a.url);
 
   const handleStop = async () => {
     setStopLoading(true);
@@ -110,9 +123,17 @@ export default function RunMonitorPage() {
                 새로고침
               </Button>
             </div>
-            {loading && heatmapItems.length === 0 ? (
-              <HeatmapSkeleton />
-            ) : (
+            {(() => {
+              if (loading && heatmapItems.length === 0) {
+                return showDelayedLoader ? (
+                  <div className="flex items-center justify-center min-h-[200px]">
+                    <Loader show />
+                  </div>
+                ) : (
+                  <HeatmapSkeleton />
+                );
+              }
+              return (
               <DeviceHeatmap
                 items={heatmapItems}
                 tileSize={tileSize}
@@ -120,12 +141,13 @@ export default function RunMonitorPage() {
                 selectedIndex={highlightIndex}
                 className="mx-auto"
               />
-            )}
+              );
+            })()}
           </CardContent>
         </Card>
 
-        <Card className="w-80 shrink-0">
-          <CardContent className="pt-6">
+        <Card className="w-96 shrink-0 max-h-[calc(100vh-8rem)] overflow-hidden flex flex-col">
+          <CardContent className="pt-6 flex flex-col min-h-0 overflow-hidden">
             {selected ? (
               <>
                 <h3 className="font-semibold text-sm">디바이스 #{selected.index}</h3>
@@ -139,20 +161,28 @@ export default function RunMonitorPage() {
                     스텝: {selected.current_step.step_id} ({selected.current_step.status})
                   </p>
                 )}
+                {lastScreenshot?.url && (
+                  <div className="mt-3 rounded border overflow-hidden bg-muted/30">
+                    <p className="text-xs font-medium text-muted-foreground px-2 py-1">마지막 스크린샷</p>
+                    <img
+                      src={lastScreenshot.url}
+                      alt="Screenshot"
+                      className="w-full h-auto max-h-40 object-contain"
+                    />
+                  </div>
+                )}
                 {selected.logs_tail && selected.logs_tail.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">최근 로그</p>
-                    <div className="rounded bg-muted/50 p-2 max-h-48 overflow-y-auto font-mono text-[10px] leading-relaxed space-y-0.5">
+                  <div className="mt-3 flex-1 min-h-0 flex flex-col">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">최근 로그 (최대 50줄)</p>
+                    <div className="rounded bg-muted/50 p-2 flex-1 min-h-0 overflow-y-auto font-mono text-[10px] leading-relaxed space-y-0.5">
                       {selected.logs_tail.map((line, i) => (
-                        <div key={i}>{line}</div>
+                        <div key={`log-${selected.index}-${i}-${line.slice(0, 30)}`}>{line}</div>
                       ))}
                     </div>
                   </div>
                 )}
-                {selected.last_artifacts && selected.last_artifacts.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    스크린샷: {selected.last_artifacts.length}개
-                  </p>
+                {selected.last_artifacts && selected.last_artifacts.length > 0 && !lastScreenshot?.url && (
+                  <p className="text-xs text-muted-foreground mt-2">스크린샷: {selected.last_artifacts.length}개 (URL 없음)</p>
                 )}
               </>
             ) : (

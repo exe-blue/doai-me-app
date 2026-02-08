@@ -1,0 +1,45 @@
+---
+description: Recommended operation order (bottleneck-first) and input template for briefing subagents
+alwaysApply: true
+---
+
+# 추천 운영 순서 (병목 기준) & 에이전트 입력 템플릿
+
+## 1. 병목 기준 운영 순서
+
+현재 가장 큰 병목: **실제 윈도우 노드에서 실행 루프가 닫히는가**.
+
+| 순서 | 담당 | 목표 |
+|------|------|------|
+| 1 | #1 서버/DB + #2 노드 러너 | **E2E 먼저 뚫기** — pull → 실행 → callback 루프가 한 번이라도 성공 |
+| 2 | #3 UI | E2E 뚫린 직후 **관측성(로그/스샷)** 완성 |
+| 3 | #4 Sentry/설정 | **고장 찾기 비용** 급감 |
+| 4 | #5 QA | **다시는 같은 버그로 안 운다** 고정 |
+
+새 기능/버그 수정 시 위 순서를 우선 적용한다. “노드에서 실제로 돌아가는가”를 1순위로 검증한 뒤 UI·모니터링·QA를 쌓는다.
+
+---
+
+## 2. 에이전트에게 일 줄 때 입력 템플릿
+
+에이전트에 작업을 던질 때 아래 형식으로 주면 속도가 올라간다. 복붙 후 채워서 사용.
+
+```text
+• 목표: (한 문장)
+• 변경 범위: (테이블/엔드포인트/파일)
+• 성공 조건: (눈으로 확인 가능한 것 2~3개)
+• 금지: (건드리면 안 되는 것)
+• 관련 계약: (DB / Node / UI 중 해당하는 것)
+```
+
+**예시**
+
+```text
+• 목표: pull 응답에 lease_token을 넣어 노드가 callback 시 검증 가능하게 한다.
+• 변경 범위: fn_pull_job 반환 구조, GET /api/nodes/pull 응답, run_device_states.lease_token
+• 성공 조건: (1) pull JSON에 lease_token 존재 (2) callback에서 token 불일치 시 업데이트 거부 (3) 기존 E2E 스크립트 통과
+• 금지: callback 엔드포인트 URL/메서드 변경, UI 컴포넌트 수정
+• 관련 계약: DB(lease_token 의미), Node(pull/callback 페이로드)
+```
+
+이 템플릿을 사용해 위임할 때마다 “목표·범위·성공·금지·계약”이 명시되도록 한다.

@@ -14,12 +14,12 @@ export interface DevicesVM {
 type NodesStatusRaw = {
   now?: string;
   online_window_sec?: number;
-  heatmap?: { items: { index: number; online: boolean; activity?: string; last_seen?: string; last_error_message?: string }[] };
+  heatmap?: { items: { index: number; online: boolean; activity?: string; node_id?: string; last_seen?: string; last_error_message?: string }[] };
   nodes?: { id: string; last_seen: string | null; last_error_message: string | null }[];
 };
 
 function toHeatmapItem(
-  raw: { index: number; online: boolean; activity?: string; last_seen?: string; last_error_message?: string }
+  raw: { index: number; online: boolean; activity?: string; node_id?: string; last_seen?: string; last_error_message?: string }
 ): HeatmapItem {
   const activity = raw.online ? ((raw.activity as HeatmapItem["activity"]) ?? "idle") : "idle";
   return {
@@ -28,6 +28,7 @@ function toHeatmapItem(
     activity: activity === "running" || activity === "waiting" || activity === "done" || activity === "error" ? activity : "idle",
     last_seen: raw.last_seen ?? undefined,
     last_error_message: raw.last_error_message ?? undefined,
+    ...(raw.node_id && { node_id: raw.node_id }),
   };
 }
 

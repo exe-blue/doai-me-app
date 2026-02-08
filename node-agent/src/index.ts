@@ -1,41 +1,22 @@
 /**
  * DoAi.Me MVP — Node Agent (TS)
- * Device-dedicated queues; 20 slots; round-robin; callback model (push status/artifacts)
+ * Poll /api/nodes/pull (1–2s), run one job (adb + screenshot + upload), callback with event_id + lease_token.
  */
 
 import { config } from './config.js';
-import { Orchestrator } from './orchestrator.js';
 import { logInfo, logError } from './logger.js';
-import type { WorkflowPayload } from './queue.js';
-import { runWorkflow } from './workflowRunner.js';
 import { CallbackBuffer } from './callbackBuffer.js';
+import { runJob } from './jobRunner.js';
+import type { PullResponse } from './jobTypes.js';
 import { listDevices, nodePreflight } from './vendorAdapter.js';
 
 const callbackBuffer = new CallbackBuffer();
-
-async function executeWorkflow(payload: WorkflowPayload, device_serial: string): Promise<void> {
-  const node_id = config.nodeId;
-  logInfo('Executing workflow', {
-    run_id: payload.run_id,
-    node_id,
-    device_serial,
-    workflow_id: payload.workflow_id,
-  });
-  await runWorkflow(
-    payload,
-    device_serial,
-    device_serial,
-    callbackBuffer
-  );
-}
-
-const orchestrator = new Orchestrator(executeWorkflow);
-
-const POLL_INTERVAL_MS = 10_000;
+const POLL_INTERVAL_MS = 1500;
 const HEARTBEAT_INTERVAL_MS = 30_000;
 
 async function sendHeartbeat(vendor_ws_ok: boolean, devicesCount: number): Promise<void> {
   try {
+    const event_id = `heartbeat-${config.nodeId}-${Date.now()}`;
     const res = await fetch(`${config.backendUrl}/api/nodes/callback`, {
       method: 'POST',
       headers: {
@@ -43,7 +24,7 @@ async function sendHeartbeat(vendor_ws_ok: boolean, devicesCount: number): Promi
         Authorization: `Bearer ${config.sharedSecret}`,
       },
       body: JSON.stringify({
-        event_id: `heartbeat-${config.nodeId}-${Date.now()}`,
+        event_id,
         type: 'node_heartbeat',
         payload: {
           node_id: config.nodeId,
@@ -61,39 +42,21 @@ async function sendHeartbeat(vendor_ws_ok: boolean, devicesCount: number): Promi
   }
 }
 
-async function pollPendingRuns(): Promise<void> {
+async function pullAndRunOne(): Promise<void> {
   try {
-    const res = await fetch(`${config.backendUrl}/api/nodes/pull?node_id=${encodeURIComponent(config.nodeId)}`, {
-      headers: { 'X-Node-Auth': config.sharedSecret },
-    });
+    const res = await fetch(
+      `${config.backendUrl}/api/nodes/pull?node_id=${encodeURIComponent(config.nodeId)}`,
+      { headers: { 'X-Node-Auth': config.sharedSecret } }
+    );
     if (!res.ok) return;
-    const data = (await res.json()) as { pending?: Array<{
-      run_id: string;
-      youtubeVideoId: string | null;
-      workflow_id: string;
-      timeoutOverrides?: Record<string, number>;
-      global_timeout_ms?: number | null;
-    }> };
-    const pending = data.pending ?? [];
-    if (pending.length === 0) return;
+    const data = (await res.json()) as PullResponse;
+    const jobs = data.jobs ?? [];
+    if (jobs.length === 0) return;
 
-    const devices = await listDevices();
-    for (const run of pending) {
-      for (const d of devices) {
-        const device_id = d.serial;
-        const payload: WorkflowPayload = {
-          run_id: run.run_id,
-          youtube_video_id: run.youtubeVideoId ?? 'manual',
-          device_serial: device_id,
-          workflow_id: run.workflow_id,
-          timeout_overrides: run.timeoutOverrides,
-          global_timeout_ms: run.global_timeout_ms ?? undefined,
-        };
-        orchestrator.enqueue(device_id, payload);
-      }
-    }
+    const job = jobs[0];
+    await runJob(job, callbackBuffer);
   } catch (err) {
-    logError('Poll pending runs failed', err, { node_id: config.nodeId });
+    logError('Pull or run failed', err as Error, { node_id: config.nodeId });
   }
 }
 
@@ -135,8 +98,11 @@ async function main(): Promise<void> {
     await sendHeartbeat(ok, count);
   }, HEARTBEAT_INTERVAL_MS);
 
-  setInterval(pollPendingRuns, POLL_INTERVAL_MS);
-  await pollPendingRuns();
+  const pollLoop = async (): Promise<void> => {
+    await pullAndRunOne();
+    setTimeout(pollLoop, POLL_INTERVAL_MS);
+  };
+  setTimeout(pollLoop, 0);
 }
 
 main().catch((err) => {

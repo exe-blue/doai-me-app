@@ -135,10 +135,8 @@ async function resolveWorkflowOrPlaybook(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const mode = body.mode === 'workflow' ? 'workflow' : 'playbook';
     const target = body.target && typeof body.target === 'object' ? body.target : {};
     const scope = target.scope ?? body.scope ?? 'ALL';
-    const defaults = body.defaults && typeof body.defaults === 'object' ? body.defaults : {};
     const {
       trigger = 'manual',
       youtubeVideoId = null,
@@ -224,7 +222,6 @@ export async function POST(req: NextRequest) {
     }
 
     const run_id = run.id;
-    const created_at = new Date(run.created_at).getTime();
     console.log(`[run_id=${run_id}] Created run; workflow_id=${workflow_id ?? '—'}, playbook_id=${playbook_id ?? '—'}`);
 
     return NextResponse.json({ run_id }, { status: 201 });

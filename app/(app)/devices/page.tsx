@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePolling } from "@/lib/api";
@@ -8,6 +8,7 @@ import { POLL_INTERVAL_DEVICES_MS } from "@/lib/constants";
 import { toDevicesVM } from "@/lib/viewmodels/devicesVM";
 import { DeviceHeatmap } from "@/components/DeviceHeatmap";
 import { HeatmapSkeleton } from "@/components/Skeleton";
+import { normalizeToSlots } from "@/lib/heatmap";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ function DevicesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filterParam = searchParams.get("filter");
+  const nodeParam = searchParams.get("node");
   const selFromUrl = searchParams.get("sel");
   const selectedIndex = parseSel(selFromUrl);
   const [indexSearch, setIndexSearch] = useState("");
@@ -54,13 +56,22 @@ function DevicesPageContent() {
   );
 
   const vm = toDevicesVM(raw as Parameters<typeof toDevicesVM>[0]);
-  const heatmapItems = vm?.heatmapItems ?? [];
+  const allItems = vm?.heatmapItems ?? [];
   const tileSize = 36;
-  const selectedItem = selectedIndex != null ? heatmapItems.find((i) => i.index === selectedIndex) : null;
+
+  const { displayItems, selectedItem } = useMemo(() => {
+    const filtered = nodeParam
+      ? allItems.filter((i) => (i.node_id ?? "") === nodeParam)
+      : allItems;
+    const items = nodeParam ? normalizeToSlots(filtered, 100) : filtered;
+    const selected = selectedIndex != null ? items.find((i) => i.index === selectedIndex) : null;
+    return { displayItems: items, selectedItem: selected };
+  }, [allItems, nodeParam, selectedIndex]);
 
   const setSelectedIndex = (index: number) => {
     const url = new URL(window.location.href);
     url.searchParams.set("sel", String(index));
+    if (nodeParam) url.searchParams.set("node", nodeParam);
     router.replace(url.pathname + url.search, { scroll: false });
   };
 
@@ -112,12 +123,31 @@ function DevicesPageContent() {
                 className="w-24 h-8"
               />
             </div>
+            {nodeParam && (
+              <span className="text-xs text-muted-foreground">
+                노드: <span className="font-mono">{nodeParam}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-1 h-6 px-1"
+                  onClick={() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete("node");
+                    url.searchParams.delete("sel");
+                    router.replace(url.pathname + url.search);
+                  }}
+                >
+                  전체 보기
+                </Button>
+              </span>
+            )}
             <Select
               value={filterParam ?? "all"}
               onValueChange={(v) => {
                 const url = new URL(window.location.href);
                 if (v === "all") url.searchParams.delete("filter");
                 else url.searchParams.set("filter", v);
+                if (nodeParam) url.searchParams.set("node", nodeParam);
                 router.replace(url.pathname + url.search);
               }}
             >
@@ -176,7 +206,7 @@ function DevicesPageContent() {
               <HeatmapSkeleton />
             ) : (
               <DeviceHeatmap
-                items={heatmapItems}
+                items={displayItems}
                 tileSize={tileSize}
                 onTileClick={(item) => setSelectedIndex(item.index)}
                 selectedIndex={selectedIndex}

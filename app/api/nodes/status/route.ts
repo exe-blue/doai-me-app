@@ -21,13 +21,15 @@ export async function GET() {
     .order('index_no', { ascending: true, nullsFirst: false });
 
   const threshold = new Date(Date.now() - ONLINE_WINDOW_SEC * 1000).toISOString();
-  const items: { index: number; online: boolean; last_seen?: string; last_error_message?: string }[] = [];
+  const items: { index: number; online: boolean; node_id?: string; last_seen?: string; last_error_message?: string }[] = [];
   let rowIndex = 1;
   for (const d of devices ?? []) {
     const index = (d as { index_no: number | null }).index_no ?? rowIndex++;
     const lastSeen = (d as { last_seen_at: string | null }).last_seen_at;
     const online = lastSeen != null && lastSeen >= threshold;
-    items.push(deviceToHeatmapItem(index, online, lastSeen, (d as { last_error_message: string | null }).last_error_message));
+    const nodeId = (d as { node_id: string | null }).node_id ?? undefined;
+    const item = deviceToHeatmapItem(index, online, lastSeen, (d as { last_error_message: string | null }).last_error_message);
+    items.push({ ...item, node_id: nodeId });
   }
 
   const { data: heartbeats } = await supabase

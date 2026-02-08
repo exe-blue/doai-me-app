@@ -28,8 +28,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
-import { Upload, Loader2, ChevronUp, ChevronDown, Play, Save } from "lucide-react"
+import { Upload, Loader2, ChevronUp, ChevronDown, Play, Save, BookOpen } from "lucide-react"
 import { toast } from "sonner"
 
 type CommandAsset = {
