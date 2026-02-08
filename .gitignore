@@ -1,0 +1,23 @@
+# Env
+.env
+.env.local
+.env.*.local
+node-agent/.env
+
+# Dependencies
+node_modules/
+
+# Build
+.next/
+dist/
+out/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
