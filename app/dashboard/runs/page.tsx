@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -149,7 +150,7 @@ export default function RunsPage() {
         }
       })
       .catch(() => {})
-  }, [])
+  }, [workflowId])
 
   useEffect(() => {
     fetch("/api/nodes")
@@ -485,10 +486,10 @@ export default function RunsPage() {
                   실행 중단
                 </Button>
                 <Button size="sm" variant="secondary" className="h-8 text-xs" asChild>
-                  <a href="/dashboard/artifacts">
+                  <Link href="/dashboard/artifacts">
                     <ExternalLink className="size-3 mr-1.5" />
                     기록
-                  </a>
+                  </Link>
                 </Button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -210,10 +211,10 @@ export default function ArtifactsPage() {
                   다시 업로드
                 </Button>
                 <Button size="sm" variant="secondary" className="h-8 text-xs" asChild>
-                  <a href="/dashboard/runs">
+                  <Link href="/dashboard/runs">
                     <ExternalLink className="size-3 mr-1.5" />
                     실행
-                  </a>
+                  </Link>
                 </Button>
               </div>
             </div>
