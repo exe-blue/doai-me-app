@@ -1,6 +1,6 @@
 /**
  * DoAi.Me MVP Orchestration v1 — Supabase Storage upload
- * Path: {youtubeVideoId}/{node_id}/{device_serial}/{run_id}/{timestamp}.png
+ * Path: {youtubeVideoId}/{node_id}/{device_id}/{run_id}/{timestamp}.png
  * Timeout: 30s upload
  */
 
@@ -11,11 +11,11 @@ import { UPLOAD_TIMEOUT_MS } from './config.js';
 export function buildStoragePath(
   youtubeVideoId: string,
   nodeId: string,
-  deviceSerial: string,
+  deviceId: string,
   runId: string,
   timestamp: number
 ): string {
-  return `${youtubeVideoId}/${nodeId}/${deviceSerial}/${runId}/${timestamp}.png`;
+  return `${youtubeVideoId}/${nodeId}/${deviceId}/${runId}/${timestamp}.png`;
 }
 
 export async function uploadScreenshot(
@@ -25,7 +25,7 @@ export async function uploadScreenshot(
   buffer: Buffer,
   runId: string,
   nodeId: string,
-  deviceSerial: string
+  deviceId: string
 ): Promise<{ ok: boolean }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
@@ -39,13 +39,13 @@ export async function uploadScreenshot(
       });
 
     if (error) {
-      logError('Upload failed', error, { run_id: runId, node_id: nodeId, device_serial: deviceSerial });
+      logError('Upload failed', error, { run_id: runId, node_id: nodeId, device_id: deviceId });
       return { ok: false };
     }
-    logInfo('Upload OK', { run_id: runId, node_id: nodeId, device_serial: deviceSerial });
+    logInfo('Upload OK', { run_id: runId, node_id: nodeId, device_id: deviceId });
     return { ok: true };
   } catch (err) {
-    logError('Upload timeout or error', err, { run_id: runId, node_id: nodeId, device_serial: deviceSerial });
+    logError('Upload timeout or error', err, { run_id: runId, node_id: nodeId, device_id: deviceId });
     return { ok: false };
   } finally {
     clearTimeout(timeout);

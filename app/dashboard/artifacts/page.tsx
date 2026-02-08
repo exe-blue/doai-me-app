@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/table"
 import { Grid3X3, List, Download, RotateCcw, ExternalLink } from "lucide-react"
 import { ImageIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 type ArtifactStatus = "업로드 완료" | "업로드 중" | "실패"
 

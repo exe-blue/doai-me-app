@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,10 +20,12 @@ import { Separator } from "@/components/ui/separator"
 import { RotateCcw, Square, ExternalLink, Check, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const STEP_TIMEOUT_MIN = 5000
-const STEP_TIMEOUT_MAX = 600000
 const GLOBAL_TIMEOUT_MIN = 60000
 const GLOBAL_TIMEOUT_MAX = 1800000
+
+const STEP_KEYS = ["PREFLIGHT", "BOOTSTRAP", "LOGIN_FLOW", "SCREENSHOT", "UPLOAD"] as const
+const STEP_TIMEOUT_MIN = 5000
+const STEP_TIMEOUT_MAX = 600000
 
 type RunStatus = "대기열" | "실행 중" | "완료" | "실패" | "중단됨"
 type RunStep = "관측" | "등록" | "배포" | "행동" | "기록"
@@ -121,16 +123,50 @@ export default function RunsPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [youtubeVideoId, setYoutubeVideoId] = useState("")
   const [globalTimeoutMs, setGlobalTimeoutMs] = useState<string>("600000")
+  const [workflows, setWorkflows] = useState<{ workflow_id: string; name: string }[]>([])
+  const [workflowId, setWorkflowId] = useState("login_settings_screenshot_v1")
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [timeoutOverrides, setTimeoutOverrides] = useState<Record<string, string>>({
+    PREFLIGHT: "",
+    BOOTSTRAP: "",
+    LOGIN_FLOW: "",
+    SCREENSHOT: "",
+    UPLOAD: "",
+  })
+
+  useEffect(() => {
+    fetch("/api/workflows")
+      .then((r) => r.json())
+      .then((d: { workflows?: { workflow_id: string; name: string }[] }) =>
+        setWorkflows(d.workflows ?? [])
+      )
+      .catch(() => {})
+  }, [])
 
   const handleCreateRun = async () => {
     const timeout = parseInt(globalTimeoutMs, 10)
     if (isNaN(timeout) || timeout < GLOBAL_TIMEOUT_MIN || timeout > GLOBAL_TIMEOUT_MAX) {
       return
     }
+    const overrides: Record<string, number> = {}
+    if (showAdvanced) {
+      for (const [key, val] of Object.entries(timeoutOverrides)) {
+        const n = parseInt(val, 10)
+        if (!Number.isNaN(n) && n > 0) overrides[key] = n
+      }
+    }
+    const body: Record<string, unknown> = {
+      trigger: "manual",
+      scope: "ALL",
+      youtubeVideoId: youtubeVideoId.trim() || null,
+      workflow_id: workflowId,
+      globalTimeoutMs: timeout,
+    }
+    if (Object.keys(overrides).length > 0) body.timeoutOverrides = overrides
     const res = await fetch("/api/runs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ youtube_video_id: youtubeVideoId.trim(), globalTimeoutMs: timeout }),
+      body: JSON.stringify(body),
     })
     if (res.ok) {
       setCreateOpen(false)
@@ -159,7 +195,25 @@ export default function RunsPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div>
-                <Label htmlFor="youtubeVideoId">YouTube Video ID (필수)</Label>
+                <Label htmlFor="workflowId">Workflow</Label>
+                <select
+                  id="workflowId"
+                  value={workflowId}
+                  onChange={(e) => setWorkflowId(e.target.value)}
+                  className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                >
+                  {workflows.length ? workflows.map((w) => (
+                    <option key={w.workflow_id} value={w.workflow_id}>{w.name}</option>
+                  )) : (
+                    <>
+                      <option value="bootstrap_only_v1">Bootstrap Only</option>
+                      <option value="login_settings_screenshot_v1">Login → Settings → Screenshot</option>
+                    </>
+                  )}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="youtubeVideoId">YouTube Video ID (선택, 수동이면 비움)</Label>
                 <Input
                   id="youtubeVideoId"
                   placeholder="dQw4w9WgXcQ"
@@ -180,7 +234,34 @@ export default function RunsPage() {
                   className="mt-2"
                 />
               </div>
-              <Button onClick={handleCreateRun} disabled={!youtubeVideoId.trim()}>
+              <div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                >
+                  {showAdvanced ? "고급 옵션 접기" : "고급 옵션 (step 타임아웃)"}
+                </Button>
+                {showAdvanced && (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {(["PREFLIGHT", "BOOTSTRAP", "LOGIN_FLOW", "SCREENSHOT", "UPLOAD"] as const).map((key) => (
+                      <div key={key}>
+                        <Label className="text-xs">{key} (ms)</Label>
+                        <Input
+                          type="number"
+                          placeholder="미지정"
+                          value={timeoutOverrides[key] ?? ""}
+                          onChange={(e) => setTimeoutOverrides((p) => ({ ...p, [key]: e.target.value }))}
+                          className="mt-1 h-8"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button onClick={handleCreateRun}>
                 생성
               </Button>
             </div>

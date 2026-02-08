@@ -129,7 +129,7 @@ export function ProjectsPageContent() {
   const sectionRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    setIsVisible(true)
+    queueMicrotask(() => setIsVisible(true))
   }, [])
 
   const filteredProjects = projects.filter((p) => {
