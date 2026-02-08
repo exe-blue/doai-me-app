@@ -2,14 +2,19 @@
  * DoAi.Me MVP — Node Agent (TS)
  * Poll /api/nodes/pull (1–2s), run one job (adb + screenshot + upload), callback with event_id + lease_token.
  * 동시 실행 1개, 실패 시 15초 후 스킵(다음 폴링).
+ * Entry: --tray → tray mode (tray.ts); else → console poll loop.
  */
 
-import { config, GRACE_WAIT_MS } from './config.js';
-import { logInfo, logError } from './logger.js';
+import { config, GRACE_WAIT_MS, validateRequiredKeys } from './config.js';
+import { logInfo, logError, initLogFile } from './logger.js';
+
+initLogFile(config.logFile);
 import { CallbackBuffer } from './callbackBuffer.js';
 import { runJob } from './jobRunner.js';
 import type { PullResponse } from './jobTypes.js';
 import { listDevices, nodePreflight } from './vendorAdapter.js';
+
+const isTrayMode = process.argv.includes('--tray');
 
 const callbackBuffer = new CallbackBuffer();
 const POLL_INTERVAL_MS = config.pollIntervalMs;
@@ -38,7 +43,10 @@ async function sendHeartbeat(vendor_ws_ok: boolean, devicesCount: number): Promi
         },
       }),
     });
-    if (!res.ok) logError('Heartbeat failed', undefined, { status: res.status, node_id: config.nodeId });
+    if (!res.ok) {
+      if (res.status === 401) logError('Invalid api key (401 from backend). Check node_shared_secret matches server NODE_SHARED_SECRET/WORKER_SECRET_TOKEN.', undefined, { status: 401, node_id: config.nodeId });
+      else logError('Heartbeat failed', undefined, { status: res.status, node_id: config.nodeId });
+    }
   } catch (err) {
     logError('Heartbeat error', err as Error, { node_id: config.nodeId });
   }
@@ -51,7 +59,10 @@ async function pullAndRunOne(): Promise<'none' | 'ok' | 'fail'> {
       `${config.backendUrl}/api/nodes/pull?node_id=${encodeURIComponent(config.nodeId)}`,
       { headers: { 'X-Node-Auth': config.sharedSecret } }
     );
-    if (!res.ok) return 'none';
+    if (!res.ok) {
+      if (res.status === 401) logError('Invalid api key (401 from backend). Check node_shared_secret matches server secret.', undefined, { status: 401, node_id: config.nodeId });
+      return 'none';
+    }
     const data = (await res.json()) as PullResponse;
     const jobs = data.jobs ?? [];
     if (jobs.length === 0) return 'none';
@@ -66,6 +77,13 @@ async function pullAndRunOne(): Promise<'none' | 'ok' | 'fail'> {
 }
 
 async function main(): Promise<void> {
+  const missing = validateRequiredKeys();
+  if (missing.length > 0) {
+    logError('Config validation failed: missing ' + missing.join(', '), undefined, {});
+    if (!isTrayMode) process.exit(1);
+    return; // tray mode will show "설정 누락" and keep running
+  }
+
   logInfo('Node Agent starting', { node_id: config.nodeId });
 
   callbackBuffer.loadFromDisk();
@@ -87,6 +105,23 @@ async function main(): Promise<void> {
   }
 
   await sendHeartbeat(vendorWsOk, devicesCount);
+
+  // C.2: After first connection success, run ADB/device scan 2–3 times (2s apart), then report
+  const scanIntervalMs = 2000;
+  for (let i = 0; i < 2; i++) {
+    await new Promise((r) => setTimeout(r, scanIntervalMs));
+    try {
+      const preflight = await nodePreflight();
+      if (preflight.ok) {
+        const devices = await listDevices();
+        devicesCount = devices.length;
+      }
+    } catch {
+      // keep previous count
+    }
+  }
+  await sendHeartbeat(vendorWsOk, devicesCount);
+
   setInterval(async () => {
     let ok = false;
     let count = 0;
@@ -111,7 +146,16 @@ async function main(): Promise<void> {
   setTimeout(pollLoop, 0);
 }
 
-main().catch((err) => {
-  logError('Fatal', err, { node_id: config.nodeId });
-  process.exit(1);
-});
+if (isTrayMode) {
+  import('./tray.js')
+    .then((m) => m.runTray(() => main()))
+    .catch((err) => {
+      logError('Tray entry failed', err as Error, {});
+      process.exit(1);
+    });
+} else {
+  main().catch((err) => {
+    logError('Fatal', err, { node_id: config.nodeId });
+    process.exit(1);
+  });
+}

@@ -4,14 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-
-function verifyNodeAuth(req: NextRequest): boolean {
-  const secret = process.env.NODE_AGENT_SHARED_SECRET;
-  const auth = req.headers.get('Authorization');
-  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
-  const header = token ?? req.headers.get('X-Node-Auth');
-  return !!secret && secret === header;
-}
+import { verifyNodeAuth } from '@/lib/nodeAuth';
 
 export async function GET(req: NextRequest) {
   if (!verifyNodeAuth(req)) {

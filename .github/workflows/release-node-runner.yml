@@ -57,12 +57,19 @@ jobs:
           if (-not (Test-Path $env:CJS_BUNDLE)) { throw "CJS bundle not found: $env:CJS_BUNDLE" }
           Write-Host "Bundle OK: $env:CJS_BUNDLE"
 
+      # Tray (systray): embed traybin so --tray can spawn tray_windows_release.exe
+      - name: Copy systray traybin for pkg assets
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path node-agent/traybin | Out-Null
+          Copy-Item -Force node-agent/node_modules/systray/traybin/tray_windows_release.exe node-agent/traybin/
+
       - name: Build node-runner.exe (pkg node18-win-x64)
         shell: pwsh
         run: |
           npm install -g pkg@5.8.1
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          pkg --targets node18-win-x64 --output $env:PKG_OUTPUT $env:CJS_BUNDLE
+          pkg --targets node18-win-x64 --output $env:PKG_OUTPUT --config node-agent/pkg-config.json $env:CJS_BUNDLE
           if (-not (Test-Path $env:PKG_OUTPUT)) { throw "pkg output not found: $env:PKG_OUTPUT" }
           Write-Host "EXE OK: $env:PKG_OUTPUT"
 
@@ -145,4 +152,5 @@ jobs:
           files: |
             doai-me-app-*-win-x64-installer.exe
             sha256sums.txt
-          generate_release_notes: true
+          body_path: .github/release-notes-node-runner.md
+          generate_release_notes: false

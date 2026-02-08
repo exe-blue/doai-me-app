@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { HEATMAP_COLS, HEATMAP_TILE_SIZE, deviceToHeatmapItem } from '@/lib/heatmap';
+import { verifyNodeAuth } from '@/lib/nodeAuth';
 
 const ONLINE_WINDOW_SEC = 30;
 
@@ -61,12 +62,6 @@ export async function GET() {
     nodes,
     runner: { latest_version: latestRunnerVersion },
   });
-}
-
-function verifyNodeAuth(req: NextRequest): boolean {
-  const secret = process.env.NODE_AGENT_SHARED_SECRET;
-  const header = req.headers.get('X-Node-Auth');
-  return !!secret && secret === header;
 }
 
 export async function POST(req: NextRequest) {

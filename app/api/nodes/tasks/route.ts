@@ -4,12 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-function verifyNodeAuth(req: NextRequest): boolean {
-  const secret = process.env.NODE_AGENT_SHARED_SECRET;
-  const header = req.headers.get('X-Node-Auth');
-  return !!secret && secret === header;
-}
+import { verifyNodeAuth } from '@/lib/nodeAuth';
 
 export async function POST(req: NextRequest) {
   if (!verifyNodeAuth(req)) {

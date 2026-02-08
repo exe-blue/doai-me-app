@@ -12,7 +12,7 @@
 
   <!-- 실제 실행 파일 -->
   <executable>%ProgramFiles%\doai\node-runner\node-runner.exe</executable>
-  <arguments>--config "%ProgramData%\doai\node-runner\config.json"</arguments>
+  <arguments>--config "%ProgramData%\doai\node-runner\config.json" --log-file "%ProgramData%\doai\node-runner\logs\node-runner.log"</arguments>
 
   <!-- 작업 디렉토리 -->
   <workingdirectory>%ProgramFiles%\doai\node-runner</workingdirectory>

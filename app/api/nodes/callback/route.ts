@@ -8,6 +8,7 @@ import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { withRequestId } from '@/lib/requestId';
+import { verifyNodeAuth } from '@/lib/nodeAuth';
 
 const LEASE_GRACE_SEC = 5;
 
@@ -38,14 +39,6 @@ async function hasValidLease(
   const deadline = new Date(until).getTime();
   const now = Date.now();
   return deadline + LEASE_GRACE_SEC * 1000 > now;
-}
-
-function verifyNodeAuth(req: NextRequest): boolean {
-  const secret = process.env.NODE_AGENT_SHARED_SECRET;
-  const auth = req.headers.get('Authorization');
-  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
-  const header = token ?? req.headers.get('X-Node-Auth');
-  return !!secret && secret === header;
 }
 
 export async function POST(req: NextRequest) {

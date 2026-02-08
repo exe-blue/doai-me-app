@@ -1,7 +1,34 @@
 /**
  * DoAi.Me MVP Orchestration v1 — Logging
- * Every log MUST include run_id, node_id, device_serial when applicable
+ * Every log MUST include run_id, node_id, device_serial when applicable.
+ * initLogFile(path) enables appending to a file (e.g. %ProgramData%\doai\node-runner\logs\node-runner.log).
  */
+
+import { createWriteStream, mkdirSync, existsSync } from 'node:fs';
+import path from 'node:path';
+
+let logStream: ReturnType<typeof createWriteStream> | null = null;
+
+export function initLogFile(filePath: string | undefined): void {
+  if (!filePath?.trim()) return;
+  try {
+    const dir = path.dirname(filePath);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    logStream = createWriteStream(filePath, { flags: 'a' });
+  } catch {
+    logStream = null;
+  }
+}
+
+function writeToFile(line: string): void {
+  if (logStream?.writable) {
+    try {
+      logStream.write(line + '\n');
+    } catch {
+      /* ignore */
+    }
+  }
+}
 
 type LogContext = {
   run_id?: string;
@@ -41,14 +68,20 @@ function fmt(ctx: LogContext): string {
 }
 
 export function logInfo(msg: string, ctx: LogContext = {}): void {
-  console.log(`${fmt(ctx)}${msg}`);
+  const line = `${fmt(ctx)}${msg}`;
+  console.log(line);
+  writeToFile(line);
 }
 
 export function logWarn(msg: string, ctx: LogContext = {}): void {
-  console.warn(`${fmt(ctx)}${msg}`);
+  const line = `${fmt(ctx)}${msg}`;
+  console.warn(line);
+  writeToFile(line);
 }
 
 export function logError(msg: string, err?: unknown, ctx: LogContext = {}): void {
   const errStr = err instanceof Error ? err.message : String(err);
-  console.error(`${fmt(ctx)}${msg} ${errStr}`);
+  const line = `${fmt(ctx)}${msg} ${errStr}`;
+  console.error(line);
+  writeToFile(line);
 }

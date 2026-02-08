@@ -8,19 +8,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 import { withRequestId } from '@/lib/requestId';
+import { verifyNodeAuth } from '@/lib/nodeAuth';
 
 const ONLINE_WINDOW_SEC = 30;
 const LEASE_SEC = 30;
 /** 노드 동시 실행 1개 고정 (한 번에 한 job만 할당) */
 const MAX_JOBS = 1;
-
-function verifyNodeAuth(req: NextRequest): boolean {
-  const secret = process.env.NODE_AGENT_SHARED_SECRET;
-  const auth = req.headers.get('Authorization');
-  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
-  const header = token ?? req.headers.get('X-Node-Auth');
-  return !!secret && secret === header;
-}
 
 function isoNow(): string {
   return new Date().toISOString();

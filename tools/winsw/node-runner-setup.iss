@@ -69,15 +69,24 @@ begin
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
+var
+  LogsDir: String;
 begin
   if CurStep = ssPostInstall then
+  begin
+    LogsDir := ExpandConstant('{commonappdata}\doai\node-runner\logs');
+    if not DirExists(LogsDir) then
+      ForceDirectories(LogsDir);
     CreateConfigIfNotExists;
+  end;
 end;
 
 [Run]
 ; Install and start Windows service (no PowerShell)
 Filename: "{app}\winsw.exe"; Parameters: "install"; WorkingDir: "{app}"; StatusMsg: "Installing service..."; Flags: runhidden waituntilterminated
 Filename: "{app}\winsw.exe"; Parameters: "start"; WorkingDir: "{app}"; StatusMsg: "Starting service..."; Flags: runhidden waituntilterminated
+; D.1: Start Tray App after install (--tray)
+Filename: "{app}\node-runner.exe"; Parameters: "--tray"; WorkingDir: "{app}"; Description: "Start Tray App"; Flags: nowait postinstall
 
 [UninstallRun]
 ; Stop and remove service before deleting files (no PowerShell)
