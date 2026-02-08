@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "deploy": "node scripts/deploy.mjs"
+    "deploy": "node scripts/deploy.mjs",
+    "e2e:acceptance": "node scripts/e2e-mvp-acceptance.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

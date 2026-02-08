@@ -1,8 +1,6 @@
+# SonarQube: PR/merge 시에만 실행. 릴리즈(태그 푸시)에서는 실행되지 않아 빌드/업로드를 막지 않음.
 name: Build
 on:
-  push:
-    branches:
-      - main
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:

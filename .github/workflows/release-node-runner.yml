@@ -35,7 +35,7 @@ jobs:
         working-directory: node-agent
         run: npm run build
 
-      # Build node-runner.exe with pkg (input = CJS bundle)
+      # pkg: target node18 (not node20); input = CJS single bundle only → dist/node-runner.exe always
       - name: Build node-runner.exe
         shell: pwsh
         run: |
@@ -105,6 +105,7 @@ jobs:
           Compress-Archive -Path "$folder/*" -DestinationPath $zip -Force
 
           $hashes = @()
+          $hashes += (Get-FileHash -Algorithm SHA256 "dist/node-runner.exe").Hash.ToLower() + "  doai-node-runner-$ver-win-x64.exe"
           $hashes += (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower() + "  $zip"
           $hashes += (Get-FileHash -Algorithm SHA256 "$folder/setup.exe").Hash.ToLower() + "  node-runner-setup-v$ver.exe"
           $hashes -join "`n" | Out-File -FilePath sha256sums.txt -Encoding ascii
@@ -116,11 +117,18 @@ jobs:
           $folder = "release/node-runner-win-x64-v$ver"
           Copy-Item -Force "$folder/setup.exe" "node-runner-setup-v$ver.exe"
 
-      # All artifacts (zip + setup.exe + hashes) are uploaded to the Release on every tag push.
+      # Standalone exe for Releases: doai-node-runner-<ver>-win-x64.exe (required for every release)
+      - name: Prepare doai-node-runner exe
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart("v")
+          Copy-Item -Force dist/node-runner.exe "doai-node-runner-$ver-win-x64.exe"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            doai-node-runner-*-win-x64.exe
             node-runner-win-x64-v*.zip
             node-runner-setup-v*.exe
             sha256sums.txt

@@ -49,46 +49,31 @@
 
 ---
 
-## 4. 워크플로 "Build node-runner.exe" 단계 — 이렇게 바꿔라
+## 4. 워크플로 "Build node-runner.exe" 단계 (고정)
 
 **파일:** `.github/workflows/release-node-runner.yml`
 
-**기존:**  
-`Build node-agent` → `Build node-runner.exe`에서 `node-agent/dist/index.js`를 pkg에 넘기는 블록 전체.
-
-**교체:** 아래 블록으로 치환.
+- **pkg 타겟:** `node18-win-x64` (node20 아님. pkg에서 node20 타겟 미지원 시 node18 사용.)
+- **pkg 입력:** CJS 단일 번들 한 파일만 — `node-agent/dist-bundle/index.cjs` (tsup 출력 고정).
+- **pkg 출력:** `dist/node-runner.exe` 항상 생성.
 
 ```yaml
-      # 1) tsc 빌드 (기존)
+      # Build node-agent (tsup → dist-bundle/index.cjs)
       - name: Build node-agent
         working-directory: node-agent
         run: npm run build
 
-      # 2) CJS 단일 번들 생성 (tsup 또는 esbuild — 프로젝트 선택에 맞게 하나만)
-      - name: Bundle node-runner CJS
-        shell: pwsh
-        run: |
-          cd node-agent
-          npx tsup src/index.ts --format cjs --outDir dist --minify --no-splitting --outExtension '{"cjs":"cjs"}'
-          if (-not (Test-Path dist/index.cjs)) { throw "dist/index.cjs not found" }
-          # 또는 esbuild 사용 시:
-          # npx esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/node-runner.cjs
-
-      # 3) pkg로 exe 생성 (입력 = CJS 번들 파일 하나)
+      # pkg: target node18; input = CJS single bundle only → dist/node-runner.exe always
       - name: Build node-runner.exe
         shell: pwsh
         run: |
           npm install -g pkg
-          $cjs = "node-agent/dist/index.cjs"
-          if (-not (Test-Path $cjs)) { $cjs = "node-agent/dist/node-runner.cjs" }
-          if (-not (Test-Path $cjs)) { throw "CJS bundle not found. Expected index.cjs or node-runner.cjs in node-agent/dist" }
+          $cjs = "node-agent/dist-bundle/index.cjs"
+          if (-not (Test-Path $cjs)) { throw "CJS bundle not found: $cjs" }
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          pkg -t node20-win-x64 -o dist/node-runner.exe $cjs
+          pkg -t node18-win-x64 -o dist/node-runner.exe $cjs
           if (-not (Test-Path dist/node-runner.exe)) { throw "dist/node-runner.exe not found" }
 ```
-
-- tsup 사용 시: `node-agent/package.json`에 `devDependencies`에 `tsup` 추가, 위처럼 `tsup src/index.ts ...` 실행.
-- esbuild 사용 시: `npx esbuild ...`로 번들하고, `$cjs`를 `node-agent/dist/node-runner.cjs`로 맞추면 됨.
 
 ---
 

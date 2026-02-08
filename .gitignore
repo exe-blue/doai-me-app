@@ -27,3 +27,7 @@ Thumbs.db
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# E2E outputs
+e2e-report.json
+e2e-screenshots/

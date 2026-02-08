@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * QA Ralph: Visit /, /dashboard, /commands, /content and collect:
- * - status, consoleErrors, overlayText, failedRequests per page
- * - BASE_URL from env (use Vercel preview/prod for CI)
+ * QA Ralph: Visit MVP 5 URLs only (see docs/guide/mvp-routes-and-backend.md).
+ * Collects status, consoleErrors, overlayText, failedRequests per page.
+ * BASE_URL from env (use Vercel preview/prod for CI).
  */
 import { chromium } from 'playwright';
 
 const BASE = process.env.BASE_URL || 'http://localhost:3000';
 
-const PATHS = ['/', '/dashboard', '/commands', '/content'];
+const PATHS = ['/', '/dashboard', '/devices', '/commands', '/runs'];
 
 async function run() {
   const browser = await chromium.launch({ headless: true });
