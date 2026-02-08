@@ -224,6 +224,28 @@ export async function POST(req: NextRequest) {
     const run_id = run.id;
     console.log(`[run_id=${run_id}] Created run; workflow_id=${workflow_id ?? '—'}, playbook_id=${playbook_id ?? '—'}`);
 
+    // Resolve target devices and insert run_device_states so /api/nodes/pull can assign work
+    const nodeIds = Array.isArray(target.node_ids) ? (target.node_ids as string[]) : undefined;
+    let devicesQuery = supabase
+      .from('devices')
+      .select('index_no')
+      .not('index_no', 'is', null);
+    if (nodeIds?.length) {
+      devicesQuery = devicesQuery.in('node_id', nodeIds);
+    }
+    const { data: devices, error: devErr } = await devicesQuery;
+    if (!devErr && devices?.length) {
+      const rows = devices.map((d) => ({
+        run_id,
+        device_index: (d as { index_no: number }).index_no,
+        status: 'queued',
+        current_step_index: 0,
+      }));
+      const { error: rdsErr } = await supabase.from('run_device_states').insert(rows);
+      if (rdsErr) console.error('[runs] run_device_states insert failed', rdsErr);
+      else console.log(`[run_id=${run_id}] Inserted ${rows.length} run_device_states`);
+    }
+
     return NextResponse.json({ run_id }, { status: 201 });
   } catch (err) {
     console.error('[runs] Error', err);

@@ -11,6 +11,7 @@ import { withRequestId } from '@/lib/requestId';
 
 const ONLINE_WINDOW_SEC = 30;
 const LEASE_SEC = 30;
+/** 노드 동시 실행 1개 고정 (한 번에 한 job만 할당) */
 const MAX_JOBS = 1;
 
 function verifyNodeAuth(req: NextRequest): boolean {

@@ -48,7 +48,8 @@ async function sendCallback(
   });
 }
 
-export async function runJob(job: PullJob, callback: CallbackBuffer): Promise<void> {
+/** Returns true only when task completed successfully (task_finished status 'succeeded'). */
+export async function runJob(job: PullJob, callback: CallbackBuffer): Promise<boolean> {
   const { run_id, device_index, device_id, runtime_handle, step_index, step_id, step_type, decision } = job;
 
   if (decision === 'skipped') {
@@ -56,7 +57,7 @@ export async function runJob(job: PullJob, callback: CallbackBuffer): Promise<vo
       step: { step_index, step_id, step_type, status: 'skipped', decision: 'skipped' },
     });
     logInfo('Job skipped (decision)', { run_id, device_index, step_index });
-    return;
+    return false;
   }
 
   const handle = runtime_handle ?? device_id;
@@ -92,7 +93,7 @@ export async function runJob(job: PullJob, callback: CallbackBuffer): Promise<vo
           error_message: lastError,
           timings: { startedAt, endedAt: Date.now() },
         });
-        return;
+        return false;
       }
     }
 
@@ -120,7 +121,7 @@ export async function runJob(job: PullJob, callback: CallbackBuffer): Promise<vo
         error_message: 'screenshot read failed',
         timings: { startedAt, endedAt: Date.now() },
       });
-      return;
+      return false;
     }
 
     const storagePath = buildArtifactPath(run_id, device_index, timestamp);
@@ -139,7 +140,7 @@ export async function runJob(job: PullJob, callback: CallbackBuffer): Promise<vo
         error_message: 'upload failed',
         timings: { startedAt, endedAt: Date.now() },
       });
-      return;
+      return false;
     }
 
     await sendCallback(callback, job, 'artifact_created', {
@@ -167,6 +168,7 @@ export async function runJob(job: PullJob, callback: CallbackBuffer): Promise<vo
     });
 
     logInfo('Job completed', { run_id, device_index, step_index });
+    return true;
   } catch (err) {
     logError('Job failed', err as Error, { run_id, device_index });
     await sendCallback(callback, job, 'task_finished', {
@@ -177,5 +179,6 @@ export async function runJob(job: PullJob, callback: CallbackBuffer): Promise<vo
       error_message: (err as Error).message,
       timings: { startedAt, endedAt: Date.now() },
     });
+    return false;
   }
 }

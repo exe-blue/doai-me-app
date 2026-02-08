@@ -60,13 +60,14 @@ function DevicesPageContent() {
   const tileSize = 36;
 
   const { displayItems, selectedItem } = useMemo(() => {
-    const filtered = nodeParam
-      ? allItems.filter((i) => (i.node_id ?? "") === nodeParam)
-      : allItems;
+    let filtered = allItems;
+    if (nodeParam) filtered = filtered.filter((i) => (i.node_id ?? "") === nodeParam);
+    if (filterParam === "online") filtered = filtered.filter((i) => i.online);
+    if (filterParam === "offline") filtered = filtered.filter((i) => !i.online);
     const items = nodeParam ? normalizeToSlots(filtered, 100) : filtered;
     const selected = selectedIndex != null ? items.find((i) => i.index === selectedIndex) : null;
     return { displayItems: items, selectedItem: selected };
-  }, [allItems, nodeParam, selectedIndex]);
+  }, [allItems, nodeParam, filterParam, selectedIndex]);
 
   const setSelectedIndex = (index: number) => {
     const url = new URL(window.location.href);
@@ -158,7 +159,6 @@ function DevicesPageContent() {
                 <SelectItem value="__all__">전체</SelectItem>
                 <SelectItem value="online">Online</SelectItem>
                 <SelectItem value="offline">Offline</SelectItem>
-                <SelectItem value="needs-attention">즉시 조치</SelectItem>
               </SelectContent>
             </Select>
             <Dialog open={scanOpen} onOpenChange={setScanOpen}>
