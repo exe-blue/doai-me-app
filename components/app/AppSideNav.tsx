@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar"
 
 const navItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { label: "대시보드", href: "/", icon: Home },
+  { label: "대시보드", href: "/dashboard", icon: Home },
   { label: "명령", href: "/commands", icon: Library },
   { label: "기기", href: "/devices", icon: Smartphone },
   { label: "실행", href: "/runs", icon: Brain },
@@ -28,14 +28,14 @@ export function AppSideNav() {
   const pathname = usePathname()
 
   const isActive = (href: string) => {
-    if (href === "/") return pathname === "/"
+    if (href === "/dashboard") return pathname === "/dashboard"
     return pathname.startsWith(href)
   }
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="px-4 py-4">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-lg font-bold tracking-tight text-foreground group-data-[collapsible=icon]:hidden">
             DoAi.Me
           </span>

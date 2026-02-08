@@ -24,9 +24,10 @@
 
 ## 산출물 (GitHub Release 자산)
 
-- **릴리즈에 올릴 zip:** `node-runner-win-x64-v{VERSION}.zip`
-- **포함 파일:**  
-  `node-runner.exe`, `winsw.exe`, `node-runner-service.xml`, `install.ps1`, `update.ps1`, `sha256sums.txt`
+- **설치형 (권장):** `node-runner-setup-v{VERSION}.exe` — Inno Setup 기반. **PowerShell 의존 없음.** 설치 시 ProgramData 디렉터리 생성, config.json 없을 때만 템플릿 생성(onlyifdoesntexist), winsw install/start 자동 실행. 제거 시 winsw stop/uninstall 자동.
+- **릴리즈 zip:** `node-runner-win-x64-v{VERSION}.zip`
+- **zip 포함 파일:**  
+  `node-runner.exe`, `winsw.exe`, `node-runner-service.xml`, `install.ps1`, `update.ps1`, `sha256sums.txt` (수동 설치/업데이트용; setup.exe는 PS1 미사용)
 
 **설치 경로 표준**
 
@@ -67,11 +68,10 @@
 
 ---
 
-## install.ps1 요구사항
+## 설치 방식
 
-- 관리자 권한 가정.
-- 디렉토리 생성 → config.json 없으면 템플릿 생성(기본값, node_id/secret/url은 사용자 수정) → zip 파일 배치 → 서비스 install + start.
-- **config.json이 이미 있으면 절대 덮어쓰지 않음.**
+- **setup.exe (Inno Setup):** 관리자 실행 → 설치 경로 선택 → ProgramData 디렉터리·config.json(없을 때만) 생성 → winsw install + start. 제거 시 winsw stop + uninstall. **PS1 불필요.**
+- **install.ps1 (zip 수동):** 관리자 권한. 디렉터리 생성 → config.json 없으면 템플릿 생성 → 서비스 install + start. **config.json이 이미 있으면 덮어쓰지 않음.**
 
 ---
 
@@ -92,7 +92,7 @@
 
 ## GitHub Actions (릴리즈 자동화)
 
-- 태그 **vX.Y.Z** 푸시 시: Windows x64 빌드 → node-runner.exe 생성 → zip 패키징(위 파일 포함) → sha256sums.txt 생성 → GitHub Release 생성 + zip 업로드.
+- 태그 **vX.Y.Z** 푸시 시: pkg로 node-runner.exe 빌드 → WinSW 다운로드 → Inno Setup(iscc)로 setup.exe 생성 → zip 패키징(위 파일 포함) → sha256sums.txt 생성 → GitHub Release 생성 + zip 및 setup exe 업로드.
 
 ---
 

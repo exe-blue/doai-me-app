@@ -1,22 +1,27 @@
 #!/usr/bin/env node
 /**
- * QA Ralph: Visit /, /dashboard, /content, /commands and collect:
- * - First console error (full text + stack)
- * - Failed network requests (url, status)
- * - Page content snapshot on error
+ * QA Ralph: Visit /, /dashboard, /commands, /content and collect:
+ * - status, consoleErrors, overlayText, failedRequests per page
+ * - BASE_URL from env (use Vercel preview/prod for CI)
  */
 import { chromium } from 'playwright';
 
 const BASE = process.env.BASE_URL || 'http://localhost:3000';
 
+const PATHS = ['/', '/dashboard', '/commands', '/content'];
+
 async function run() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
-  const results = { pages: {}, firstClientError: null, failedRequests: [] };
+  const results = {
+    baseUrl: BASE,
+    pages: {},
+    firstClientError: null,
+    failedRequests: [],
+  };
 
   const page = await context.newPage();
 
-  // Capture first client-side error with stack
   await page.exposeFunction('__reportError', (msg, stack) => {
     if (!results.firstClientError) results.firstClientError = { message: msg, stack: stack || '' };
   });
@@ -37,63 +42,51 @@ async function run() {
     });
   });
 
+  const requestFailures = [];
   page.on('requestfailed', (req) => {
-    results.failedRequests.push({
+    requestFailures.push({
       url: req.url(),
       method: req.method(),
       failure: req.failure()?.errorText || 'unknown',
     });
   });
 
-  // Note: /command_catalogs is the current route; /commands is not present
-  const paths = ['/', '/dashboard', '/content', '/command_catalogs'];
-  let currentPath = null;
+  for (const path of PATHS) {
+    results.pages[path] = {
+      status: null,
+      consoleErrors: [],
+      overlayText: null,
+      hasOverlay: false,
+      failedRequests: [],
+    };
+    const pageResults = results.pages[path];
+    requestFailures.length = 0;
+    const consoleErrors = [];
+    const consoleListener = (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    };
+    page.on('console', consoleListener);
 
-  page.on('console', (msg) => {
-    if (msg.type() === 'error' && currentPath && results.pages[currentPath]) {
-      results.pages[currentPath].consoleErrors.push(msg.text());
-    }
-  });
-
-  for (const path of paths) {
-    currentPath = path;
-    results.pages[path] = { status: null, consoleErrors: [], hasOverlay: false };
     try {
       const res = await page.goto(BASE + path, { waitUntil: 'domcontentloaded', timeout: 12000 });
-      results.pages[path].status = res?.status() ?? null;
+      pageResults.status = res?.status() ?? null;
       await page.waitForTimeout(2000);
-      const overlay = await page.$('[data-nextjs-dialog]');
-      results.pages[path].hasOverlay = !!overlay;
-      if (overlay) {
-        const overlayText = await overlay.textContent();
-        results.pages[path].overlayText = overlayText?.slice(0, 500) || '';
-      }
-    } catch (e) {
-      results.pages[path].navigateError = e.message;
-    }
-  }
 
-  // Try to get the first reported error from page (from Next.js error overlay)
-  const lastPage = await context.newPage();
-  await lastPage.addInitScript(() => {
-    const orig = window.onerror;
-    window.onerror = function (message, source, lineno, colno, error) {
-      if (typeof window.__reportError === 'function') {
-        window.__reportError(String(message), error?.stack || `${source}:${lineno}:${colno}`);
+      const overlay = await page.$('[data-nextjs-dialog]');
+      pageResults.hasOverlay = !!overlay;
+      if (overlay) {
+        pageResults.overlayText = (await overlay.textContent())?.slice(0, 500) || null;
       }
-      if (orig) return orig.apply(this, arguments);
-      return false;
-    };
-  });
-  await lastPage.exposeFunction('__reportError', (msg, stack) => {
-    if (!results.firstClientError) results.firstClientError = { message: msg, stack: stack || '' };
-  });
-  await lastPage.goto(BASE + '/content', { waitUntil: 'networkidle', timeout: 15000 });
-  await lastPage.waitForTimeout(3000);
-  const overlay = await lastPage.$('[data-nextjs-dialog]');
-  if (overlay) {
-    const text = await overlay.textContent();
-    results.overlayContent = text?.slice(0, 2000) || '';
+
+      pageResults.failedRequests = [...requestFailures];
+      pageResults.consoleErrors = [...consoleErrors];
+    } catch (e) {
+      pageResults.navigateError = e.message;
+      pageResults.failedRequests = [...requestFailures];
+      pageResults.consoleErrors = [...consoleErrors];
+    }
+
+    page.off('console', consoleListener);
   }
 
   await browser.close();

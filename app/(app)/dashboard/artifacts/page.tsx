@@ -54,11 +54,11 @@ function artifactStatusBadge(status: ArtifactStatus) {
 
 export default function ArtifactsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("__all__")
   const [selected, setSelected] = useState<Artifact | null>(null)
 
   const filtered = artifacts.filter((a) => {
-    if (statusFilter !== "all" && a.status !== statusFilter) return false
+    if (statusFilter !== "__all__" && a.status !== statusFilter) return false
     return true
   })
 
@@ -79,7 +79,7 @@ export default function ArtifactsPage() {
             <SelectValue placeholder="상태" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">전체</SelectItem>
+            <SelectItem value="__all__">전체</SelectItem>
             <SelectItem value="업로드 완료">업로드 완료</SelectItem>
             <SelectItem value="업로드 중">업로드 중</SelectItem>
             <SelectItem value="실패">실패</SelectItem>

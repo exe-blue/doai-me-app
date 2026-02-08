@@ -15,8 +15,8 @@ export function HeatmapSkeleton({ className }: { className?: string }) {
         gridTemplateRows: `repeat(${HEATMAP_COLS}, ${HEATMAP_TILE_SIZE}px)`,
       }}
     >
-      {Array.from({ length: TOTAL }).map((_, i) => (
-        <UiSkeleton key={i} style={{ width: HEATMAP_TILE_SIZE, height: HEATMAP_TILE_SIZE }} className="rounded" />
+      {Array.from({ length: TOTAL }, (_, i) => i).map((i) => (
+        <UiSkeleton key={`heatmap-${i}`} style={{ width: HEATMAP_TILE_SIZE, height: HEATMAP_TILE_SIZE }} className="rounded" />
       ))}
     </div>
   );
@@ -26,14 +26,14 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
   return (
     <div className="space-y-2">
       <div className="flex gap-2 border-b pb-2">
-        {Array.from({ length: cols }).map((_, i) => (
-          <UiSkeleton key={i} className="h-4 flex-1" />
+        {Array.from({ length: cols }, (_, i) => i).map((i) => (
+          <UiSkeleton key={`col-${i}`} className="h-4 flex-1" />
         ))}
       </div>
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex gap-2">
-          {Array.from({ length: cols }).map((_, j) => (
-            <UiSkeleton key={j} className="h-6 flex-1" />
+      {Array.from({ length: rows }, (_, i) => i).map((i) => (
+        <div key={`row-${i}`} className="flex gap-2">
+          {Array.from({ length: cols }, (_, j) => j).map((j) => (
+            <UiSkeleton key={`row-${i}-col-${j}`} className="h-6 flex-1" />
           ))}
         </div>
       ))}

@@ -57,8 +57,8 @@ export default function OnboardingPage() {
 
       {/* Checklist */}
       <div className="flex flex-col gap-3">
-        {steps.map((step, i) => (
-          <Card key={i} className={cn("py-4 gap-3 transition-colors", step.done && "opacity-60")}>
+        {steps.map((step) => (
+          <Card key={step.title} className={cn("py-4 gap-3 transition-colors", step.done && "opacity-60")}>
             <CardContent className="px-4 flex items-start gap-4">
               <div className={cn(
                 "flex size-7 shrink-0 items-center justify-center rounded-full mt-0.5",

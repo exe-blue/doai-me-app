@@ -142,10 +142,10 @@ function DevicesPageContent() {
               </span>
             )}
             <Select
-              value={filterParam ?? "all"}
+              value={filterParam ?? "__all__"}
               onValueChange={(v) => {
                 const url = new URL(window.location.href);
-                if (v === "all") url.searchParams.delete("filter");
+                if (v === "__all__") url.searchParams.delete("filter");
                 else url.searchParams.set("filter", v);
                 if (nodeParam) url.searchParams.set("node", nodeParam);
                 router.replace(url.pathname + url.search);
@@ -155,7 +155,7 @@ function DevicesPageContent() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">전체</SelectItem>
+                <SelectItem value="__all__">전체</SelectItem>
                 <SelectItem value="online">Online</SelectItem>
                 <SelectItem value="offline">Offline</SelectItem>
                 <SelectItem value="needs-attention">즉시 조치</SelectItem>

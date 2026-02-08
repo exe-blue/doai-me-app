@@ -21,7 +21,7 @@ const AUTH_COOKIE_NAMES = ['doai-auth', 'sb-access-token'] as const;
 export default async function LandingPage() {
   const cookieStore = await cookies();
   const hasAuth = AUTH_COOKIE_NAMES.some((name) => cookieStore.get(name)?.value);
-  if (hasAuth) redirect('/');
+  if (hasAuth) redirect('/dashboard');
 
   const websiteStructuredData = generateWebsiteStructuredData(baseUrl);
   const personStructuredData = generatePersonStructuredData();
@@ -46,7 +46,7 @@ export default async function LandingPage() {
           <h2 className="text-xl font-semibold tracking-tight">빠른 링크</h2>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/"
+              href="/dashboard"
               className="rounded-lg border border-primary bg-primary/10 px-4 py-2 font-mono text-sm text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
             >
               대시보드

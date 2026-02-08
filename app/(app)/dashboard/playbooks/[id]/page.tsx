@@ -46,7 +46,8 @@ export default function EditPlaybookPage() {
       fetch("/api/library/list").then((r) => r.json()),
       fetch(`/api/playbooks/${id}`).then((r) => (r.ok ? r.json() : null)),
     ]).then(([libData, pb]) => {
-      setAssets(libData.items ?? [])
+      const raw = libData.items ?? []
+      setAssets(raw.filter((a: { id?: unknown }) => a.id != null && String(a.id).trim() !== ""))
       if (pb) {
         setName(pb.name ?? "")
         setDescription(pb.description ?? "")
@@ -187,7 +188,7 @@ export default function EditPlaybookPage() {
           ) : (
             <ul className="space-y-3">
               {steps.map((step, i) => (
-                <li key={i} className="flex flex-wrap items-center gap-2 p-3 rounded-lg border bg-card">
+                <li key={step.id ?? `step-${step.command_asset_id ?? "empty"}-${i}`} className="flex flex-wrap items-center gap-2 p-3 rounded-lg border bg-card">
                   <span className="text-muted-foreground w-6">{i + 1}.</span>
                   <Select
                     value={step.command_asset_id}

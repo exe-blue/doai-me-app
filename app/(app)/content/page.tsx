@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/table"
 import { Plus, Loader2, RefreshCw } from "lucide-react"
 import Image from "next/image"
-import { Suspense } from "react"
 
 type ContentItem = {
   content_id: string
@@ -51,7 +50,7 @@ function ContentTabs() {
   const searchParams = useSearchParams()
   const tab = searchParams.get("tab") === "channels" ? "channels" : "status"
 
-  const [statusFilter, setStatusFilter] = useState<string>("new")
+  const [statusFilter, setStatusFilter] = useState<string>("__all__")
   const [channelFilter, setChannelFilter] = useState<string | undefined>(undefined)
   const [contentItems, setContentItems] = useState<ContentItem[]>([])
   const [contentLoading, setContentLoading] = useState(true)
@@ -66,7 +65,7 @@ function ContentTabs() {
 
   const fetchContent = useCallback(() => {
     const params = new URLSearchParams({ window: "24" })
-    if (statusFilter && statusFilter !== "all") params.set("status", statusFilter)
+    if (statusFilter && statusFilter !== "__all__") params.set("status", statusFilter)
     if (channelFilter) params.set("channel_id", channelFilter)
     return fetch(`/api/content/status?${params}`)
       .then((r) => (r.ok ? r.json() : { items: [] }))
@@ -174,14 +173,14 @@ function ContentTabs() {
             <CardHeader>
               <CardTitle className="text-base">최근 24시간</CardTitle>
               <div className="flex flex-wrap gap-3 mt-2">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter || "__all__"} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-32 h-8">
                     <SelectValue placeholder="상태" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="new">등록됨(New)</SelectItem>
                     <SelectItem value="done">완료됨(Done)</SelectItem>
-                    <SelectItem value="all">전체</SelectItem>
+                    <SelectItem value="__all__">전체</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={channelFilter ?? "__all__"} onValueChange={(v) => setChannelFilter(v === "__all__" ? undefined : v)}>

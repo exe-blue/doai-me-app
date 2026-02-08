@@ -113,8 +113,8 @@ export default function OnboardingPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {CHECKLIST.map((item, i) => (
-            <label key={i} className="flex items-center gap-2 text-sm">
+          {CHECKLIST.map((item) => (
+            <label key={item.label} className="flex items-center gap-2 text-sm">
               <Check className="size-4 text-muted-foreground" />
               <span>{item.label}</span>
             </label>
@@ -132,15 +132,15 @@ export default function OnboardingPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-            {OTG_STEPS.map((step, i) => (
-              <li key={i}>{step}</li>
+            {OTG_STEPS.map((step) => (
+              <li key={step.slice(0, 48)}>{step}</li>
             ))}
           </ol>
           <div className="pt-2 border-t border-border">
             <p className="text-xs font-medium text-foreground mb-2">자주 묻는 질문</p>
             <ul className="space-y-2 text-xs text-muted-foreground">
-              {FAQ.map((faq, i) => (
-                <li key={i}>
+              {FAQ.map((faq) => (
+                <li key={faq.q}>
                   <span className="font-medium text-foreground">{faq.q}</span> — {faq.a}
                 </li>
               ))}

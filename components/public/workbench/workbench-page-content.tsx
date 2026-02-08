@@ -228,8 +228,8 @@ export function WorkbenchPageContent() {
                 Recent Activity
               </h3>
               <div className="space-y-3">
-                {recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-start gap-3 text-xs">
+                {recentActivity.map((activity) => (
+                  <div key={`${activity.message}-${activity.time}`} className="flex items-start gap-3 text-xs">
                     <span
                       className={cn(
                         "shrink-0 w-1.5 h-1.5 rounded-full mt-1.5",

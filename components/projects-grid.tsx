@@ -58,9 +58,9 @@ export function ProjectsGrid() {
             {"이번 MVP에서 확정하는 것"}
           </h3>
           <ul className="space-y-3">
-            {mvpItems.map((item, index) => (
+            {mvpItems.map((item) => (
               <li
-                key={index}
+                key={item}
                 className="flex items-start gap-3 text-sm text-muted-foreground"
               >
                 <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />

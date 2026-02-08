@@ -1,6 +1,6 @@
-; DOAI Node Runner - Inno Setup script
+; DOAI Node Runner - Inno Setup script (no PowerShell dependency)
 ; Build: iscc /DMyAppVersion=0.1.0 node-runner-setup.iss
-; Run from the folder that contains node-runner.exe, winsw.exe, install.ps1, etc.
+; Run from the folder that contains node-runner.exe, winsw.exe, node-runner-service.xml.
 
 #ifndef MyAppVersion
 #define MyAppVersion "0.0.0"
@@ -8,7 +8,7 @@
 
 #define MyAppName "DOAI Node Runner"
 #define MyAppPublisher "DOAI"
-#define MyAppURL "https://github.com/doai/doai-me-app"
+#define MyAppURL "https://github.com/exe-blue/doai-me-app"
 
 [Setup]
 AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
@@ -35,13 +35,49 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "node-runner.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "winsw.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "node-runner-service.xml"; DestDir: "{app}"; Flags: ignoreversion
-Source: "install.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "update.ps1"; DestDir: "{app}"; Flags: ignoreversion
+
+[Dirs]
+; ProgramData: config, logs, cache (created by [Code] if needed)
+Name: "{commonappdata}\doai\node-runner"; Permissions: users-full
+Name: "{commonappdata}\doai\node-runner\logs"; Permissions: users-full
+Name: "{commonappdata}\doai\node-runner\cache"; Permissions: users-full
+
+[Code]
+const
+  ConfigDir = '{commonappdata}\doai\node-runner';
+  ConfigFile = 'config.json';
+
+procedure CreateConfigIfNotExists;
+var
+  ConfigPath: String;
+  ArtifactsDir: String;
+  Json: String;
+begin
+  ConfigPath := ExpandConstant(ConfigDir) + '\' + ConfigFile;
+  if not FileExists(ConfigPath) then
+  begin
+    ArtifactsDir := ExpandConstant(ConfigDir) + '\cache';
+    StringChange(ArtifactsDir, '\', '\\');
+    Json := '{"server_base_url":"https://<your-vercel>.vercel.app","node_id":"PC-01","node_shared_secret":"REPLACE_ME","adb_path":"C:\\Program Files (x86)\\xiaowei\\tools\\adb.exe","poll_interval_ms":1500,"max_jobs":1,"online_window_sec":30,"lease_sec":30,"artifacts_dir":"' + ArtifactsDir + '"}';
+    SaveStringToFile(ConfigPath, Json, False);
+    Log('Created config template: ' + ConfigPath);
+  end
+  else
+    Log('Config already exists, keeping: ' + ConfigPath);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    CreateConfigIfNotExists;
+end;
 
 [Run]
-; Post-install: create ProgramData dirs, config template, install & start Windows service
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -NoProfile -File ""{app}\install.ps1"""; WorkingDir: "{app}"; StatusMsg: "Installing service..."; Flags: runhidden waituntilterminated
+; Install and start Windows service (no PowerShell)
+Filename: "{app}\winsw.exe"; Parameters: "install"; WorkingDir: "{app}"; StatusMsg: "Installing service..."; Flags: runhidden waituntilterminated
+Filename: "{app}\winsw.exe"; Parameters: "start"; WorkingDir: "{app}"; StatusMsg: "Starting service..."; Flags: runhidden waituntilterminated
 
 [UninstallRun]
-; Stop and remove service before deleting files
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -NoProfile -Command ""& '{app}\winsw.exe' stop; & '{app}\winsw.exe' uninstall"""; WorkingDir: "{app}"; RunOnceId: "UninstallService"; Flags: runhidden waituntilterminated
+; Stop and remove service before deleting files (no PowerShell)
+Filename: "{app}\winsw.exe"; Parameters: "stop"; WorkingDir: "{app}"; RunOnceId: "UninstallServiceStop"; Flags: runhidden waituntilterminated
+Filename: "{app}\winsw.exe"; Parameters: "uninstall"; WorkingDir: "{app}"; RunOnceId: "UninstallServiceUninstall"; Flags: runhidden waituntilterminated

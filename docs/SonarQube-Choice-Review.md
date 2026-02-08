@@ -15,6 +15,15 @@
 
 ---
 
+## 0.1. process.env (NODE_ID 등) — 클라이언트 유출 금지
+
+- **정책**: `app/`, `components/` 등 클라이언트 번들에 들어가는 코드에서는 **서버 전용 env 사용 금지**.
+  - **금지**: `process.env.NODE_ID`, `process.env.NODE_AGENT_*` 등 노드/서버 전용 변수. 클라이언트로 흘러가면 value가 빈 문자열이 되거나 보안 이슈.
+  - **허용**: `process.env.NEXT_PUBLIC_*` 만 클라이언트에서 사용. 그 외는 API 라우트·서버 컴포넌트·getServerSideProps 등 서버에서만 사용.
+- **공용 유틸**: 서버에서 주입하거나, `NEXT_PUBLIC_` 접두사로 명시적으로 공개한 것만 클라이언트에서 참조.
+
+---
+
 ## 1. Cognitive Complexity (S3776) — 리팩터 필요
 
 ### 1.1 `node-agent/src/workflowDsl.ts` (약 59행)
