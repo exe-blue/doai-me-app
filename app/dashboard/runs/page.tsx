@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,15 +18,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { Checkbox } from "@/components/ui/checkbox"
 import { RotateCcw, Square, ExternalLink, Check, Plus } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
-const GLOBAL_TIMEOUT_MIN = 60000
-const GLOBAL_TIMEOUT_MAX = 1800000
-
 const STEP_KEYS = ["PREFLIGHT", "BOOTSTRAP", "LOGIN_FLOW", "SCREENSHOT", "UPLOAD"] as const
-const STEP_TIMEOUT_MIN = 5000
-const STEP_TIMEOUT_MAX = 600000
+const STEP_TIMEOUT_SEC_MIN = 5
+const STEP_TIMEOUT_SEC_MAX = 600
+const DEFAULT_NODE_IDS = ["PC-01", "PC-02", "PC-03", "PC-04"]
 
 type RunStatus = "대기열" | "실행 중" | "완료" | "실패" | "중단됨"
 type RunStep = "관측" | "등록" | "배포" | "행동" | "기록"
@@ -115,65 +116,132 @@ const tabMap: Record<string, RunStatus> = {
 }
 
 export default function RunsPage() {
+  const router = useRouter()
   const [selectedRun, setSelectedRun] = useState<Run | null>(null)
   const [tab, setTab] = useState("all")
 
   const filtered = tab === "all" ? runs : runs.filter((r) => r.status === tabMap[tab])
 
   const [createOpen, setCreateOpen] = useState(false)
-  const [youtubeVideoId, setYoutubeVideoId] = useState("")
-  const [globalTimeoutMs, setGlobalTimeoutMs] = useState<string>("600000")
   const [workflows, setWorkflows] = useState<{ workflow_id: string; name: string }[]>([])
   const [workflowId, setWorkflowId] = useState("login_settings_screenshot_v1")
+  const [nodeList, setNodeList] = useState<string[]>(DEFAULT_NODE_IDS)
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>(DEFAULT_NODE_IDS)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [timeoutOverrides, setTimeoutOverrides] = useState<Record<string, string>>({
+  const [timeoutSec, setTimeoutSec] = useState<Record<string, string>>({
     PREFLIGHT: "",
     BOOTSTRAP: "",
     LOGIN_FLOW: "",
     SCREENSHOT: "",
     UPLOAD: "",
   })
+  const [timeoutErrors, setTimeoutErrors] = useState<Record<string, string>>({})
+  const [submitLoading, setSubmitLoading] = useState(false)
 
   useEffect(() => {
     fetch("/api/workflows")
       .then((r) => r.json())
-      .then((d: { workflows?: { workflow_id: string; name: string }[] }) =>
-        setWorkflows(d.workflows ?? [])
-      )
+      .then((d: { workflows?: { workflow_id: string; name: string }[] }) => {
+        const list = d.workflows ?? []
+        setWorkflows(list)
+        if (list.length && !list.some((w) => w.workflow_id === workflowId)) {
+          setWorkflowId(list[0].workflow_id)
+        }
+      })
       .catch(() => {})
   }, [])
 
+  useEffect(() => {
+    fetch("/api/nodes")
+      .then((r) => r.json())
+      .then((d: { nodes?: { node_id: string }[] }) => {
+        const ids = (d.nodes ?? []).map((n) => n.node_id)
+        if (ids.length > 0) {
+          setNodeList(ids)
+          setSelectedNodeIds((prev) => {
+            const intersection = prev.filter((id) => ids.includes(id))
+            return prev.length === 0 || intersection.length === 0 ? ids : intersection
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  function validateTimeouts(): boolean {
+    const err: Record<string, string> = {}
+    if (showAdvanced) {
+      for (const key of STEP_KEYS) {
+        const raw = timeoutSec[key]?.trim()
+        if (!raw) continue
+        const n = parseInt(raw, 10)
+        if (Number.isNaN(n) || n < STEP_TIMEOUT_SEC_MIN || n > STEP_TIMEOUT_SEC_MAX) {
+          err[key] = `${STEP_TIMEOUT_SEC_MIN}~${STEP_TIMEOUT_SEC_MAX}초 사이로 입력하세요.`
+        }
+      }
+    }
+    setTimeoutErrors(err)
+    return Object.keys(err).length === 0
+  }
+
   const handleCreateRun = async () => {
-    const timeout = parseInt(globalTimeoutMs, 10)
-    if (isNaN(timeout) || timeout < GLOBAL_TIMEOUT_MIN || timeout > GLOBAL_TIMEOUT_MAX) {
+    if (selectedNodeIds.length === 0) {
+      toast.error("실행할 노드를 한 개 이상 선택하세요.")
       return
     }
-    const overrides: Record<string, number> = {}
+    if (!validateTimeouts()) return
+    setSubmitLoading(true)
+    const overridesMs: Record<string, number> = {}
     if (showAdvanced) {
-      for (const [key, val] of Object.entries(timeoutOverrides)) {
-        const n = parseInt(val, 10)
-        if (!Number.isNaN(n) && n > 0) overrides[key] = n
+      for (const key of STEP_KEYS) {
+        const raw = timeoutSec[key]?.trim()
+        if (!raw) continue
+        const sec = parseInt(raw, 10)
+        if (!Number.isNaN(sec) && sec >= STEP_TIMEOUT_SEC_MIN && sec <= STEP_TIMEOUT_SEC_MAX) {
+          overridesMs[key] = sec * 1000
+        }
       }
     }
     const body: Record<string, unknown> = {
       trigger: "manual",
       scope: "ALL",
-      youtubeVideoId: youtubeVideoId.trim() || null,
       workflow_id: workflowId,
-      globalTimeoutMs: timeout,
+      target: { node_ids: selectedNodeIds },
     }
-    if (Object.keys(overrides).length > 0) body.timeoutOverrides = overrides
-    const res = await fetch("/api/runs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-    if (res.ok) {
-      setCreateOpen(false)
-      setYoutubeVideoId("")
-      setGlobalTimeoutMs("600000")
+    if (Object.keys(overridesMs).length > 0) body.timeoutOverrides = overridesMs
+    try {
+      const res = await fetch("/api/runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.run_id) {
+        setCreateOpen(false)
+        toast.success("의식 실행이 생성되었습니다.")
+        router.push(`/dashboard/runs/${data.run_id}`)
+        return
+      }
+      if (res.status === 400) {
+        toast.error(data.error ?? "입력값을 확인해 주세요.")
+        return
+      }
+      if (res.status === 401 || res.status === 403) {
+        toast.error("권한이 없습니다.")
+        return
+      }
+      toast.error("일시적인 오류가 났습니다. 잠시 후 다시 시도해 주세요.")
+    } finally {
+      setSubmitLoading(false)
     }
   }
+
+  const toggleNode = (nodeId: string) => {
+    setSelectedNodeIds((prev) =>
+      prev.includes(nodeId) ? prev.filter((id) => id !== nodeId) : [...prev, nodeId]
+    )
+  }
+  const selectAllNodes = () => setSelectedNodeIds([...nodeList])
+  const clearAllNodes = () => setSelectedNodeIds([])
 
   return (
     <div className="flex flex-col gap-6">
@@ -186,53 +254,60 @@ export default function RunsPage() {
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="size-4 mr-2" />
-              Run 생성
+              의식 실행 생성
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Run 생성</DialogTitle>
+              <DialogTitle>의식 실행 생성</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div>
-                <Label htmlFor="workflowId">Workflow</Label>
+                <Label htmlFor="workflowId">레시피(workflow)</Label>
                 <select
                   id="workflowId"
+                  aria-label="레시피(workflow) 선택"
                   value={workflowId}
                   onChange={(e) => setWorkflowId(e.target.value)}
                   className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                 >
-                  {workflows.length ? workflows.map((w) => (
-                    <option key={w.workflow_id} value={w.workflow_id}>{w.name}</option>
-                  )) : (
-                    <>
-                      <option value="bootstrap_only_v1">Bootstrap Only</option>
-                      <option value="login_settings_screenshot_v1">Login → Settings → Screenshot</option>
-                    </>
-                  )}
+                  {workflows.length > 0
+                    ? workflows.map((w) => (
+                        <option key={w.workflow_id} value={w.workflow_id}>
+                          {w.name}
+                        </option>
+                      ))
+                    : (
+                      <>
+                        <option value="bootstrap_only_v1">Bootstrap Only</option>
+                        <option value="login_settings_screenshot_v1">Login → Settings → Screenshot</option>
+                      </>
+                    )}
                 </select>
               </div>
               <div>
-                <Label htmlFor="youtubeVideoId">YouTube Video ID (선택, 수동이면 비움)</Label>
-                <Input
-                  id="youtubeVideoId"
-                  placeholder="dQw4w9WgXcQ"
-                  value={youtubeVideoId}
-                  onChange={(e) => setYoutubeVideoId(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="globalTimeoutMs">전체 타임아웃 (ms, {GLOBAL_TIMEOUT_MIN / 1000}s ~ {GLOBAL_TIMEOUT_MAX / 60000}분)</Label>
-                <Input
-                  id="globalTimeoutMs"
-                  type="number"
-                  min={GLOBAL_TIMEOUT_MIN}
-                  max={GLOBAL_TIMEOUT_MAX}
-                  value={globalTimeoutMs}
-                  onChange={(e) => setGlobalTimeoutMs(e.target.value)}
-                  className="mt-2"
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <Label>실행할 노드</Label>
+                  <div className="flex gap-1">
+                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={selectAllNodes}>
+                      전체 선택
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={clearAllNodes}>
+                      해제
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3 rounded-md border border-input p-3 max-h-32 overflow-y-auto">
+                  {nodeList.map((nodeId) => (
+                    <label key={nodeId} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={selectedNodeIds.includes(nodeId)}
+                        onCheckedChange={() => toggleNode(nodeId)}
+                      />
+                      <span className="font-mono text-sm">{nodeId}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
               <div>
                 <Button
@@ -242,27 +317,36 @@ export default function RunsPage() {
                   className="text-muted-foreground"
                   onClick={() => setShowAdvanced(!showAdvanced)}
                 >
-                  {showAdvanced ? "고급 옵션 접기" : "고급 옵션 (step 타임아웃)"}
+                  {showAdvanced ? "고급 설정 접기" : "고급 설정"}
                 </Button>
                 {showAdvanced && (
                   <div className="mt-2 grid grid-cols-2 gap-2">
-                    {(["PREFLIGHT", "BOOTSTRAP", "LOGIN_FLOW", "SCREENSHOT", "UPLOAD"] as const).map((key) => (
+                    {STEP_KEYS.map((key) => (
                       <div key={key}>
-                        <Label className="text-xs">{key} (ms)</Label>
+                        <Label htmlFor={`timeout-${key}`} className="text-xs">{key} (초, {STEP_TIMEOUT_SEC_MIN}~{STEP_TIMEOUT_SEC_MAX})</Label>
                         <Input
+                          id={`timeout-${key}`}
                           type="number"
+                          min={STEP_TIMEOUT_SEC_MIN}
+                          max={STEP_TIMEOUT_SEC_MAX}
                           placeholder="미지정"
-                          value={timeoutOverrides[key] ?? ""}
-                          onChange={(e) => setTimeoutOverrides((p) => ({ ...p, [key]: e.target.value }))}
-                          className="mt-1 h-8"
+                          value={timeoutSec[key] ?? ""}
+                          onChange={(e) => {
+                            setTimeoutSec((p) => ({ ...p, [key]: e.target.value }))
+                            if (timeoutErrors[key]) setTimeoutErrors((p) => ({ ...p, [key]: "" }))
+                          }}
+                          className={cn("mt-1 h-8", timeoutErrors[key] && "border-destructive")}
                         />
+                        {timeoutErrors[key] && (
+                          <p className="text-xs text-destructive mt-0.5">{timeoutErrors[key]}</p>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-              <Button onClick={handleCreateRun}>
-                생성
+              <Button onClick={handleCreateRun} disabled={submitLoading}>
+                {submitLoading ? "생성 중…" : "생성"}
               </Button>
             </div>
           </DialogContent>
@@ -385,7 +469,7 @@ export default function RunsPage() {
                 <p className="text-xs text-muted-foreground mb-2">로그</p>
                 <div className="rounded-lg bg-secondary/50 p-3 max-h-40 overflow-y-auto scrollbar-hide">
                   {selectedRun.logs.map((log, i) => (
-                    <p key={i} className="font-mono text-[11px] text-muted-foreground leading-relaxed">{log}</p>
+                    <p key={`${i}-${log}`} className="font-mono text-[11px] text-muted-foreground leading-relaxed">{log}</p>
                   ))}
                 </div>
               </div>
