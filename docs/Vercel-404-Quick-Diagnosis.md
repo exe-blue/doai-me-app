@@ -1,8 +1,56 @@
 # Vercel 404 즉시 진단 루틴 (5분 컷)
 
-Vercel 프로젝트에서 **Deployments → 최신 배포** 클릭 후 아래를 **순서대로** 확인한다.
+---
+
+# 1) 제일 먼저 할 것: Vercel 프로젝트 설정 고정 (99%)
+
+**Index of /** 또는 `/` 404는 대부분 여기서 해결된다. Vercel 대시보드에서 해당 프로젝트 열고 아래를 **순서대로** 적용한 뒤 **Deployments → Redeploy → Clear cache and redeploy** 한다.
+
+## Settings → General
+
+- **Framework Preset**: Next.js
+- **Root Directory**: 레포 루트 **`.`** (비우거나 `.`로 두기)
+  - `public`, `frontend`, 그 밖의 하위 폴더로 잡혀 있으면 **Index of /** 가 나올 수 있음.
+
+## Settings → Build & Development Settings
+
+- **Build Command**: `npm run build` (또는 비워두면 Next 자동)
+- **Output Directory**: **비워두기**
+  - 여기에 `public` / `out` / `frontend` 등이 있으면 정적 배포로 고정되어 앱이 안 나옴.
+- **Install Command**: `npm install` (사용 패키지 매니저에 맞게)
+
+## Settings → Git
+
+- **Production Branch**: **main**
+- 연결된 저장소가 **exe-blue/doai-me-app** 인지 확인 (다른 프로젝트/다른 브랜치 배포 중인지 체크).
+
+## 그 다음
+
+- **Deployments** → 최신 배포 선택 → **Redeploy** → **Clear cache and redeploy**
+
+## (선택) favicon 404 정리
+
+로그에 `/favicon.ico` 404, `/favicon.png` 404가 나오면 브라우저 기본 요청 때문이다.  
+이 레포는 **app/layout.tsx**의 `metadata.icons`로 `/icon.svg`를 지정해 두었다.  
+완전히 없애려면 **public/favicon.ico** 또는 App Router 방식으로 **app/icon.ico** / **app/icon.png** 중 하나를 추가하면 된다.
 
 ---
+
+# 2) 성공 판정 (Deploy Gate)
+
+설정을 고친 뒤 아래만 확인하면 된다.
+
+| # | 항목 | 기대 |
+|---|------|------|
+| 1 | `/` 접속 | **Index of /** 사라짐. 307/308 redirect → `/dashboard` (또는 200) |
+| 2 | `/dashboard` | 정상 렌더 |
+| 3 | `app/page.tsx` `redirect('/dashboard')` | 동작함 |
+
+---
+
+# 3) 진단 루틴 (설정 후에도 문제 시)
+
+Vercel 프로젝트에서 **Deployments → 최신 배포** 클릭 후 아래를 **순서대로** 확인한다.
 
 ## 404 원인 1순위: Vercel이 다른 브랜치/커밋을 배포 중
 

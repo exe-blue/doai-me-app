@@ -2,9 +2,12 @@ import { Github } from "lucide-react"
 
 const footerLinks = [
   { label: "콘솔", href: "/dashboard" },
+  { label: "상태", href: "/health" },
+  { label: "블로그", href: "/blog" },
+  { label: "노트", href: "/notes" },
   { label: "기술적 구현", href: "/#tech" },
   { label: "학문적 근거", href: "/#philosophy" },
-  { label: "GitHub", href: "https://github.com", external: true },
+  { label: "GitHub", href: "https://github.com/exe-blue/doai-me-app", external: true },
 ]
 
 export function Footer() {

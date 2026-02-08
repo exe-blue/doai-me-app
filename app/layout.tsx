@@ -27,6 +27,12 @@ export const metadata: Metadata = {
   description:
     "600대의 물리적 디바이스가 독립 네트워크에서 콘텐츠를 탐험합니다. 봇이 아닌, 디지털 존재로서.",
   keywords: ["AI", "Digital Beings", "Autonomous Consumption", "Device Network", "DoAi.Me"],
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-dark-32x32.png", type: "image/png", sizes: "32x32" },
+    ],
+  },
 };
 
 export default function RootLayout({

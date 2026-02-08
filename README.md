@@ -38,9 +38,11 @@ npm start
 
 - **doai.me**, **\*.doai.me** (Vercel에서 Domains로 등록). 상세: `docs/deployment-domains.md`
 
-## 구조
+## 구조 (단일 앱)
 
-- `app/` — Next.js App Router (API routes + Dashboard UI)
+- `app/` — Next.js App Router 단일 진입: 공개 라우트(`/`, `/blog`, `/notes`, `/projects`, `/workbench`, `/introduction`, `/health`) + 대시보드(`/dashboard/*`) + API(`/api/*`)
+- `components/` — 공통 UI (dashboard, public, ui)
+- `lib/` — 유틸, 블로그 데이터, structured data
 - `node-agent/` — Node Agent (TS) — 디바이스 오케스트레이션
 - `supabase/migrations/` — DB 스키마
-- `docs/` — Callback Contract, Orchestration Rules, Workflow DSL
+- `docs/` — API Contract, 배포, Workflow DSL

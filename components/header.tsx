@@ -7,13 +7,16 @@ import Link from "next/link"
 
 const mainNavItems = [
   { label: "오버뷰", href: "/#overview" },
-  { label: "디바이스=실체", href: "/#devices" },
-  { label: "컨텐츠", href: "/#videos" },
-  { label: "실행", href: "/#runs" },
-  { label: "로그", href: "/#artifacts" },
+  { label: "콘솔", href: "/dashboard" },
+  { label: "블로그", href: "/blog" },
+  { label: "노트", href: "/notes" },
+  { label: "프로젝트", href: "/projects" },
 ]
 
 const moreNavItems = [
+  { label: "워크벤치", href: "/workbench" },
+  { label: "소개", href: "/introduction" },
+  { label: "상태", href: "/health" },
   { label: "학문적 근거", href: "/#philosophy" },
   { label: "기술적 구현", href: "/#tech" },
 ]
