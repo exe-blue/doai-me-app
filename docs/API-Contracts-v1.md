@@ -8,7 +8,7 @@
 
 ### Base URL
 
-- Backend (Vercel): `https://<your-domain>`
+- Backend: `https://doai.me`
 - All endpoints are under: `/api/*`
 
 ### Auth

@@ -9,7 +9,7 @@ alwaysApply: true
 
 ## Phase D0: Deploy Gate (가장 먼저)
 
-배포 직후 아래 4개를 **고정 체크리스트**로 확인한다.
+배포 직후 아래 4개를 **고정 체크리스트**로 확인한다. Production 도메인: **https://doai.me**
 
 | # | 경로 | 기대 |
 |---|------|------|
