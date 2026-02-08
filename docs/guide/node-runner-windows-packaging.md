@@ -24,16 +24,39 @@
 
 ## 산출물 (GitHub Release 자산)
 
-- **설치형 (권장):** `node-runner-setup-v{VERSION}.exe` — Inno Setup 기반. **PowerShell 의존 없음.** 설치 시 ProgramData 디렉터리 생성, config.json 없을 때만 템플릿 생성(onlyifdoesntexist), winsw install/start 자동 실행. 제거 시 winsw stop/uninstall 자동.
+- **설치형 (권장):** `doai-me-app-{VERSION}-win-x64-installer.exe` — Inno Setup 기반 (리포명+버전+installer). **PowerShell 의존 없음.** 설치 시 ProgramData 디렉터리 생성, config.json 없을 때만 템플릿 생성(onlyifdoesntexist), winsw install/start 자동 실행. 제거 시 winsw stop/uninstall 자동.
 - **릴리즈 zip:** `node-runner-win-x64-v{VERSION}.zip`
 - **zip 포함 파일:**  
-  `node-runner.exe`, `winsw.exe`, `node-runner-service.xml`, `install.ps1`, `update.ps1`, `sha256sums.txt` (수동 설치/업데이트용; setup.exe는 PS1 미사용)
+  `node-runner.exe`, `winsw.exe`, `node-runner-service.xml`, `install.ps1`, `update.ps1`, `sha256sums.txt` (수동 설치/업데이트용; installer exe는 PS1 미사용)
 
 **설치 경로 표준**
 
 - 바이너리: `C:\Program Files\doai\node-runner\`
 - 설정/로그/캐시: `C:\ProgramData\doai\node-runner\`  
   - `config.json`, `logs\`, `cache\`
+
+**Releases 산출물 규격 (고정)**
+
+- **파일명:** `setup.exe` 사용 금지. `doai-me-app-${VERSION}-win-x64-installer.exe` 고정 (리포명+버전+installer, 예: `doai-me-app-0.1.0-win-x64-installer.exe`).
+- **빌드 경로:** `release/node-runner-win-x64-${TAG}/Output/doai-me-app-${VERSION}-win-x64-installer.exe` (TAG = v0.1.0, VERSION = 0.1.0).
+- **Test-Path:** 워크플로에서 위 경로 1개만 검사. Output 폴더 누락 시 즉시 실패.
+- **업로드(MVP):** 릴리즈 asset은 (1) 설치 EXE 1개 필수, (2) `sha256sums.txt` 선택. 릴리즈 성공 = 해당 EXE가 GitHub Releases에 존재.
+- **트리거:** `v*` 태그 푸시만. main 머지는 릴리즈 생성 금지.
+
+| 자산 | MVP | 비고 |
+|------|-----|------|
+| `doai-me-app-<version>-win-x64-installer.exe` | ✅ 필수 | Inno Setup, 동일 AppId로 업그레이드 지원 |
+| `sha256sums.txt` | 선택 | 체크섬 |
+| `latest.json` / `manifest.json` | (Phase 2) | 자동 업데이트 시 |
+
+---
+
+## 반자동 업데이트 (MVP)
+
+- **노드 러너:** heartbeat에 `runner_version`(및 `adb_ok`, `device_count` 등) 포함 → 서버에 보고.
+- **서버:** `LATEST_RUNNER_VERSION`(env, 기본 0.1.0)과 비교. `RUNNER_DOWNLOAD_URL`(선택)으로 다운로드 링크 제공.
+- **웹:** 대시보드 "즉시 조치"에 **업데이트 필요 노드 n대** 표시. 기기 페이지 노드 목록에 **업데이트 필요** 배지.
+- **운영:** 새 버전 나오면 노드 PC에서 설치 EXE 실행(덮어쓰기) → 서비스 자동 재시작. 롤백은 이전 태그 EXE 재설치.
 
 ---
 
@@ -70,7 +93,7 @@
 
 ## 설치 방식
 
-- **setup.exe (Inno Setup):** 관리자 실행 → 설치 경로 선택 → ProgramData 디렉터리·config.json(없을 때만) 생성 → winsw install + start. 제거 시 winsw stop + uninstall. **PS1 불필요.**
+- **doai-me-app-{ver}-win-x64-installer.exe (Inno Setup):** 관리자 실행 → 설치 경로 선택 → ProgramData 디렉터리·config.json(없을 때만) 생성 → winsw install + start. 제거 시 winsw stop + uninstall. **PS1 불필요.**
 - **install.ps1 (zip 수동):** 관리자 권한. 디렉터리 생성 → config.json 없으면 템플릿 생성 → 서비스 install + start. **config.json이 이미 있으면 덮어쓰지 않음.**
 
 ---
@@ -92,7 +115,7 @@
 
 ## GitHub Actions (릴리즈 자동화)
 
-- 태그 **vX.Y.Z** 푸시 시: pkg로 node-runner.exe 빌드 → WinSW 다운로드 → Inno Setup(iscc)로 setup.exe 생성 → zip 패키징(위 파일 포함) → sha256sums.txt 생성 → GitHub Release 생성 + zip 및 setup exe 업로드.
+- 태그 **vX.Y.Z** 푸시 시: pkg로 node-runner.exe 빌드 → WinSW 다운로드 → Inno Setup(iscc)로 doai-me-app-{ver}-win-x64-installer.exe 생성(Output/) → sha256sums.txt 생성 → GitHub Release에 installer exe 업로드.
 
 ---
 

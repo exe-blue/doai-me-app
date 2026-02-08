@@ -27,6 +27,11 @@ export interface DashboardVM {
   };
   todo: { kind: string; count?: number; label: string; href: string }[];
   miniHeatmapByNode: MiniHeatmapNode[];
+  runner?: {
+    latest_version: string;
+    update_needed_count: number;
+    download_url: string | null;
+  };
 }
 
 type DashboardRaw = {
@@ -44,6 +49,11 @@ type DashboardRaw = {
       items: { index: number; online: boolean }[];
       counts: { online: number; offline: number };
     }[];
+  };
+  runner?: {
+    latest_version: string;
+    update_needed_count: number;
+    download_url: string | null;
   };
 };
 
@@ -66,5 +76,6 @@ export function toDashboardVM(raw: DashboardRaw | null): DashboardVM | null {
     },
     todo: raw.todo ?? [],
     miniHeatmapByNode,
+    runner: raw.runner,
   };
 }

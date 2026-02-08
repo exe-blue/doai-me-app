@@ -6,7 +6,13 @@ import type { HeatmapItem } from "@/lib/heatmap";
 
 export interface DevicesVM {
   heatmapItems: HeatmapItem[];
-  nodesSummary: { id: string; last_seen: string | null; last_error_message: string | null }[];
+  nodesSummary: {
+    id: string;
+    last_seen: string | null;
+    last_error_message: string | null;
+    runner_version?: string | null;
+    needs_update?: boolean;
+  }[];
   now: string;
   online_window_sec: number;
 }
@@ -15,7 +21,13 @@ type NodesStatusRaw = {
   now?: string;
   online_window_sec?: number;
   heatmap?: { items: { index: number; online: boolean; activity?: string; node_id?: string; last_seen?: string; last_error_message?: string }[] };
-  nodes?: { id: string; last_seen: string | null; last_error_message: string | null }[];
+  nodes?: {
+    id: string;
+    last_seen: string | null;
+    last_error_message: string | null;
+    runner_version?: string | null;
+    needs_update?: boolean;
+  }[];
 };
 
 function toHeatmapItem(

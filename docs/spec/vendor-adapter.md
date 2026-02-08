@@ -11,8 +11,9 @@
 ### action=list (기기 조회)
 
 - 노드 기동 시 및 주기적 호출
-- 반환: 기기별 `serial`
+- 반환: 기기별 `serial` (및 status 있으면 온라인/오프라인 구분)
 - `serial` → `runtime_handle` 및 `device_id`(onlySerial)로 사용
+- 온라인/오프라인은 list 결과 status로만 사용 (MVP)
 
 ### action=screen (스크린샷)
 
@@ -22,13 +23,16 @@
 
 ---
 
-## 선택 액션
+## 선택 액션 (Node Runner 래핑 최소)
 
-| 액션 | 용도 | 대체 |
+| 액션 | 용도 | 비고 |
 |------|------|------|
-| autojsCreate | JS 스크립트 실행 | ADB로 대체 가능 |
-| launch | 앱 실행 | ADB am start |
-| 입력 관련 | 텍스트/탭 입력 | ADB input |
+| autojsCreate | JS 스크립트/배치 실행 | Xiaowei v8.288+. Request: `{ action, devices, data }`. taskInterval/deviceInterval = 확률·조합 실행 기반 |
+| actionCreate | 조합 실행 | v8.288+. devices, data |
+| adb_shell, pointerEvent, pushEvent | 명령 실행 | |
+| uploadFile, pullFile, installApk, uninstallApk | 파일/APK | |
+
+- **WS 기본 주소:** `ws://127.0.0.1:22222/` (Node Runner 미설정 시 기본값)
 
 ---
 

@@ -12,7 +12,7 @@
 | **exe 빌드/릴리즈 작업을 개발 에이전트에게 맡기기** | [node-runner-windows-packaging.md](node-runner-windows-packaging.md) 맨 아래 **「개발 에이전트 핸드오프 프롬프트 (복붙용)」** 블록 전체를 복사해 에이전트에게 붙여넣기. 이 문서(node-runner-exe-build-points.md)는 수정 포인트·워크플로 치환용. |
 | **릴리즈 zip 만들기(태그 푸시)** | `git tag -a v0.1.1 -m "..."` → `git push origin v0.1.1`. GitHub Actions `release-node-runner`가 돌면서 exe → zip → Release에 첨부. (CJS 번들+--config 적용된 뒤부터 성공) |
 | **노드 PC(윈도우)에서 실행** | 1) Releases에서 `node-runner-win-x64-v*.zip` 내려받기 2) 풀기 3) 관리자 PowerShell에서 `.\install.ps1` 4) `C:\ProgramData\doai\node-runner\config.json` 수정 5) `C:\Program Files\doai\node-runner\winsw.exe restart` (업데이트: `.\update.ps1 -RepoOwner exe-blue -RepoName doai-me-app`) |
-| **한 번에 설치(설치형)** | Releases에서 `node-runner-setup-v*.exe` 내려받기 → 실행(관리자 권한) → 설치 경로·서비스 등록·config 템플릿까지 자동. 이후 `C:\ProgramData\doai\node-runner\config.json`만 수정 후 서비스 재시작. |
+| **한 번에 설치(설치형)** | Releases에서 `doai-me-app-*-win-x64-installer.exe` 내려받기 → 실행(관리자 권한) → 설치 경로·서비스 등록·config 템플릿까지 자동. 이후 `C:\ProgramData\doai\node-runner\config.json`만 수정 후 서비스 재시작. |
 
 ---
 

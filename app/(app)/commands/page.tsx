@@ -347,7 +347,7 @@ export default function LibraryPage() {
                 onChange={(e) => setFolderFilter(e.target.value)}
                 className="w-28"
               />
-              <Select value={typeFilter ?? "__all__"} onValueChange={(v) => setTypeFilter(v === "__all__" ? undefined : v)}>
+              <Select value={typeFilter || "__all__"} onValueChange={(v) => setTypeFilter(v === "__all__" ? undefined : v)}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="타입" />
                 </SelectTrigger>

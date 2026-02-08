@@ -112,9 +112,21 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([t, count]) => ({ t, new: count }));
 
-    // Topology: nodes + devices by node
-    const { data: nodes } = await supabase.from('node_heartbeats').select('node_id, updated_at').order('node_id');
-    const nodeIds = [...new Set((nodes ?? []).map((n) => n.node_id))];
+    // Topology: nodes + devices by node (and runner version for update badge)
+    const { data: heartbeats } = await supabase
+      .from('node_heartbeats')
+      .select('node_id, updated_at, payload')
+      .order('node_id');
+    const nodes = heartbeats ?? [];
+    const nodeIds = [...new Set(nodes.map((n) => n.node_id))];
+    const latestRunnerVersion = process.env.LATEST_RUNNER_VERSION ?? '0.1.0';
+    const runnerNodes = nodes.map((r) => {
+      const p = (r.payload as Record<string, unknown>) ?? {};
+      const v = (p.runner_version as string) ?? '';
+      const needsUpdate = v !== latestRunnerVersion && v !== '';
+      return { node_id: r.node_id, runner_version: v || null, needs_update: needsUpdate };
+    });
+    const runnerUpdateNeededCount = runnerNodes.filter((n) => n.needs_update).length;
     const byNode: { node_id: string; online: number; offline: number }[] = [];
     for (const nid of nodeIds) {
       let on = 0, off = 0;
@@ -134,6 +146,7 @@ export async function GET(req: NextRequest) {
     if (devicesOffline > 0) todo.push({ kind: 'devices_offline', count: devicesOffline, label: 'Offline 기기', href: '/devices?filter=offline' });
     if (runsFailed > 0) todo.push({ kind: 'runs_failed_recent', count: runsFailed, label: '최근 1시간 실패', href: '/runs?status=error&window=24h' });
     if (needsAttention > 0) todo.push({ kind: 'needs_attention', count: needsAttention, label: '즉시 조치 필요', href: '/devices?filter=needs-attention' });
+    if (runnerUpdateNeededCount > 0) todo.push({ kind: 'runner_update', count: runnerUpdateNeededCount, label: '업데이트 필요 노드', href: '/devices' });
     todo.push({ kind: 'scan_stale', label: '스캔', href: '/devices' });
     const newContent24h = (contentsInWindow ?? []).length;
     todo.push({ kind: 'content_new', count: newContent24h, label: '24h 신규 콘텐츠', href: '/content' });
@@ -187,6 +200,12 @@ export async function GET(req: NextRequest) {
       mini_heatmap: {
         slot: { cols: 10, rows: 10, perNode: 100 },
         nodes: mini_heatmap_nodes,
+      },
+      runner: {
+        latest_version: latestRunnerVersion,
+        update_needed_count: runnerUpdateNeededCount,
+        download_url: process.env.RUNNER_DOWNLOAD_URL ?? null,
+        nodes: runnerNodes,
       },
     };
 

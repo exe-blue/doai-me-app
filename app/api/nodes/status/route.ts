@@ -36,11 +36,19 @@ export async function GET() {
     .from('node_heartbeats')
     .select('node_id, updated_at, payload')
     .order('node_id');
-  const nodes = (heartbeats ?? []).map((h) => ({
-    id: (h as { node_id: string }).node_id,
-    last_seen: (h as { updated_at: string }).updated_at,
-    last_error_message: (h as { payload?: { last_error_message?: string } }).payload?.last_error_message ?? null,
-  }));
+  const latestRunnerVersion = process.env.LATEST_RUNNER_VERSION ?? '0.1.0';
+  const nodes = (heartbeats ?? []).map((h) => {
+    const p = (h as { payload?: Record<string, unknown> }).payload ?? {};
+    const runnerVersion = (p.runner_version as string) ?? '';
+    const needsUpdate = runnerVersion !== '' && runnerVersion !== latestRunnerVersion;
+    return {
+      id: (h as { node_id: string }).node_id,
+      last_seen: (h as { updated_at: string }).updated_at,
+      last_error_message: (p.last_error_message as string) ?? null,
+      runner_version: runnerVersion || null,
+      needs_update: needsUpdate,
+    };
+  });
 
   return NextResponse.json({
     now: new Date().toISOString(),
@@ -51,6 +59,7 @@ export async function GET() {
       items,
     },
     nodes,
+    runner: { latest_version: latestRunnerVersion },
   });
 }
 

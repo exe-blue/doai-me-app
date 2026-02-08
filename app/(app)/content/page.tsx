@@ -183,7 +183,7 @@ function ContentTabs() {
                     <SelectItem value="__all__">전체</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={channelFilter ?? "__all__"} onValueChange={(v) => setChannelFilter(v === "__all__" ? undefined : v)}>
+                <Select value={channelFilter || "__all__"} onValueChange={(v) => setChannelFilter(v === "__all__" ? undefined : v)}>
                   <SelectTrigger className="w-40 h-8">
                     <SelectValue placeholder="채널" />
                   </SelectTrigger>
@@ -192,7 +192,7 @@ function ContentTabs() {
                     {channels
                       .filter((c) => typeof c.id === "string" && c.id.trim().length > 0)
                       .map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
+                        <SelectItem key={c.id} value={c.id || "__unknown__"}>
                           {c.title || c.channel_id}
                         </SelectItem>
                       ))}

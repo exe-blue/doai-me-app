@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
 import { HeroSection } from '@/components/hero-section';
 import { ProjectsGrid } from '@/components/projects-grid';
 import { LabNotes } from '@/components/lab-notes';
@@ -16,13 +14,11 @@ import Link from 'next/link';
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://doai.me';
 
-const AUTH_COOKIE_NAMES = ['doai-auth', 'sb-access-token'] as const;
-
+/**
+ * MVP: / 및 /landing은 무조건 랜딩. 로그인 여부와 관계없이 랜딩 표시.
+ * 로그인 사용자는 상단 CTA "대시보드" 버튼으로 이동.
+ */
 export default async function LandingPage() {
-  const cookieStore = await cookies();
-  const hasAuth = AUTH_COOKIE_NAMES.some((name) => cookieStore.get(name)?.value);
-  if (hasAuth) redirect('/dashboard');
-
   const websiteStructuredData = generateWebsiteStructuredData(baseUrl);
   const personStructuredData = generatePersonStructuredData();
 

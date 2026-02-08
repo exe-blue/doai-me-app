@@ -133,7 +133,7 @@ export const RUNNER_VERSION = '0.1.0';
 export const config = {
   runnerVersion: RUNNER_VERSION,
   nodeId: str('node_id', 'NODE_ID'),
-  vendorWsUrl: strOptional('vendor_ws_url', 'VENDOR_WS_URL') ?? '',
+  vendorWsUrl: strOptional('vendor_ws_url', 'VENDOR_WS_URL') ?? 'ws://127.0.0.1:22222/',
   backendUrl: str('server_base_url', 'BACKEND_URL').replace(/\/$/, ''),
   sharedSecret: str('node_shared_secret', 'NODE_AGENT_SHARED_SECRET'),
   supabaseUrl: strOptional('supabase_url', 'SUPABASE_URL') ?? '',

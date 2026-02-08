@@ -13,6 +13,8 @@
 - 모든 콜백은 `event_id` 기반 멱등 처리
 - Backend watchdog: heartbeat N초(30초) 이상 없으면 노드 offline 처리
 
+**최소 필드 (수용 테스트):** 콜백 payload에는 `node_id`, `run_id`(job_id), `device_id`(device_serial), `status`, `error_message`(last_error) 포함.
+
 ---
 
 ## 엔드포인트

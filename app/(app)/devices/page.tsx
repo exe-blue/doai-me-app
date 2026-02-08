@@ -56,10 +56,10 @@ function DevicesPageContent() {
   );
 
   const vm = toDevicesVM(raw as Parameters<typeof toDevicesVM>[0]);
-  const allItems = vm?.heatmapItems ?? [];
   const tileSize = 36;
 
   const { displayItems, selectedItem } = useMemo(() => {
+    const allItems = vm?.heatmapItems ?? [];
     let filtered = allItems;
     if (nodeParam) filtered = filtered.filter((i) => (i.node_id ?? "") === nodeParam);
     if (filterParam === "online") filtered = filtered.filter((i) => i.online);
@@ -67,7 +67,7 @@ function DevicesPageContent() {
     const items = nodeParam ? normalizeToSlots(filtered, 100) : filtered;
     const selected = selectedIndex != null ? items.find((i) => i.index === selectedIndex) : null;
     return { displayItems: items, selectedItem: selected };
-  }, [allItems, nodeParam, filterParam, selectedIndex]);
+  }, [vm?.heatmapItems, nodeParam, filterParam, selectedIndex]);
 
   const setSelectedIndex = (index: number) => {
     const url = new URL(window.location.href);
@@ -245,6 +245,34 @@ function DevicesPageContent() {
           )}
         </CardContent>
       </Card>
+
+      {vm?.nodesSummary && vm.nodesSummary.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <p className="text-sm font-medium">노드</p>
+          </CardHeader>
+          <CardContent>
+            <ul className="flex flex-wrap gap-2">
+              {vm.nodesSummary.map((node) => (
+                <li
+                  key={node.id}
+                  className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm"
+                >
+                  <span className="font-mono text-muted-foreground">{node.id}</span>
+                  {node.runner_version && (
+                    <span className="text-xs text-muted-foreground">v{node.runner_version}</span>
+                  )}
+                  {node.needs_update && (
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                      업데이트 필요
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

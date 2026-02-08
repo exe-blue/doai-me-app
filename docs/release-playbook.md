@@ -24,7 +24,7 @@
 3. 로컬에서 **태그를 생성**한다. (예: v0.1.0)
 4. **태그를 원격으로 푸시**한다. → GitHub Actions가 자동으로 빌드/업로드를 수행한다.
 5. **GitHub Releases**에서 아래 파일이 올라왔는지 확인한다.
-   - 예: `doai-node-runner-0.1.0-win-x64.exe` (또는 프로젝트에서 정한 표준 파일명)
+   - 예: `doai-me-app-0.1.0-win-x64-installer.exe` (설치형, 리포명+버전+installer)
 
 ## 태그 생성/푸시 명령 (macOS)
 

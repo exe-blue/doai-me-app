@@ -1,6 +1,7 @@
-# Node Runner Windows exe → zip → GitHub Release
-# Trigger: push tag v* (e.g. v0.1.0)
-# SonarQube: 이 워크플로에는 Sonar를 넣지 않음. 넣을 경우 해당 job은 continue-on-error: true로 EXE 업로드를 막지 않도록 할 것.
+# Node Runner Windows installer → GitHub Release
+# Trigger: push tag v* only (e.g. git tag v0.1.0 && git push origin v0.1.0). main 머지는 릴리즈 생성 금지.
+# 산출물 규격(고정): release/node-runner-win-x64-${TAG}/Output/doai-me-app-${VERSION}-win-x64-installer.exe (리포명+버전+installer)
+# 릴리즈 성공 = 해당 EXE asset이 GitHub Releases에 존재.
 name: release-node-runner
 
 on:
@@ -11,7 +12,7 @@ on:
 permissions:
   contents: write
 
-# 고정 경로: 번들(CJS 단일) → pkg → dist/node-runner.exe. pkg@5.8.1은 node20 타겟 미지원이므로 Node 18 사용.
+# 고정 경로: 번들 → pkg → dist/node-runner.exe. Inno → .../Output/doai-me-app-<ver>-win-x64-installer.exe
 env:
   CJS_BUNDLE: node-agent/dist-bundle/index.cjs
   PKG_OUTPUT: dist/node-runner.exe
@@ -73,12 +74,13 @@ jobs:
           New-Item -ItemType Directory -Force -Path tools/winsw | Out-Null
           Invoke-WebRequest -Uri $winswUrl -OutFile tools/winsw/winsw.exe -UseBasicParsing
 
+      # 빌드 산출물 디렉터리: release/node-runner-win-x64-${TAG}/ (TAG = v0.1.0)
       - name: Prepare release folder
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           $ver = $tag.TrimStart("v")
-          $out = "release/node-runner-win-x64-v$ver"
+          $out = "release/node-runner-win-x64-$tag"
           New-Item -ItemType Directory -Force -Path $out | Out-Null
 
           Copy-Item -Force dist/node-runner.exe "$out/node-runner.exe"
@@ -92,63 +94,55 @@ jobs:
         shell: pwsh
         run: choco install innosetup -y
 
-      - name: Build setup.exe
+      # 산출물 규격: release/node-runner-win-x64-${TAG}/Output/doai-node-runner-${VERSION}-win-x64-installer.exe (고정)
+      - name: Build installer (Inno Setup → Output/)
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           $ver = $tag.TrimStart("v")
-          $out = "release/node-runner-win-x64-v$ver"
+          $out = "release/node-runner-win-x64-$tag"
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { throw "ISCC not found: $iscc" }
           & $iscc "/DMyAppVersion=$ver" "$out/node-runner-setup.iss"
-          if (-not (Test-Path "$out/setup.exe")) { throw "setup.exe was not created" }
+          $installer = "$out/Output/doai-me-app-$ver-win-x64-installer.exe"
+          if (-not (Test-Path $installer)) { throw "Installer was not created: $installer" }
+          Write-Host "Installer OK: $installer"
 
-      - name: Verify setup.exe
-        shell: pwsh
-        run: |
-          $ver = "${{ github.ref_name }}".TrimStart("v")
-          $setup = "release/node-runner-win-x64-v$ver/setup.exe"
-          if (-not (Test-Path $setup)) { throw "setup.exe missing: $setup" }
-          $len = (Get-Item $setup).Length
-          if ($len -lt 1MB) { throw "setup.exe too small ($len bytes), likely corrupt" }
-          Write-Host "setup.exe OK, size $([math]::Round($len/1MB, 2)) MB"
-
-      - name: Zip package
+      # 생성 확인(Test-Path): 정확한 경로 1개만 검사. Output 폴더 누락 시 즉시 실패.
+      - name: Verify installer path
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           $ver = $tag.TrimStart("v")
-          $folder = "release/node-runner-win-x64-v$ver"
-          $zip = "node-runner-win-x64-v$ver.zip"
-          if (Test-Path $zip) { Remove-Item -Force $zip }
-          Compress-Archive -Path "$folder/*" -DestinationPath $zip -Force
+          $installer = "release/node-runner-win-x64-$tag/Output/doai-me-app-$ver-win-x64-installer.exe"
+          if (-not (Test-Path $installer)) { throw "Installer missing: $installer" }
+          $len = (Get-Item $installer).Length
+          if ($len -lt 1MB) { throw "Installer too small ($len bytes), likely corrupt" }
+          Write-Host "Installer OK, size $([math]::Round($len/1MB, 2)) MB"
 
-          $hashes = @()
-          $hashes += (Get-FileHash -Algorithm SHA256 "dist/node-runner.exe").Hash.ToLower() + "  doai-node-runner-$ver-win-x64.exe"
-          $hashes += (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower() + "  $zip"
-          $hashes += (Get-FileHash -Algorithm SHA256 "$folder/setup.exe").Hash.ToLower() + "  node-runner-setup-v$ver.exe"
-          $hashes -join "`n" | Out-File -FilePath sha256sums.txt -Encoding ascii
-
-      - name: Rename setup.exe for release
+      # 체크섬 (선택): sha256sums.txt
+      - name: Create sha256sums.txt
         shell: pwsh
         run: |
-          $ver = "${{ github.ref_name }}".TrimStart("v")
-          $folder = "release/node-runner-win-x64-v$ver"
-          Copy-Item -Force "$folder/setup.exe" "node-runner-setup-v$ver.exe"
+          $tag = "${{ github.ref_name }}"
+          $ver = $tag.TrimStart("v")
+          $installer = "release/node-runner-win-x64-$tag/Output/doai-me-app-$ver-win-x64-installer.exe"
+          $hash = (Get-FileHash -Algorithm SHA256 $installer).Hash.ToLower()
+          "$hash  doai-me-app-$ver-win-x64-installer.exe" | Out-File -FilePath sha256sums.txt -Encoding ascii
 
-      # Standalone exe for Releases: doai-node-runner-<ver>-win-x64.exe (required for every release)
-      - name: Prepare doai-node-runner exe
+      # Release 업로드: MVP는 이 파일 1개 필수. sha256sums.txt 선택 포함.
+      - name: Copy assets for release upload
         shell: pwsh
         run: |
-          $ver = "${{ github.ref_name }}".TrimStart("v")
-          Copy-Item -Force dist/node-runner.exe "doai-node-runner-$ver-win-x64.exe"
+          $tag = "${{ github.ref_name }}"
+          $ver = $tag.TrimStart("v")
+          $src = "release/node-runner-win-x64-$tag/Output/doai-me-app-$ver-win-x64-installer.exe"
+          Copy-Item -Force $src "doai-me-app-$ver-win-x64-installer.exe"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            doai-node-runner-*-win-x64.exe
-            node-runner-win-x64-v*.zip
-            node-runner-setup-v*.exe
+            doai-me-app-*-win-x64-installer.exe
             sha256sums.txt
           generate_release_notes: true

@@ -22,7 +22,9 @@ DefaultDirName={autopf}\doai\node-runner
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
-OutputBaseFilename=setup
+; 고정: setup.exe 미사용. 리포 이름 + 버전 + installer (영문). CI는 release/.../Output/ 이 경로만 검사/업로드.
+OutputDir=Output
+OutputBaseFilename=doai-me-app-{#MyAppVersion}-win-x64-installer
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern

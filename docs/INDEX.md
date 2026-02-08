@@ -54,6 +54,7 @@ docs/
 | [code-quality.md](guide/code-quality.md) | `sonar` `complexity` `refactor` `s3776` `s2004` | SonarQube 이슈별 선택지·리팩터 가이드 |
 | [node-runner-windows-packaging.md](guide/node-runner-windows-packaging.md) | `node-runner` `windows` `exe` `winsw` `service` `release` `update.ps1` | Node Runner exe 빌드·WinSW 서비스·GitHub Release·update.ps1 핸드오프 |
 | [node-runner-exe-build-points.md](guide/node-runner-exe-build-points.md) | `node-runner` `exe` `pkg` `cjs` `tsup` `actions` | exe 빌드 정확한 수정 포인트: 엔트리 경로·CJS 번들·워크플로 pkg 단계 치환 |
+| [mvp-api-execution-consistency.md](guide/mvp-api-execution-consistency.md) | `mvp` `xiaowei` `node-runner` `callback` `command_catalogs` `acceptance` | **Canonical** MVP API/실행 정합성·Xiaowei 액션·노드 부팅·체크 순서 5단계·수용 기준 |
 
 ## QA / E2E (qa/)
 
@@ -68,6 +69,7 @@ docs/
 
 | 문서 | 태그 | 한줄 요약 |
 |------|------|-----------|
+| [architecture-single-line-and-phases.md](arch/architecture-single-line-and-phases.md) | `architecture` `outbound` `adapters` `phase-a` `phase-b` `phase-c` `consistency` | **Canonical** 구조 한 문장(웹↛노드)·4어댑터·Phase A/B/C·에이전트 지시문·수용테스트 |
 | [orchestration.md](arch/orchestration.md) | `orchestration` `node-agent` `scheduler` `fifo` `concurrency` `device` `workflow` `callback` `storage` `logging` `offline` `grace` | **CRITICAL** 실행 아키텍처·스케줄러·인증·Offline 처리·로깅 |
 | [frd.md](arch/frd.md) | `frd` `requirements` `command-library` `status-dashboard` `run-monitor` `playbook` `scan` `probability` | MVP 기능 요구사항·범위·수용 기준 |
 

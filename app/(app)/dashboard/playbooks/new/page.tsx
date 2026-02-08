@@ -162,7 +162,7 @@ export default function NewPlaybookPage() {
                       {assets
                         .filter((a) => typeof a.id === "string" && a.id.trim().length > 0)
                         .map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
+                          <SelectItem key={a.id} value={a.id || "__unknown__"}>
                             {a.title} ({a.asset_type})
                           </SelectItem>
                         ))}

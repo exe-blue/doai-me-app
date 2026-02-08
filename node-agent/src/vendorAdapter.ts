@@ -73,6 +73,28 @@ export async function screen(
   }
 }
 
+/** action=autojsCreate (Xiaowei v8.288+) — 스크립트/배치 실행. devices, data 필수. */
+export async function autojsCreate(devices: string[], data: Record<string, unknown>): Promise<unknown> {
+  const ws = await connect();
+  try {
+    const res = await send(ws, { action: 'autojsCreate', devices, data });
+    return res;
+  } finally {
+    ws.close();
+  }
+}
+
+/** action=actionCreate (Xiaowei v8.288+) — taskInterval/deviceInterval 등 조합 실행. */
+export async function actionCreate(devices: string[], data: Record<string, unknown>): Promise<unknown> {
+  const ws = await connect();
+  try {
+    const res = await send(ws, { action: 'actionCreate', devices, data });
+    return res;
+  } finally {
+    ws.close();
+  }
+}
+
 /** Node preflight: vendor WS + list success */
 export async function nodePreflight(): Promise<{ ok: boolean }> {
   try {

@@ -19,6 +19,15 @@
 
 ---
 
+## 콜백 방식 아키텍처 (고정)
+
+- **Web**: 등록·분배·상태만. 실행은 노드 러너가 담당.
+- **최소 이벤트 (개념 ↔ 구현):**
+  - **RUN_REQUEST (Web → Runner):** Runner가 `GET /api/nodes/pull`로 폴링하여 job 수신. (실제 전송은 Runner가 pull.)
+  - **RUN_EVENT / DEVICE_SNAPSHOT (Runner → Web):** Runner가 `POST /api/nodes/callback`으로 task_started, run_step_update, task_finished, node_heartbeat 등 전송. event_id 멱등, lease_token 검증.
+
+---
+
 ## 용어
 
 | 용어 | 의미 |

@@ -82,13 +82,26 @@ export default function DashboardPage() {
             {todoList.map((item, i) => (
               <li key={`${item.kind}-${i}`} className="flex items-center justify-between gap-4 py-2 border-b last:border-0">
                 <span className="text-sm">{item.count != null ? `${item.label} ${item.count}` : item.label}</span>
-                <Link
-                  href={item.href}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                >
-                  <ExternalLink className="size-3" />
-                  열기
-                </Link>
+                <span className="flex items-center gap-3">
+                  {item.kind === "runner_update" && vm?.runner?.download_url && (
+                    <a
+                      href={vm.runner.download_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    >
+                      <ExternalLink className="size-3" />
+                      다운로드
+                    </a>
+                  )}
+                  <Link
+                    href={item.href}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    <ExternalLink className="size-3" />
+                    열기
+                  </Link>
+                </span>
               </li>
             ))}
             {todoList.length === 0 && !loading && <p className="text-sm text-muted-foreground">조치 항목 없음</p>}
