@@ -32,6 +32,34 @@ async function executeWorkflow(payload: WorkflowPayload, device_serial: string):
 const orchestrator = new Orchestrator(executeWorkflow);
 
 const POLL_INTERVAL_MS = 10_000;
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
+async function sendHeartbeat(vendor_ws_ok: boolean, devicesCount: number): Promise<void> {
+  try {
+    const res = await fetch(`${config.backendUrl}/api/nodes/callback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.sharedSecret}`,
+      },
+      body: JSON.stringify({
+        event_id: `heartbeat-${config.nodeId}-${Date.now()}`,
+        type: 'node_heartbeat',
+        payload: {
+          node_id: config.nodeId,
+          vendor_ws_ok,
+          connected_devices_count: devicesCount,
+          running_devices_count: 0,
+          queue_devices_count: 0,
+          timestamp: Date.now(),
+        },
+      }),
+    });
+    if (!res.ok) logError('Heartbeat failed', undefined, { status: res.status, node_id: config.nodeId });
+  } catch (err) {
+    logError('Heartbeat error', err as Error, { node_id: config.nodeId });
+  }
+}
 
 async function pollPendingRuns(): Promise<void> {
   try {
@@ -74,10 +102,38 @@ async function main(): Promise<void> {
 
   callbackBuffer.loadFromDisk();
 
-  const preflight = await nodePreflight();
-  if (!preflight.ok) {
-    logError('Node preflight failed (vendor WS/list)', undefined, { node_id: config.nodeId });
+  let vendorWsOk = false;
+  let devicesCount = 0;
+  try {
+    const preflight = await nodePreflight();
+    vendorWsOk = preflight.ok;
+    if (preflight.ok) {
+      const devices = await listDevices();
+      devicesCount = devices.length;
+    }
+    if (!preflight.ok) {
+      logError('Node preflight failed (vendor WS/list)', undefined, { node_id: config.nodeId });
+    }
+  } catch {
+    // leave vendorWsOk false
   }
+
+  await sendHeartbeat(vendorWsOk, devicesCount);
+  setInterval(async () => {
+    let ok = false;
+    let count = 0;
+    try {
+      const preflight = await nodePreflight();
+      ok = preflight.ok;
+      if (ok) {
+        const devices = await listDevices();
+        count = devices.length;
+      }
+    } catch {
+      // leave ok false
+    }
+    await sendHeartbeat(ok, count);
+  }, HEARTBEAT_INTERVAL_MS);
 
   setInterval(pollPendingRuns, POLL_INTERVAL_MS);
   await pollPendingRuns();

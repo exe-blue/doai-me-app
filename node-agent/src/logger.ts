@@ -11,6 +11,8 @@ type LogContext = {
   runtime_handle?: string;
   workflow_id?: string;
   count?: number;
+  avd?: string;
+  status?: number;
 };
 
 function fmt(ctx: LogContext): string {
@@ -22,6 +24,8 @@ function fmt(ctx: LogContext): string {
   if (ctx.runtime_handle) parts.push(`runtime_handle=${ctx.runtime_handle}`);
   if (ctx.workflow_id) parts.push(`workflow_id=${ctx.workflow_id}`);
   if (ctx.count !== undefined) parts.push(`count=${ctx.count}`);
+  if (ctx.avd) parts.push(`avd=${ctx.avd}`);
+  if (ctx.status !== undefined) parts.push(`status=${ctx.status}`);
   return parts.length ? `[${parts.join(' ')}] ` : '';
 }
 

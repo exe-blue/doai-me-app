@@ -35,23 +35,29 @@
 
 **Q**: Preflight는 adb unauthorized만 확인? 아니면 USB 연결/벤더 WS도 확인?
 
-**A**: Preflight는 "빠른 실패를 위한 게이트"로 2계층으로 한다.
+**A**: Preflight는 "빠른 실패를 위한 게이트"로 **2계층**으로 고정하고, 그 **앞단에 Emulator Health Gate**를 둔 **3중 문지기** 구조다.
 
-### 1. Device Preflight (필수, 10~20초)
+### 0. Emulator Health Gate (Device Preflight보다 앞단)
+
+- **통과 조건(최소)**: (1) 에뮬레이터 프로세스 존재 (2) ADB에서 해당 기기 online (3) 부팅 완료(`sys.boot_completed` 또는 홈 화면 도달).
+- 미통과 시: 자동 기동/재기동(선택, env `EMULATOR_AVD` 등) → 안정화 대기 → ADB online 확보. 통과 전까지 워크플로우 진입 불가.
+- 실패 시 `failure_reason`: `emulator_not_online`, `emulator_not_booted` 등.
+
+### 1. Device Preflight (필수, 매 run 직전 10~20초)
 
 - ADB 상태 확인: `device` / `unauthorized` / `offline` / `missing`
 - unauthorized면 즉시 `needs_usb_authorization`으로 fail-fast
 
 ### 2. Node Preflight (필수, 부팅 시 또는 주기)
 
-- 벤더 WS 연결 가능 여부(현재는 이미 22222 LISTENING + 실제 응답 성공)
-- list 호출 성공 여부
-- 이 결과는 노드 상태(online/offline/vendor_ws_ok)로 별도 보고
+- 벤더 WS `ws://127.0.0.1:22222` 연결 가능 여부, `action=list` 호출 성공 여부
+- 이 결과를 노드 상태(online/offline/vendor_ws_ok)로 heartbeat에 보고
 
 **정리하면**:
 
-- 디바이스 작업 시작 직전에는 "adb unauthorized/offline" 같은 **디바이스 레벨**을 반드시 확인
-- 노드 전체 관점으로는 "벤더 WS/list 가능" 같은 **노드 레벨**을 heartbeat에 포함
+- 실행 순서: **Emulator Health Gate → Device Preflight → 워크플로우 스텝**. Node Preflight는 주기/부팅 시 별도.
+- 디바이스 작업 시작 직전에는 "에뮬레이터 구동·ADB online·부팅 완료" → "adb unauthorized/offline" 순으로 확인.
+- 노드 전체 관점으로는 "벤더 WS/list 가능"을 heartbeat에 포함.
 
 ---
 
@@ -79,9 +85,7 @@
 - 해야 할 것:
   - workflow 선택 dropdown (또는 기본값 자동 선택)
   - timeout overrides는 "고급 옵션"으로 숨기고 기본값 사용 가능
-- UI가 준비 안 되면 MVP에서는:
-  - 백엔드 API로도 run 생성 가능(POSTman/CLI)
-  - 프론트는 조회 중심으로 둔다
+- **UI가 늦으면 API/CLI로 run 생성해도 된다.** MVP에서는 백엔드 `POST /api/runs`(POSTman/CLI)로 run 생성 가능; 프론트는 조회·최소 배선 중심으로 둔다.
 
 ---
 
@@ -110,8 +114,8 @@
 **A**: 반드시 둔다. 운영에서 제일 중요한 진단 필드다.
 
 - `device_tasks.failure_reason` (enum/string)
-  - `needs_usb_authorization`
-  - `adb_offline`
+  - `emulator_not_online`, `emulator_not_booted` (Emulator Health Gate)
+  - `needs_usb_authorization`, `adb_offline`, `adb_missing` (Device Preflight)
   - `vendor_ws_error`
   - `timeout`
   - `upload_error`
