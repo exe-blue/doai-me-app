@@ -8,6 +8,7 @@
 - **DSL 명세**: docs/Prometheus-Workflow-DSL-v1.md
 - **Minimal Vendor Adapter**: docs/Minimal-Vendor-Adapter-Contract.md
 - **Callback**: docs/Callback-Contract-v1.md
+- **벤더(效卫) / API·ADB 명령 참조**: docs/vendor-xiaowei-notes.md — API·ADB·화면 제어·스크립트 명령 구현 시 위 문서와 Minimal Vendor Adapter를 반드시 참조.
 
 ## Node + Scheduler
 - ~100 devices per node; 20 concurrent
