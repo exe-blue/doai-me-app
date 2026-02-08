@@ -81,14 +81,14 @@ export function IdeAnimation() {
     if (currentLine.type === "command") {
       // Type out commands character by character
       if (currentCharIndex < currentLine.text.length) {
-        setIsTyping(true)
+        queueMicrotask(() => setIsTyping(true))
         const speed = 30 + Math.random() * 40
         animationRef.current = setTimeout(() => {
           setCurrentCharIndex((prev) => prev + 1)
         }, speed)
       } else {
         // Command fully typed, pause then move to next
-        setIsTyping(false)
+        queueMicrotask(() => setIsTyping(false))
         animationRef.current = setTimeout(() => {
           setVisibleLines((prev) => prev + 1)
           setCurrentCharIndex(0)

@@ -26,6 +26,14 @@ npm start
 - `NODE_AGENT_SHARED_SECRET` — Backend↔Node 인증
 - `YOUTUBE_API_KEY` — (선택) YouTube Data API
 
+## 의식 실행 생성 UX (로컬 테스트)
+
+1. `npm run dev` 후 대시보드 → **의식 실행** (`/dashboard/runs`) 이동.
+2. **의식 실행 생성** 버튼 클릭 → 모달에서 레시피(workflow) 선택, 실행할 노드 체크리스트 선택 (기본 전체).
+3. **고급 설정** 토글 시 PREFLIGHT/BOOTSTRAP/LOGIN_FLOW/SCREENSHOT/UPLOAD 타임아웃(초, 5~600) 입력 가능. 범위 밖이면 인라인 오류 표시.
+4. **생성** 클릭 → `POST /api/runs` 호출 후 성공 시 토스트 표시 및 `/dashboard/runs/[runId]` 상세 페이지로 이동.
+5. 실패 시: 400 입력값 오류, 401/403 권한 없음, 500 서버 오류에 따라 짧은 한글 메시지 토스트.
+
 ## 구조
 
 - `app/` — Next.js App Router (API routes + Dashboard UI)

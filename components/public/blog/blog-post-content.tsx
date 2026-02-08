@@ -20,7 +20,7 @@ export function BlogPostContent({ post }: BlogPostContentProps) {
   const relatedPosts = getRelatedPosts(post.slug)
 
   useEffect(() => {
-    setIsVisible(true)
+    queueMicrotask(() => setIsVisible(true))
 
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 500)

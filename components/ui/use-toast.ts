@@ -15,12 +15,14 @@ type ToasterToast = ToastProps & {
   action?: ToastActionElement
 }
 
+// Used for type inference in Action type - eslint-disable: only used in type position
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- type-only usage
 const actionTypes = {
   ADD_TOAST: 'ADD_TOAST',
   UPDATE_TOAST: 'UPDATE_TOAST',
   DISMISS_TOAST: 'DISMISS_TOAST',
   REMOVE_TOAST: 'REMOVE_TOAST',
-} as const
+} as const satisfies Record<string, string>
 
 let count = 0
 

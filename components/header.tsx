@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "./theme-toggle"
 import Link from "next/link"
@@ -25,7 +24,6 @@ export function Header() {
   const [isMoreOpen, setIsMoreOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
-  const pathname = usePathname()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -70,7 +68,7 @@ export function Header() {
           {/* Desktop Navigation */}
           <div className="hidden items-center gap-0.5 lg:flex">
             {mainNavItems.map((item, index) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
                 className={cn(
@@ -81,7 +79,7 @@ export function Header() {
                 onMouseLeave={() => setHoveredIndex(null)}
               >
                 <span>{item.label}</span>
-              </a>
+              </Link>
             ))}
 
             {/* More dropdown */}
@@ -103,7 +101,7 @@ export function Header() {
               {isMoreOpen && (
                 <div className="absolute right-0 top-full mt-2 w-44 rounded-lg border border-border/60 bg-background/95 backdrop-blur-xl shadow-lg py-1 z-50 animate-fade-in">
                   {moreNavItems.map((item) => (
-                    <a
+                    <Link
                       key={item.label}
                       href={item.href}
                       onClick={() => setIsMoreOpen(false)}
@@ -111,7 +109,7 @@ export function Header() {
                     >
                       <span className="text-primary font-mono text-[10px]">{">"}</span>
                       {item.label}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -119,18 +117,18 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-3">
-            <a
+            <Link
               href="/dashboard"
               className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-primary bg-primary/10 px-4 py-2 font-mono text-xs text-primary transition-all duration-300 hover:bg-primary hover:text-primary-foreground"
             >
               {"콘솔 열기"}
-            </a>
-            <a
+            </Link>
+            <Link
               href="/#philosophy"
               className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-mono text-xs text-muted-foreground transition-all duration-300 hover:border-foreground hover:text-foreground"
             >
               {"봇이 아닌 이유"}
-            </a>
+            </Link>
             <ThemeToggle />
 
             <button
@@ -171,7 +169,7 @@ export function Header() {
         >
           <div className="flex flex-col gap-1 border-t border-border/50 pt-4">
             {[...mainNavItems, ...moreNavItems].map((item, index) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -180,22 +178,22 @@ export function Header() {
               >
                 <span className="text-primary font-mono text-xs">{">"}</span>
                 {item.label}
-              </a>
+              </Link>
             ))}
             <div className="mt-4 flex flex-col gap-2 border-t border-border/50 pt-4 px-4 pb-2">
-              <a
+              <Link
                 href="/dashboard"
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-primary bg-primary/10 px-4 py-3 font-mono text-xs text-primary transition-all duration-300 hover:bg-primary hover:text-primary-foreground"
               >
                 {"콘솔 열기"}
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/#philosophy"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-3 font-mono text-xs text-muted-foreground transition-all duration-300 hover:border-foreground hover:text-foreground"
               >
                 {"봇이 아닌 이유"}
-              </a>
+              </Link>
             </div>
           </div>
         </div>

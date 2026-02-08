@@ -92,7 +92,7 @@ export function NotesPageContent() {
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    setIsVisible(true)
+    queueMicrotask(() => setIsVisible(true))
   }, [])
 
   const filteredNotes = notes.filter((n) => {

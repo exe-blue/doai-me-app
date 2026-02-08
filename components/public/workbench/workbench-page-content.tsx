@@ -69,7 +69,7 @@ export function WorkbenchPageContent() {
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    setIsVisible(true)
+    queueMicrotask(() => setIsVisible(true))
   }, [])
 
   return (

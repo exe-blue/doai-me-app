@@ -1,0 +1,28 @@
+---
+description: MVP 고정 성공 조건 — Gate/Preflight/Workflow 연속 실행·실패 기록
+alwaysApply: true
+---
+
+# MVP 고정 성공 조건
+
+이번 MVP에서 **반드시 지킬 성공 조건**이다. 오케스트레이션·노드 에이전트·워크플로우·run/디바이스 관련 코드/문서 수정 시 이 조건을 깨지 말 것.
+
+## 1. 시작 전 체크 (3중 문지기)
+
+- **Emulator Health Gate**: 항상 시작 전에 에뮬레이터 구동 여부 체크. 통과 전까지 워크플로우 진입 불가.
+- **Node Preflight**: Vendor WS(예: `ws://127.0.0.1:22222`)가 살아 있고 `action=list` 가능. 결과를 노드 상태(heartbeat)로 보고.
+- **Device Preflight**: 디바이스 ADB 상태가 `device`. `unauthorized`/`offline`이면 **fail-fast** (즉시 실패, `needs_usb_authorization` 등 기록).
+
+## 2. Workflow = 한 덩어리 연속 실행
+
+- **20+ sequential commands**를 **하나의 Workflow**로 끝까지 실행.
+- **금지**: 한 플로우를 여러 큐 작업으로 쪼개지 말 것. (참조: `docs/Prometheus-Workflow-DSL-v1.md`)
+
+## 3. 실패 시 기록
+
+- `failure_reason` + `error_message` 기록.
+- 가능하면 스크린샷 등 artifact 남기기.
+
+---
+
+참조: `docs/Prometheus-Workflow-DSL-v1.md`, `docs/Workflow-Recipe-DSL-v1-QA.md`, `.cursor/rules/doai-me-orchestration-v1.md`

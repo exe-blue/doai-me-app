@@ -1,6 +1,5 @@
 /**
- * DoAi.Me MVP Orchestration v1 — Nodes poll for pending runs (start-run)
- * Shared secret auth; returns runs for nodes to process
+ * DoAi.Me MVP — Nodes poll for pending runs (run_start payload for enqueue)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,7 +7,9 @@ import { createClient } from '@supabase/supabase-js';
 
 function verifyNodeAuth(req: NextRequest): boolean {
   const secret = process.env.NODE_AGENT_SHARED_SECRET;
-  const header = req.headers.get('X-Node-Auth');
+  const auth = req.headers.get('Authorization');
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
+  const header = token ?? req.headers.get('X-Node-Auth');
   return !!secret && secret === header;
 }
 
@@ -31,12 +32,14 @@ export async function GET(req: NextRequest) {
     .from('runs')
     .select(`
       id,
-      video_id,
-      videos (
-        youtube_video_id
-      )
+      trigger,
+      scope,
+      youtube_video_id,
+      timeout_overrides,
+      global_timeout_ms,
+      workflows ( workflow_id )
     `)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'queued'])
     .order('created_at', { ascending: true })
     .limit(10);
 
@@ -45,11 +48,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });
   }
 
-  const pending = (runs ?? []).map((r: { id: string; videos: { youtube_video_id: string } | { youtube_video_id: string }[] | null }) => {
-    const v = Array.isArray(r.videos) ? r.videos[0] : r.videos;
+  const pending = (runs ?? []).map((r: Record<string, unknown>) => {
+    const w = Array.isArray(r.workflows) ? r.workflows[0] : r.workflows;
+    const workflow_id = (w as Record<string, string>)?.workflow_id ?? 'login_settings_screenshot_v1';
     return {
       run_id: r.id,
-      youtube_video_id: v?.youtube_video_id ?? '',
+      trigger: r.trigger ?? 'manual',
+      scope: r.scope ?? 'ALL',
+      youtubeVideoId: r.youtube_video_id ?? null,
+      workflow_id,
+      timeoutOverrides: (r.timeout_overrides as Record<string, number>) ?? {},
+      global_timeout_ms: r.global_timeout_ms ?? null,
     };
   });
 
