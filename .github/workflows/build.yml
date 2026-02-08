@@ -1,13 +1,16 @@
-# SonarQube: PR/merge 시에만 실행. 릴리즈(태그 푸시)에서는 실행되지 않아 빌드/업로드를 막지 않음.
+# SonarQube: PR/merge 시에만 실행. on: pull_request 만 사용하므로 태그 푸시 시 이 워크플로는 실행되지 않음 → 릴리즈(EXE 업로드)를 막지 않음.
+# 릴리즈 워크플로(release-node-runner)에 Sonar를 넣을 경우 해당 job은 continue-on-error: true 로 설정할 것.
 name: Build
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
   # Requires SonarCloud "Automatic Analysis" to be OFF (CI-only). See docs/guide/sonarqube-ci.md
+  # continue-on-error: exit 3 when Automatic Analysis enabled → pipeline not blocked
   sonarqube:
     name: SonarQube
     runs-on: macos-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:

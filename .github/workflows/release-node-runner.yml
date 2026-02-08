@@ -1,5 +1,6 @@
 # Node Runner Windows exe → zip → GitHub Release
 # Trigger: push tag v* (e.g. v0.1.0)
+# SonarQube: 이 워크플로에는 Sonar를 넣지 않음. 넣을 경우 해당 job은 continue-on-error: true로 EXE 업로드를 막지 않도록 할 것.
 name: release-node-runner
 
 on:
@@ -10,6 +11,11 @@ on:
 permissions:
   contents: write
 
+# 고정 경로: 번들(CJS 단일) → pkg → dist/node-runner.exe. pkg@5.8.1은 node20 타겟 미지원이므로 Node 18 사용.
+env:
+  CJS_BUNDLE: node-agent/dist-bundle/index.cjs
+  PKG_OUTPUT: dist/node-runner.exe
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -18,10 +24,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node 18
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "18"
+          cache: "npm"
+
+      - name: Verify Node version
+        shell: pwsh
+        run: |
+          $v = node -v
+          if (-not $v.StartsWith("v18.")) { throw "Expected Node 18.x, got $v. pkg@5.8.1 does not support Node 20." }
+          Write-Host "Node $v OK"
 
       - name: Install root deps
         run: npm ci
@@ -30,21 +44,26 @@ jobs:
         working-directory: node-agent
         run: npm ci
 
-      # Build node-agent (tsup → dist-bundle/index.cjs single CJS file)
-      - name: Build node-agent
+      # 1) tsup → 단일 CJS 번들 (고정 출력: node-agent/dist-bundle/index.cjs)
+      - name: Build node-agent bundle
         working-directory: node-agent
         run: npm run build
 
-      # pkg: target node18 (not node20); input = CJS single bundle only → dist/node-runner.exe always
-      - name: Build node-runner.exe
+      # 2) CJS 번들 존재 확인 후 pkg → exe (입력/출력 경로 고정)
+      - name: Verify CJS bundle
         shell: pwsh
         run: |
-          npm install -g pkg
-          $cjs = "node-agent/dist-bundle/index.cjs"
-          if (-not (Test-Path $cjs)) { throw "CJS bundle not found: $cjs" }
+          if (-not (Test-Path $env:CJS_BUNDLE)) { throw "CJS bundle not found: $env:CJS_BUNDLE" }
+          Write-Host "Bundle OK: $env:CJS_BUNDLE"
+
+      - name: Build node-runner.exe (pkg node18-win-x64)
+        shell: pwsh
+        run: |
+          npm install -g pkg@5.8.1
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          pkg -t node18-win-x64 -o dist/node-runner.exe $cjs
-          if (-not (Test-Path dist/node-runner.exe)) { throw "dist/node-runner.exe not found" }
+          pkg --targets node18-win-x64 --output $env:PKG_OUTPUT $env:CJS_BUNDLE
+          if (-not (Test-Path $env:PKG_OUTPUT)) { throw "pkg output not found: $env:PKG_OUTPUT" }
+          Write-Host "EXE OK: $env:PKG_OUTPUT"
 
       # Download WinSW (no binary in repo)
       - name: Download WinSW

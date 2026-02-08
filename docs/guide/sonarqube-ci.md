@@ -35,7 +35,12 @@ EXECUTION FAILURE ... exit code 3
 
 설정 후 다음 push 또는 PR에서 **Build** 워크플로의 SonarQube 스텝이 정상 완료되어야 합니다.
 
+### 3) 파이프라인 블로커 회피 (임시 조치)
+
+Automatic Analysis를 끄기 전까지 파이프라인을 막지 않으려면, `build.yml`의 sonarqube job에 `continue-on-error: true`가 이미 설정되어 있습니다. Sonar 단계가 exit 3로 실패해도 PR/빌드는 통과합니다. **권장**: Automatic Analysis를 끄고 `continue-on-error`를 제거하는 것이 좋습니다.
+
 ## 요약
 
 | 원인 | CI 분석(우리 워크플로) + Automatic Analysis(SonarCloud) 동시 사용 |
 | 해결 | SonarCloud에서 **Automatic Analysis** 끄기 → **CI만** 사용 |
+| 임시 조치 | build.yml sonarqube job에 `continue-on-error: true` (이미 적용됨) |
