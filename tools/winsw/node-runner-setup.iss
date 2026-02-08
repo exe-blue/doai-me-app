@@ -37,6 +37,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "node-runner.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "winsw.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "node-runner-service.xml"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".env.local.example"; DestDir: "{app}"; Flags: ignoreversion
 
 [Dirs]
 ; ProgramData: config, logs, cache (created by [Code] if needed)
@@ -68,6 +69,21 @@ begin
     Log('Config already exists, keeping: ' + ConfigPath);
 end;
 
+procedure CopyEnvLocalFromExample;
+var
+  DataDir, SrcPath, DstPath: String;
+begin
+  DataDir := ExpandConstant(ConfigDir);
+  DstPath := DataDir + '\.env.local';
+  if not FileExists(DstPath) then
+  begin
+    SrcPath := ExpandConstant('{app}\.env.local.example');
+    if FileExists(SrcPath) then
+      if FileCopy(SrcPath, DstPath, False) then
+        Log('Created .env.local from .env.local.example: ' + DstPath);
+  end;
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   LogsDir: String;
@@ -78,6 +94,7 @@ begin
     if not DirExists(LogsDir) then
       ForceDirectories(LogsDir);
     CreateConfigIfNotExists;
+    CopyEnvLocalFromExample;
   end;
 end;
 

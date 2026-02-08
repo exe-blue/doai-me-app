@@ -96,6 +96,7 @@ jobs:
           Copy-Item -Force tools/winsw/install.ps1 "$out/install.ps1"
           Copy-Item -Force tools/winsw/update.ps1 "$out/update.ps1"
           Copy-Item -Force tools/winsw/node-runner-setup.iss "$out/node-runner-setup.iss"
+          Copy-Item -Force node-agent/.env.local.example "$out/.env.local.example"
 
       - name: Install Inno Setup
         shell: pwsh
