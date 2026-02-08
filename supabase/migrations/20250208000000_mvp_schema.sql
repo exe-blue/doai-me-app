@@ -18,11 +18,16 @@ create table if not exists public.videos (
 
 create index if not exists idx_videos_youtube_video_id on public.videos (youtube_video_id);
 
+-- run/device_task status: single definition to satisfy literal duplication rule (Sonar S1192)
+create domain public.run_status_text as text
+  check (value in ('pending', 'running', 'completed', 'failed'))
+  default 'pending';
+
 -- 3. runs: one per video playback job
 create table if not exists public.runs (
   id uuid primary key default gen_random_uuid(),
   video_id uuid not null references public.videos(id) on delete cascade,
-  status text not null default 'pending' check (status in ('pending', 'running', 'completed', 'failed')),
+  status public.run_status_text not null,
   started_at timestamptz,
   finished_at timestamptz,
   node_agent_id text,
@@ -37,7 +42,7 @@ create table if not exists public.device_tasks (
   id uuid primary key default gen_random_uuid(),
   run_id uuid not null references public.runs(id) on delete cascade,
   device_serial text not null,
-  status text not null default 'pending' check (status in ('pending', 'running', 'completed', 'failed')),
+  status public.run_status_text not null,
   started_at timestamptz,
   finished_at timestamptz,
   created_at timestamptz not null default now()

@@ -30,10 +30,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'event_id, type, payload required' }, { status: 400 });
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+  }
+  const supabase = createClient(url, key);
 
   const { error: insertEventErr } = await supabase
     .from('callback_events')
@@ -47,9 +49,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 
-  const p = payload as Record<string, unknown>;
-  const run_id = p.run_id as string | undefined;
-  const node_id = p.node_id as string | undefined;
+  const p = payload;
+  const run_id = typeof p.run_id === 'string' ? p.run_id : undefined;
+  const node_id = typeof p.node_id === 'string' ? p.node_id : undefined;
 
   const handlers: Record<string, () => Promise<void>> = {
     node_heartbeat: async () => {
@@ -151,10 +153,7 @@ export async function POST(req: NextRequest) {
   };
 
   let handler: (() => Promise<void>) | undefined;
-  if (
-    typeof type === 'string' &&
-    Object.prototype.hasOwnProperty.call(handlers, type)
-  ) {
+  if (typeof type === 'string' && Object.hasOwn(handlers, type)) {
     const possibleHandler = handlers[type];
     if (typeof possibleHandler === 'function') {
       handler = possibleHandler;

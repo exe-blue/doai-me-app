@@ -4,8 +4,8 @@
  * timeout → onFailure (stop | continue | retry); retry up to retryCount
  */
 
-import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import type { NormalizedStep } from './workflowDsl.js';
 import { logInfo, logError } from './logger.js';
 import { config } from './config.js';

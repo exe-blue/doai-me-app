@@ -6,10 +6,12 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function GET() {
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+  }
+  const supabase = createClient(url, key);
 
   const { data: rows, error } = await supabase
     .from('workflows')
@@ -23,7 +25,7 @@ export async function GET() {
 
   const workflows = (rows ?? []).map((r) => ({
     workflow_id: r.workflow_id,
-    version: parseInt(r.version, 10) || 1,
+    version: Number.parseInt(String(r.version), 10) || 1,
     name: r.name,
   }));
 

@@ -4,14 +4,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export async function GET() {
   try {
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+    }
+    const supabase = createClient(url, key);
     const { data: runs, error } = await supabase
       .from('runs')
       .select('id, status, trigger, scope, created_at')
@@ -54,6 +56,34 @@ function clampGlobalTimeout(ms: number): number {
   return Math.max(GLOBAL_TIMEOUT_MIN_MS, Math.min(GLOBAL_TIMEOUT_MAX_MS, ms));
 }
 
+type ResolvedRunSource = { workflow_id: string | null; playbook_id: string | null };
+
+async function resolveWorkflowOrPlaybook(
+  supabase: SupabaseClient,
+  playbookIdParam: string | null,
+  workflowIdText: string | null
+): Promise<ResolvedRunSource> {
+    if (playbookIdParam) {
+    const { data: pb, error: pbErr } = await supabase
+      .from('playbooks')
+      .select('id')
+      .eq('id', playbookIdParam)
+      .single();
+    if (pbErr || !pb) throw new Error('Playbook not found');
+    const playbookId = (pb as { id: string }).id;
+    return { workflow_id: null, playbook_id: playbookId };
+  }
+  const workflowId = workflowIdText ?? 'login_settings_screenshot_v1';
+  const { data: workflow, error: wfErr } = await supabase
+    .from('workflows')
+    .select('id')
+    .eq('workflow_id', workflowId)
+    .single();
+  if (wfErr || !workflow) throw new Error('Workflow not found');
+  const wfId = (workflow as { id: string }).id;
+  return { workflow_id: wfId, playbook_id: null };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -61,15 +91,30 @@ export async function POST(req: NextRequest) {
       trigger = 'manual',
       scope = 'ALL',
       youtubeVideoId = null,
-      workflow_id: workflowIdText = 'login_settings_screenshot_v1',
+      workflow_id: workflowIdText = null,
+      playbook_id: playbookIdParam = null,
+      params: runParams = {},
       timeoutOverrides = {},
       globalTimeoutMs,
     } = body;
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+    }
+    const supabase = createClient(url, key);
+
+    let workflow_id: string | null;
+    let playbook_id: string | null;
+    try {
+      const resolved = await resolveWorkflowOrPlaybook(supabase, playbookIdParam, workflowIdText);
+      workflow_id = resolved.workflow_id;
+      playbook_id = resolved.playbook_id;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Invalid run source';
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
 
     let video_id: string | null = null;
     if (youtubeVideoId) {
@@ -92,23 +137,17 @@ export async function POST(req: NextRequest) {
       video_id = video.id;
     }
 
-    const { data: workflow, error: wfErr } = await supabase
-      .from('workflows')
-      .select('id')
-      .eq('workflow_id', workflowIdText)
-      .single();
-
-    if (wfErr || !workflow) {
-      console.error('[runs] Workflow not found', workflowIdText, wfErr);
-      return NextResponse.json({ error: 'Workflow not found' }, { status: 400 });
-    }
-
     const normalizedOverrides: Record<string, number> = {};
     for (const [key, val] of Object.entries(timeoutOverrides)) {
       if (typeof val === 'number') normalizedOverrides[key] = clampStepTimeout(val);
     }
     const global_ms =
       typeof globalTimeoutMs === 'number' ? clampGlobalTimeout(globalTimeoutMs) : undefined;
+
+    const paramsPayload =
+      typeof runParams === 'object' && runParams !== null && !Array.isArray(runParams)
+        ? runParams
+        : {};
 
     const { data: run, error: runErr } = await supabase
       .from('runs')
@@ -118,7 +157,9 @@ export async function POST(req: NextRequest) {
         trigger,
         scope,
         youtube_video_id: youtubeVideoId ?? null,
-        workflow_id: workflow.id,
+        workflow_id,
+        playbook_id,
+        params: Object.keys(paramsPayload).length ? paramsPayload : null,
         timeout_overrides: Object.keys(normalizedOverrides).length ? normalizedOverrides : null,
         global_timeout_ms: global_ms ?? null,
       })
@@ -132,7 +173,7 @@ export async function POST(req: NextRequest) {
 
     const run_id = run.id;
     const created_at = new Date(run.created_at).getTime();
-    console.log(`[run_id=${run_id}] Created run; workflow=${workflowIdText}`);
+    console.log(`[run_id=${run_id}] Created run; workflow_id=${workflow_id ?? '—'}, playbook_id=${playbook_id ?? '—'}`);
 
     return NextResponse.json(
       { run_id, status: 'queued', created_at },

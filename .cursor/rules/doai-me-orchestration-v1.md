@@ -1,39 +1,49 @@
-# DoAi.Me MVP 오케스트레이션 규칙 v1
+# DoAi.Me MVP 오케스트레이션 규칙
 
-> **CRITICAL**: Follow strictly. See docs/DoAi-Me-MVP-Orchestration-Rules-v1.md for full spec.
+> **CRITICAL**: 모든 구현은 이 규칙과 canonical 문서를 따른다.
+> **Canonical**: `docs/arch/orchestration.md`
+> **문서 인덱스**: `docs/INDEX.md`
 
-## References (Workflow Recipe DSL v1)
-- **Q&A / 결정사항**: docs/Workflow-Recipe-DSL-v1-QA.md
-- **API 계약**: docs/API-Contracts-v1.md
-- **DSL 명세**: docs/Prometheus-Workflow-DSL-v1.md
-- **Minimal Vendor Adapter**: docs/Minimal-Vendor-Adapter-Contract.md
-- **Callback**: docs/Callback-Contract-v1.md
-- **벤더(效卫) / API·ADB 명령 참조**: docs/vendor-xiaowei-notes.md — API·ADB·화면 제어·스크립트 명령 구현 시 위 문서와 Minimal Vendor Adapter를 반드시 참조.
+---
 
-## Node + Scheduler
-- ~100 devices per node; 20 concurrent
-- Device-dedicated FIFO queue per device; never concurrent on same device
-- Global scheduler: 20 slots; round-robin; slot 19→20 즉시 시작
-- Callback model: node pushes 6 event types; disk queue + retry (1s→2s→5s→10s→30s, max 5~7회); Backend 멱등성 (event_id)
+## 핵심 참조
 
-## Workflow (Prometheus)
-- 디바이스 1대 = 1 Workflow 연속 실행; 작업 따로 큐에 넣기 금지
-- workflows 테이블: definition_json (DSL); runs.workflow_id 참조; frontend timeout overrides
-- ADB bootstrap recipe: locale/resolution/density/animations/stay-awake; accessibility manual fallback
-- Preflight (3중 문지기): Emulator Health Gate → Device Preflight (adb unauthorized → needs_usb_authorization) → 워크플로우; Node Preflight (vendor WS + list)는 주기/부팅 시, heartbeat에 vendor_ws_ok 보고
+| 영역 | 문서 |
+|------|------|
+| 오케스트레이션 전체 | `docs/arch/orchestration.md` |
+| API 계약 | `docs/spec/api-contracts.md` |
+| 워크플로우 DSL | `docs/spec/workflow-dsl.md` |
+| 콜백 계약 | `docs/spec/callback-contract.md` |
+| 벤더 어댑터 | `docs/spec/vendor-adapter.md` |
+| 명령 라이브러리 | `docs/spec/command-library.md` |
+| Playbook 스펙 | `docs/spec/playbook-spec.md` |
+| FRD | `docs/arch/frd.md` |
 
-## Node Agent (TS)
-- Vendor WS locally; MAX_CONCURRENCY_PER_NODE=20; FIFO queue; device-level lock
-- device_id=onlySerial; runtime_handle=serial (Minimal Vendor Adapter)
-- Timeouts: 90s task, 30s upload; fail-soft; step bounds 5s~10m
+---
 
-## Backend
-- POST /api/runs (workflow_id, timeoutOverrides); GET /api/runs/[run_id]; GET /api/workflows; GET /api/nodes; POST /api/nodes/callback (event_id idempotency)
-- MVP: nodes poll /api/nodes/pending-runs (WS control channel 추후)
-- Shared secret auth: Authorization Bearer or X-Node-Auth
+## 요약 (상세 → canonical 문서 참조)
 
-## Storage path
-`{youtubeVideoId}/{node_id}/{device_id}/{run_id}/{timestamp}.png`
+### Node + Scheduler
+- ~100 devices/node; 동시 20; 디바이스별 FIFO; round-robin
+- Callback: 6종 이벤트 push; disk queue + retry; event_id 멱등
 
-## Logging
-Every log MUST include run_id, node_id, device_serial/device_id when applicable.
+### Workflow (Prometheus)
+- 디바이스 1대 = 1 Workflow 연속 실행; 분할 큐 금지
+- 3중 문지기: Emulator Health Gate → Device Preflight → Workflow Steps
+- Node Preflight: 주기/부팅 시 별도 (vendor WS + list)
+
+### 디바이스 식별
+- `device_id` = onlySerial (DB키, 불변)
+- `runtime_handle` = serial (벤더/ADB 대상)
+
+### 인증
+- Node → Backend: `Authorization: Bearer <NODE_AGENT_SHARED_SECRET>`
+- Frontend: service_role 키 사용 금지
+
+### Storage
+```
+{youtubeVideoId}/{node_id}/{device_id}/{run_id}/{timestamp}.png
+```
+
+### 로깅
+모든 로그에 `run_id`, `node_id`, `device_id` 포함 (해당 시)

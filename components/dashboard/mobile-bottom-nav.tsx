@@ -7,16 +7,16 @@ import {
   Smartphone,
   Play,
   Brain,
-  Archive,
+  Library,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { label: "홈", href: "/dashboard", icon: Home },
-  { label: "기기", href: "/dashboard/devices", icon: Smartphone },
-  { label: "콘텐츠", href: "/dashboard/videos", icon: Play },
-  { label: "실행", href: "/dashboard/runs", icon: Brain },
-  { label: "기록", href: "/dashboard/artifacts", icon: Archive },
+  { label: "대시보드", href: "/dashboard", icon: Home },
+  { label: "명령", href: "/commands", icon: Library },
+  { label: "기기", href: "/devices", icon: Smartphone },
+  { label: "실행", href: "/runs", icon: Brain },
+  { label: "콘텐츠", href: "/content", icon: Play },
 ]
 
 export function MobileBottomNav() {

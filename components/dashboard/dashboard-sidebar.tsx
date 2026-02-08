@@ -11,6 +11,8 @@ import {
   Settings as SettingsIcon,
   Rocket,
   Circle,
+  BookOpen,
+  Library,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -34,18 +36,17 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 
-const consoleItems = [
-  { label: "콘솔 홈", href: "/dashboard", icon: Home },
+const mainItems = [
+  { label: "대시보드", href: "/dashboard", icon: Home },
+  { label: "명령", href: "/commands", icon: Library },
+  { label: "기기", href: "/devices", icon: Smartphone },
+  { label: "실행", href: "/runs", icon: Brain },
+  { label: "콘텐츠", href: "/content", icon: Play },
 ]
 
-const operationItems = [
-  { label: "기기 사회", href: "/dashboard/devices", icon: Smartphone },
-  { label: "콘텐츠 흐름", href: "/dashboard/videos", icon: Play },
-  { label: "의식 실행", href: "/dashboard/runs", icon: Brain },
+const moreItems = [
   { label: "기록 보관소", href: "/dashboard/artifacts", icon: Archive },
-]
-
-const prepareItems = [
+  { label: "Playbook", href: "/dashboard/playbooks", icon: BookOpen },
   { label: "세팅", href: "/dashboard/onboarding", icon: Rocket },
   { label: "설정/권한", href: "/dashboard/settings", icon: SettingsIcon },
 ]
@@ -75,10 +76,10 @@ export function DashboardSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>콘솔</SidebarGroupLabel>
+          <SidebarGroupLabel>메인</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {consoleItems.map((item) => (
+              {mainItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
                     <Link href={item.href}>
@@ -93,28 +94,10 @@ export function DashboardSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>운영</SidebarGroupLabel>
+          <SidebarGroupLabel>더보기</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {operationItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
-                    <Link href={item.href}>
-                      <item.icon className="size-4" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>준비</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {prepareItems.map((item) => (
+              {moreItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
                     <Link href={item.href}>

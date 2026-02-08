@@ -6,5 +6,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
+  async redirects() {
+    return [
+      { source: '/dashboard/library', destination: '/commands', permanent: true },
+      { source: '/dashboard/library/', destination: '/commands', permanent: true },
+      { source: '/dashboard/devices', destination: '/devices', permanent: true },
+      { source: '/dashboard/devices/', destination: '/devices', permanent: true },
+      { source: '/dashboard/runs', destination: '/runs', permanent: true },
+      { source: '/dashboard/runs/:path*', destination: '/runs/:path*', permanent: true },
+    ];
+  },
 };
 export default config;

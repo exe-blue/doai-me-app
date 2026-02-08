@@ -1,0 +1,93 @@
+# DoAi.Me MVP — 문서 인덱스
+
+> 개발 에이전트는 이 파일을 먼저 읽고, 태그로 필요한 문서를 즉시 찾는다.
+
+---
+
+## 구조
+
+```
+docs/
+├── INDEX.md          ← 지금 이 파일
+├── spec/             ← 명세서 (구현 기준, "무엇을 만드는가")
+├── guide/            ← 가이드 (절차, "어떻게 하는가")
+├── arch/             ← 아키텍처 (설계 결정, "왜 이렇게 하는가")
+└── plan/             ← 실행 계획 아카이브 (이력)
+```
+
+---
+
+## 명세서 (spec/)
+
+| 문서 | 태그 | 한줄 요약 |
+|------|------|-----------|
+| [api-contracts.md](spec/api-contracts.md) | `api` `rest` `runs` `workflows` `nodes` `callback` `devices` `library` `playbooks` `scan` | 전체 REST API 엔드포인트·요청·응답·DB 매핑 |
+| [callback-contract.md](spec/callback-contract.md) | `callback` `node` `backend` `heartbeat` `event` `retry` `idempotency` | Backend↔Node 콜백 6종 이벤트·재시도·멱등성 |
+| [workflow-dsl.md](spec/workflow-dsl.md) | `workflow` `dsl` `prometheus` `steps` `timeout` `params` `preflight` `bootstrap` `template` | Workflow 정의·실행·파라미터 주입·3중 Preflight |
+| [playbook-spec.md](spec/playbook-spec.md) | `playbook` `probability` `steps` `command-assets` `seed` `execution` | Playbook JSON 스펙·확률 실행·ref 해석 |
+| [vendor-adapter.md](spec/vendor-adapter.md) | `vendor` `xiaowei` `websocket` `list` `screen` `adb` `device` `serial` | 벤더 WS 최소 계약 (list/screen) + Xiaowei 정보 |
+| [command-library.md](spec/command-library.md) | `command-library` `command-assets` `upload` `ref` `workflow-builder` `folder` `script` | 명령 라이브러리 데이터 모델·ref 참조·UX |
+
+## 가이드 (guide/)
+
+| 문서 | 태그 | 한줄 요약 |
+|------|------|-----------|
+| [deploy.md](guide/deploy.md) | `deploy` `vercel` `404` `middleware` `domain` `health` `baseline` | 배포 도메인·Deploy Gate·Vercel 404 진단·Middleware 규칙 |
+| [setup.md](guide/setup.md) | `setup` `env` `supabase` `node-agent` `secret` `key-rotation` `security` | 환경변수·Supabase·키 회전·노드 PC 요구사항 |
+| [v0-integration.md](guide/v0-integration.md) | `v0` `ui` `integration` `landing` `frontend` `cta` `glossary` | v0 코드 통합 절차·DoAi.Me 용어·랜딩 CTA |
+| [code-quality.md](guide/code-quality.md) | `sonar` `complexity` `refactor` `s3776` `s2004` | SonarQube 이슈별 선택지·리팩터 가이드 |
+
+## 아키텍처 (arch/)
+
+| 문서 | 태그 | 한줄 요약 |
+|------|------|-----------|
+| [orchestration.md](arch/orchestration.md) | `orchestration` `node-agent` `scheduler` `fifo` `concurrency` `device` `workflow` `callback` `storage` `logging` `offline` `grace` | **CRITICAL** 실행 아키텍처·스케줄러·인증·Offline 처리·로깅 |
+| [frd.md](arch/frd.md) | `frd` `requirements` `command-library` `status-dashboard` `run-monitor` `playbook` `scan` `probability` | MVP 기능 요구사항·범위·수용 기준 |
+
+## 실행 계획 (plan/)
+
+| 문서 | 한줄 요약 |
+|------|-----------|
+| [_ARCHIVE.md](plan/_ARCHIVE.md) | .sisyphus/plans 인덱스·PR 이력·상태 추적 |
+
+---
+
+## 빠른 검색 (키워드 → 문서)
+
+| 키워드 | 문서 |
+|--------|------|
+| API 엔드포인트 구현 | [spec/api-contracts.md](spec/api-contracts.md) |
+| 콜백 이벤트 타입 | [spec/callback-contract.md](spec/callback-contract.md) |
+| 워크플로우 step 추가 | [spec/workflow-dsl.md](spec/workflow-dsl.md) |
+| 파라미터 치환 `{{KEY}}` | [spec/workflow-dsl.md](spec/workflow-dsl.md) §5 |
+| Preflight / Gate | [spec/workflow-dsl.md](spec/workflow-dsl.md) §3 |
+| Playbook 확률 실행 | [spec/playbook-spec.md](spec/playbook-spec.md) |
+| 벤더 WS 연동 | [spec/vendor-adapter.md](spec/vendor-adapter.md) |
+| command_assets / ref | [spec/command-library.md](spec/command-library.md) |
+| device_id vs serial | [spec/vendor-adapter.md](spec/vendor-adapter.md) §디바이스 식별 |
+| 배포 / 404 | [guide/deploy.md](guide/deploy.md) |
+| 환경변수 / .env | [guide/setup.md](guide/setup.md) |
+| 키 회전 | [guide/setup.md](guide/setup.md) §5 |
+| v0 UI 통합 | [guide/v0-integration.md](guide/v0-integration.md) |
+| 오케스트레이션 전체 | [arch/orchestration.md](arch/orchestration.md) |
+| FRD / 요구사항 | [arch/frd.md](arch/frd.md) |
+| 동시성 / FIFO / 스케줄러 | [arch/orchestration.md](arch/orchestration.md) §1 |
+| Storage 경로 | [arch/orchestration.md](arch/orchestration.md) §5 |
+| 로깅 규칙 | [arch/orchestration.md](arch/orchestration.md) §7 |
+| Node Agent 아키텍처 | [arch/orchestration.md](arch/orchestration.md) §1 |
+| Supabase 스키마 | [spec/api-contracts.md](spec/api-contracts.md) §9 |
+| 실행 계획 이력 | [plan/_ARCHIVE.md](plan/_ARCHIVE.md) |
+| Offline / grace 처리 | [arch/orchestration.md](arch/orchestration.md) §8 |
+| SonarQube / 리팩터 | [guide/code-quality.md](guide/code-quality.md) |
+
+---
+
+## 규칙 (Rule Files)
+
+| 위치 | 용도 |
+|------|------|
+| `.cursor/rules/doai-me-orchestration-v1.md` | 에이전트용 오케스트레이션 요약 → [arch/orchestration.md](arch/orchestration.md) |
+| `.cursor/rules/deploy-frontend-baseline.md` | 배포 기준선 → [guide/deploy.md](guide/deploy.md) |
+| `.cursor/rules/v0-integration.md` | v0 통합 규칙 → [guide/v0-integration.md](guide/v0-integration.md) |
+| `.cursor/rules/sisyphus-default-global.md` | Sisyphus 플러그인 설정 (외부) |
+| `.cursor/agents/deploy-gate.md` | Deploy Gate 검증 에이전트 |

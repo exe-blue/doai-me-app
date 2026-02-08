@@ -4,14 +4,14 @@
  * Optional: auto-start AVD if env EMULATOR_AVD set; wait for stable (max EMULATOR_GATE_WAIT_MS).
  */
 
-import { execSync, spawn } from 'child_process';
+import { execSync, spawn } from 'node:child_process';
 import { logInfo, logError } from './logger.js';
 
 const DEFAULT_GATE_WAIT_MS = 60_000;
 
 function getGateWaitMs(): number {
   const v = process.env.EMULATOR_GATE_WAIT_MS;
-  const n = v ? Number.parseInt(v, 10) : NaN;
+  const n = v ? Number.parseInt(v, 10) : Number.NaN;
   return Number.isNaN(n) || n <= 0 ? DEFAULT_GATE_WAIT_MS : Math.min(n, 120_000);
 }
 

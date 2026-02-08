@@ -10,7 +10,7 @@ import { emulatorHealthGate } from './emulatorGate.js';
 import { devicePreflight } from './preflight.js';
 import { listDevices, screen as vendorScreen } from './vendorAdapter.js';
 import { buildStoragePath, uploadScreenshot } from './storage.js';
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import { CallbackBuffer } from './callbackBuffer.js';
 
 const STEP_TIMEOUT_MIN_MS = 5_000;
@@ -41,6 +41,17 @@ export async function runWorkflow(
   runtime_handle: string,
   callback: CallbackBuffer
 ): Promise<{ ok: boolean; failure_reason?: string }> {
+  // Emulator Health Gate: run 시작 직전 1회 호출. 실패 시 run 미시작, 로그만 남김.
+  const gate = await emulatorHealthGate(runtime_handle);
+  if (!gate.ok) {
+    logError(`Emulator health gate failed (${gate.failure_reason})`, undefined, {
+      run_id: payload.run_id,
+      device_id,
+      runtime_handle,
+    });
+    return { ok: false, failure_reason: gate.failure_reason };
+  }
+
   const supabase = createClient(config.supabaseUrl, config.supabaseServiceRoleKey);
   const task_id = `task-${payload.run_id}-${device_id}`;
   const ctx: RunContext = {
@@ -82,21 +93,6 @@ export async function runWorkflow(
   });
 
   try {
-    const gate = await emulatorHealthGate(runtime_handle);
-    if (!gate.ok) {
-      const endedAt = Date.now();
-      await emit('task_finished', {
-        task_id,
-        device_id,
-        runtime_handle,
-        status: 'failed',
-        failure_reason: gate.failure_reason,
-        timings: { startedAt, endedAt },
-        timestamp: endedAt,
-      });
-      return { ok: false, failure_reason: gate.failure_reason };
-    }
-
     const preflight = devicePreflight(runtime_handle);
     if (!preflight.ok) {
       await emit('task_finished', {
