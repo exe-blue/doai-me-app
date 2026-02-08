@@ -4,6 +4,17 @@
 
 ---
 
+## 이걸 어떻게 실행해야 하나?
+
+| 하고 싶은 것 | 실행 방법 |
+|--------------|-----------|
+| **지금(맥)에서 러너만 로컬 실행** | `cd node-agent` → `.env` 채우기 → `npm install` → `npm run build` → `node dist/index.js` (또는 `npm run dev`) |
+| **exe 빌드/릴리즈 작업을 개발 에이전트에게 맡기기** | [node-runner-windows-packaging.md](node-runner-windows-packaging.md) 맨 아래 **「개발 에이전트 핸드오프 프롬프트 (복붙용)」** 블록 전체를 복사해 에이전트에게 붙여넣기. 이 문서(node-runner-exe-build-points.md)는 수정 포인트·워크플로 치환용. |
+| **릴리즈 zip 만들기(태그 푸시)** | `git tag -a v0.1.1 -m "..."` → `git push origin v0.1.1`. GitHub Actions `release-node-runner`가 돌면서 exe → zip → Release에 첨부. (CJS 번들+--config 적용된 뒤부터 성공) |
+| **노드 PC(윈도우)에서 실행** | 1) Releases에서 `node-runner-win-x64-v*.zip` 내려받기 2) 풀기 3) 관리자 PowerShell에서 `.\install.ps1` 4) `C:\ProgramData\doai\node-runner\config.json` 수정 5) `C:\Program Files\doai\node-runner\winsw.exe restart` (업데이트: `.\update.ps1 -RepoOwner exe-blue -RepoName doai-me-app`) |
+
+---
+
 ## 1. 러너 엔트리 파일 경로
 
 | 항목 | 값 |
