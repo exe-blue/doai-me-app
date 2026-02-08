@@ -53,6 +53,7 @@ docs/
 | [v0-integration.md](guide/v0-integration.md) | `v0` `ui` `integration` `landing` `frontend` `cta` `glossary` | v0 코드 통합 절차·DoAi.Me 용어·랜딩 CTA |
 | [code-quality.md](guide/code-quality.md) | `sonar` `complexity` `refactor` `s3776` `s2004` | SonarQube 이슈별 선택지·리팩터 가이드 |
 | [node-runner-windows-packaging.md](guide/node-runner-windows-packaging.md) | `node-runner` `windows` `exe` `winsw` `service` `release` `update.ps1` | Node Runner exe 빌드·WinSW 서비스·GitHub Release·update.ps1 핸드오프 |
+| [node-runner-exe-build-points.md](guide/node-runner-exe-build-points.md) | `node-runner` `exe` `pkg` `cjs` `tsup` `actions` | exe 빌드 정확한 수정 포인트: 엔트리 경로·CJS 번들·워크플로 pkg 단계 치환 |
 
 ## QA / E2E (qa/)
 

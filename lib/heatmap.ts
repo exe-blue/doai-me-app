@@ -20,7 +20,7 @@ export interface HeatmapItem {
 
 /** L1: 입력이 비어도 slots개 칸으로 채움. 빈 인덱스는 { index, online: false, activity: "idle", empty: true }. */
 export function normalizeToSlots(
-  items: { index: number; online: boolean; [k: string]: unknown }[],
+  items: HeatmapItem[] | Array<{ index: number; online: boolean; activity?: HeatmapActivity; last_seen?: string; last_error_message?: string }>,
   slots = 100
 ): HeatmapItem[] {
   const map = new Map(items.map((i) => [i.index, i]));

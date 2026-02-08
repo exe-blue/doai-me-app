@@ -152,3 +152,34 @@
 
 **update.ps1 사용 예:**  
 `.\update.ps1 -RepoOwner <owner> -RepoName <repo>` (최신 릴리즈 zip + sha256 검증 후 교체)
+
+---
+
+## 개발 에이전트 핸드오프 프롬프트 (복붙용)
+
+아래를 그대로 개발 에이전트에게 주면 된다. **정확한 수정 포인트**(엔트리 경로·빌드 툴·Actions pkg 단계 치환)는 [node-runner-exe-build-points.md](node-runner-exe-build-points.md) 참고.
+
+---
+
+**목표**  
+Windows 노드 PC에서 GitHub 없이 동작하는 node-runner.exe를 만들고, WinSW Windows Service로 등록해 재부팅 후 자동 실행. 배포/업데이트는 GitHub Releases 기반. 노드는 update.ps1로 삭제 없이 교체 업데이트 가능해야 함.  
+참고: repo에 docs/guide/node-runner-windows-packaging.md가 있으면 "목표~완료 기준" 섹션을 본 작업의 상위 스펙으로 준수할 것.
+
+**현재 전제**  
+ADB 고정 경로: `C:\Program Files (x86)\xiaowei\tools\adb.exe`. 노드 PC는 레포 clone 안 함. config: `C:\ProgramData\doai\node-runner\config.json`. 배포: GitHub Releases zip.
+
+**해야 할 작업 (우선순위)**  
+1) node-runner에 **--config** 옵션 추가 (필수). 실행 예: `node-runner.exe --config "C:\ProgramData\doai\node-runner\config.json"`. config 스키마: server_base_url, node_id, node_shared_secret, adb_path(기본 xiaowei), poll_interval_ms, max_jobs. PATH 의존 없이 adb_path로 직접 실행. 로그: stdout/stderr(서비스는 WinSW 수집), 가능하면 파일 로그 옵션.  
+2) **exe 빌드 가능**하게 엔트리/번들 정리 (필수). pkg/nexe가 먹도록 엔트리를 CJS 단일 파일(예: dist/node-runner.cjs)로. tsup/esbuild로 번들 후 pkg.  
+3) **GitHub Actions** pkg 단계 경로 수정 (필수). pkg 입력 = CJS 번들 파일, 출력 = dist/node-runner.exe. v* 태그 시 exe → zip → sha256 → Release 업로드.  
+4) Release zip 구성: node-runner.exe, winsw.exe, node-runner-service.xml, install.ps1, update.ps1, sha256sums.txt. 설치 경로: Program Files(바이너리), ProgramData(config/logs/cache).  
+5) 서비스: DoaiNodeRunner, AutoStart+실패재시작, args에 --config 포함. install.ps1는 config 없으면 템플릿(덮어쓰기 금지), 서비스 install/start. update.ps1는 최신 릴리즈 → zip → sha256 → stop → exe 교체 → start, 실패 시 .bak 롤백.
+
+**서버 연동**  
+POST /api/nodes/heartbeat (runner_version 포함), POST /api/nodes/pull, POST /api/nodes/callback (event_id 멱등, lease_token 필수).
+
+**완료 기준**  
+(1) zip만 복사 후 install.ps1 → 서비스 등록·실행. (2) config에서 URL/node_id/secret만 수정 → heartbeat/pull 수신. (3) adb는 xiaowei 경로로 adb devices 정상. (4) update.ps1 -RepoOwner exe-blue -RepoName doai-me-app → stop/교체/start. (5) GitHub Releases에 버전별 zip, sha256 검증 통과.
+
+**추가**  
+자기 자신 업데이트는 러너가 하지 않고 update.ps1가 수행. config/로그는 ProgramData, 실행파일은 Program Files. node_id 예: PC-01~PC-04.
