@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,39 +16,43 @@ import { Play, Clock, Smartphone, Upload, ExternalLink, ShieldAlert } from "luci
 import Link from "next/link"
 
 const flowCards = [
-  { label: "신규 콘텐츠", count: 3, icon: Play, color: "text-primary" },
-  { label: "실행 대기", count: 7, icon: Clock, color: "text-amber-500" },
-  { label: "활동 중 기기", count: 142, icon: Smartphone, color: "text-emerald-500" },
-  { label: "업로드 완료 기록", count: 1284, icon: Upload, color: "text-blue-500" },
+  { label: "신규 콘텐츠", count: "—", icon: Play, color: "text-primary" },
+  { label: "실행 대기", count: "—", icon: Clock, color: "text-amber-500" },
+  { label: "활동 중 기기", count: "—", icon: Smartphone, color: "text-emerald-500" },
+  { label: "업로드 완료 기록", count: "—", icon: Upload, color: "text-blue-500" },
 ]
 
-const recentRuns = [
-  { id: "RUN-0047", trigger: "유튜브", target: "ALL", status: "완료", started: "14:32", link: "/dashboard/runs" },
-  { id: "RUN-0046", trigger: "수동", target: "20대", status: "실행 중", started: "14:18", link: "/dashboard/runs" },
-  { id: "RUN-0045", trigger: "유튜브", target: "ALL", status: "완료", started: "13:55", link: "/dashboard/runs" },
-  { id: "RUN-0044", trigger: "유튜브", target: "20대", status: "실패", started: "13:22", link: "/dashboard/runs" },
-  { id: "RUN-0043", trigger: "수동", target: "ALL", status: "완료", started: "12:50", link: "/dashboard/runs" },
-  { id: "RUN-0042", trigger: "유튜브", target: "20대", status: "완료", started: "12:31", link: "/dashboard/runs" },
-  { id: "RUN-0041", trigger: "유튜브", target: "ALL", status: "완료", started: "11:45", link: "/dashboard/runs" },
-  { id: "RUN-0040", trigger: "수동", target: "20대", status: "완료", started: "11:12", link: "/dashboard/runs" },
-  { id: "RUN-0039", trigger: "유튜브", target: "ALL", status: "완료", started: "10:58", link: "/dashboard/runs" },
-  { id: "RUN-0038", trigger: "유튜브", target: "20대", status: "완료", started: "10:30", link: "/dashboard/runs" },
-]
+type RunRow = { id: string; trigger: string; target: string; status: string; started: string }
 
 function statusBadge(status: string) {
   switch (status) {
+    case "completed":
     case "완료":
-      return <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">{status}</Badge>
+      return <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">{status === "completed" ? "완료" : status}</Badge>
+    case "running":
     case "실행 중":
-      return <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20">{status}</Badge>
+      return <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20">{status === "running" ? "실행 중" : status}</Badge>
+    case "failed":
     case "실패":
-      return <Badge variant="secondary" className="bg-red-500/10 text-red-500 border-red-500/20">{status}</Badge>
+      return <Badge variant="secondary" className="bg-red-500/10 text-red-500 border-red-500/20">{status === "failed" ? "실패" : status}</Badge>
+    case "queued":
+    case "대기열":
+      return <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20">{status === "queued" ? "대기열" : status}</Badge>
     default:
       return <Badge variant="secondary">{status}</Badge>
   }
 }
 
 export default function ConsolePage() {
+  const [recentRuns, setRecentRuns] = useState<RunRow[]>([])
+
+  useEffect(() => {
+    fetch("/api/runs")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: RunRow[]) => setRecentRuns(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [])
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -117,7 +122,7 @@ export default function ConsolePage() {
                       <TableCell className="text-xs text-muted-foreground">{run.started}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" className="size-6" asChild>
-                          <Link href={run.link}>
+                          <Link href={`/dashboard/runs/${run.id}`}>
                             <ExternalLink className="size-3" />
                             <span className="sr-only">실행 상세 보기</span>
                           </Link>

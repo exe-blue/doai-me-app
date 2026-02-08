@@ -1,10 +1,45 @@
 /**
- * DoAi.Me MVP Orchestration v1 — Create run (workflow_id, timeoutOverrides, target)
+ * DoAi.Me MVP Orchestration v1 — List runs (GET), Create run (POST)
  * Nodes poll /api/nodes/pending-runs for run_start payload
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+
+export async function GET() {
+  try {
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: runs, error } = await supabase
+      .from('runs')
+      .select('id, status, trigger, scope, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) {
+      console.error('[runs] List failed', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json(
+      (runs ?? []).map((r) => ({
+        id: r.id,
+        status: r.status,
+        trigger: r.trigger ?? 'manual',
+        target: r.scope ?? 'ALL',
+        started: r.created_at
+          ? new Date(r.created_at).toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '—',
+      }))
+    );
+  } catch (err) {
+    console.error('[runs] GET error', err);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+}
 
 const STEP_TIMEOUT_MIN_MS = 5_000;
 const STEP_TIMEOUT_MAX_MS = 600_000;
